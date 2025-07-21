@@ -42,10 +42,10 @@ export default function ResultsPage() {
       const difference = stateValue - nationalValue
       
       return (
-        <div className="bg-white border border-gray-300 rounded-md p-3 shadow-lg">
-          <p className="font-medium text-gray-900">Year: {label}</p>
-          <p className="text-blue-600">State: {stateValue?.toFixed(2)}</p>
-          <p className="text-red-600">National Average: {nationalValue?.toFixed(2)}</p>
+        <div className="bg-white p-3 border border-gray-300 rounded-md shadow-lg">
+          <p className="font-medium text-black">Year: {label}</p>
+          <p className="text-gray-600">State: {stateValue?.toFixed(2)}%</p>
+          <p className="text-gray-600">National: {nationalValue?.toFixed(2)}%</p>
           <p className="text-gray-600">Difference: {difference?.toFixed(2)}</p>
         </div>
       )
@@ -126,7 +126,7 @@ export default function ResultsPage() {
             
             {/* Card content */}
             <div className="p-4">
-              <h4 className="text-lg font-semibold text-gray-900 mb-4">Unemployment Rate (%)</h4>
+              <h4 className="text-lg font-semibold text-black mb-4">Unemployment Rate (%)</h4>
               
               {/* Action buttons */}
               <div className="flex gap-2 mb-4">
@@ -163,7 +163,7 @@ export default function ResultsPage() {
               
               {/* Top performers */}
               <div>
-                <h5 className="text-sm font-medium text-gray-900 mb-2">Top Performing States:</h5>
+                <h5 className="text-sm font-medium text-black mb-2">Top Performing States:</h5>
                 <div className="space-y-1">
                   {TOP_PERFORMERS.map((state, index) => (
                     <div key={state.code} className="text-sm text-gray-600">
@@ -197,7 +197,7 @@ export default function ResultsPage() {
             
             {/* Card content */}
             <div className="p-4">
-              <h4 className="text-lg font-semibold text-gray-900 mb-4">Unemployment Rate (%)</h4>
+              <h4 className="text-lg font-semibold text-black mb-4">Unemployment Rate (%)</h4>
               
               {/* Action buttons */}
               <div className="flex gap-2 mb-4">
@@ -234,7 +234,7 @@ export default function ResultsPage() {
               
               {/* Top performers */}
               <div>
-                <h5 className="text-sm font-medium text-gray-900 mb-2">Top Performing States:</h5>
+                <h5 className="text-sm font-medium text-black mb-2">Top Performing States:</h5>
                 <div className="space-y-1">
                   {TOP_PERFORMERS.map((state, index) => (
                     <div key={state.code} className="text-sm text-gray-600">

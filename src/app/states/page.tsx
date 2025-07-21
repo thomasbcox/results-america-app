@@ -95,7 +95,7 @@ export default function StateSelection() {
 
         {/* Instructions */}
         <div className="w-full max-w-md mb-6">
-          <p className="text-gray-900 text-center text-sm">
+          <p className="text-black text-center text-sm">
             Choose one or more states you want to analyze, or leave empty to view all states
           </p>
         </div>
@@ -105,9 +105,9 @@ export default function StateSelection() {
           <div className="relative">
             <button
               onClick={() => setShowDropdown(!showDropdown)}
-              className="w-full bg-white border border-gray-300 rounded-md px-4 py-3 text-left flex justify-between items-center hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+              className="w-full bg-white border border-gray-300 rounded-md px-4 py-3 text-left flex justify-between items-center hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
             >
-              <span className="text-gray-900">
+              <span className="text-black">
                 {selectedStates.length === 0 
                   ? "Select a state (maximum 4, or none for all states)"
                   : selectedStates[selectedStates.length - 1]
@@ -122,7 +122,7 @@ export default function StateSelection() {
                   <button
                     key={state}
                     onClick={() => handleStateSelect(state)}
-                    className="w-full px-4 py-2 text-left hover:bg-gray-100 focus:outline-none focus:bg-gray-100 text-gray-900"
+                    className="w-full px-4 py-2 text-left hover:bg-gray-100 focus:outline-none focus:bg-gray-100 text-black"
                   >
                     {state}
                   </button>
@@ -169,7 +169,7 @@ export default function StateSelection() {
         <div className="w-full max-w-md flex gap-4">
           <a
             href="/"
-            className="flex-1 bg-white border border-gray-300 text-gray-900 font-medium py-3 px-6 rounded-md text-center hover:bg-gray-50 transition-colors"
+            className="flex-1 bg-white border border-gray-300 text-black font-medium py-3 px-6 rounded-md text-center hover:bg-gray-50 transition-colors"
           >
             Back
           </a>

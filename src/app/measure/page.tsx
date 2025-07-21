@@ -85,7 +85,7 @@ export default function MeasureSelection() {
 
         {/* Instructions */}
         <div className="w-full max-w-md mb-6">
-          <p className="text-gray-900 text-center text-sm">
+          <p className="text-black text-center text-sm">
             Choose a measure from the Economy category
           </p>
         </div>
@@ -100,7 +100,7 @@ export default function MeasureSelection() {
                   selectedMeasure === measure.id
                     ? 'bg-red-600 text-white border-red-600'
                     : measure.available
-                    ? 'bg-white text-gray-900 border-gray-300 hover:bg-gray-50'
+                    ? 'bg-white text-black border-gray-300 hover:bg-gray-50'
                     : 'bg-gray-100 text-gray-700 border-gray-200'
                 }`}
                 onClick={() => measure.available && handleMeasureSelect(measure.id)}
@@ -148,7 +148,7 @@ export default function MeasureSelection() {
         <div className="w-full max-w-md flex gap-4">
           <a
             href="/category"
-            className="flex-1 bg-white border border-gray-300 text-gray-900 font-medium py-3 px-6 rounded-md text-center hover:bg-gray-50 transition-colors"
+            className="flex-1 bg-white border border-gray-300 text-black font-medium py-3 px-6 rounded-md text-center hover:bg-gray-50 transition-colors"
           >
             Back
           </a>

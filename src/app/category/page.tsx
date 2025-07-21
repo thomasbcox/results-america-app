@@ -146,7 +146,7 @@ export default function CategorySelection() {
 
         {/* Instructions */}
         <div className="w-full max-w-md mb-6">
-          <p className="text-gray-900 text-center text-sm">
+          <p className="text-black text-center text-sm">
             Choose a category to see state performance measures
           </p>
         </div>
@@ -162,7 +162,7 @@ export default function CategorySelection() {
                 className={`w-full flex items-center justify-between p-4 rounded-md border transition-colors ${
                   selectedCategory === category.id
                     ? 'bg-red-600 text-white border-red-600'
-                    : 'bg-gray-100 text-gray-900 border-gray-300 hover:bg-gray-200'
+                    : 'bg-gray-100 text-black border-gray-300 hover:bg-gray-200'
                 }`}
               >
                 <div className="flex items-center gap-3">
@@ -175,8 +175,8 @@ export default function CategorySelection() {
               {/* Tooltip */}
               {hoveredCategory === category.id && (
                 <div className="absolute left-full top-0 ml-2 w-64 bg-white border border-gray-300 rounded-md p-3 shadow-lg z-10">
-                  <h4 className="font-medium text-gray-900 mb-2">{category.name} Includes:</h4>
-                  <ul className="text-sm text-gray-900 space-y-1">
+                  <h4 className="font-medium text-black mb-2">{category.name} Includes:</h4>
+                  <ul className="text-sm text-black space-y-1">
                     {category.measures.map((measure, index) => (
                       <li key={index} className="flex items-start">
                         <span className="text-gray-400 mr-2">•</span>
@@ -194,7 +194,7 @@ export default function CategorySelection() {
         <div className="w-full max-w-md flex gap-4">
           <a
             href="/states"
-            className="flex-1 bg-white border border-gray-300 text-gray-900 font-medium py-3 px-6 rounded-md text-center hover:bg-gray-50 transition-colors"
+            className="flex-1 bg-white border border-gray-300 text-black font-medium py-3 px-6 rounded-md text-center hover:bg-gray-50 transition-colors"
           >
             Back
           </a>
