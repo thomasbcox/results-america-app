@@ -96,8 +96,19 @@ export default function MainMenu() {
         </div>
 
         {/* Hero Image */}
-        <div className="w-full h-64 bg-gray-200 flex items-center justify-center">
-          <span className="text-gray-600 text-lg">State Capitol Building</span>
+        <div className="w-full h-64 relative overflow-hidden">
+          <img
+            src="/state-capitol-building.png"
+            alt="State Capitol Building"
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              // Fallback to a placeholder if image doesn't exist
+              e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 200'%3E%3Crect width='400' height='200' fill='%23e5e7eb'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='%236b7280' font-family='sans-serif' font-size='16'%3EState Capitol Building%3C/text%3E%3C/svg%3E"
+            }}
+          />
+          <div className="absolute top-4 right-4 bg-red-600 px-3 py-1 rounded-md shadow-lg">
+            <span className="text-white font-bold text-sm">RESULTS AMERICA</span>
+          </div>
         </div>
 
         {/* Main Content */}
@@ -250,7 +261,7 @@ export default function MainMenu() {
         {/* Hero image */}
         <div className="w-full max-w-md mb-6">
           <img 
-            src="/state-capitol-building.jpg" 
+            src="/state-capitol-building.png" 
             alt="State Capitol Building"
             className="w-full h-48 object-cover rounded-lg shadow-md"
             onError={(e) => {
