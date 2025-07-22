@@ -1,8 +1,8 @@
-import { seedDatabase } from '../src/lib/db/seed';
+import { seedDatabaseNormalized } from '../src/lib/db/seed-normalized';
 
 async function main() {
   try {
-    await seedDatabase();
+    await seedDatabaseNormalized();
     console.log('🎉 Database seeding completed successfully!');
     process.exit(0);
   } catch (error) {

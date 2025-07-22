@@ -2,8 +2,8 @@ import { db } from './index';
 import { states, categories, statistics, dataPoints } from './schema';
 import { eq } from 'drizzle-orm';
 
-export async function seedDatabase() {
-  console.log('🌱 Seeding database...');
+export async function seedDatabaseComplete() {
+  console.log('🌱 Seeding database with complete data...');
 
   // Insert states (all 50 states in alphabetical order)
   const stateData = [
@@ -89,7 +89,7 @@ export async function seedDatabase() {
   const infrastructureCategory = await db.select().from(categories).where(eq(categories.name, 'Infrastructure')).limit(1);
   const governmentCategory = await db.select().from(categories).where(eq(categories.name, 'Government')).limit(1);
 
-  // Insert statistics (matching the actual data source)
+  // Insert statistics (complete data from CSV)
   const statisticData = [
     // Education (6 measures)
     {
@@ -116,351 +116,543 @@ export async function seedDatabase() {
     },
     {
       categoryId: educationCategory[0].id,
+      raNumber: '1003',
       name: 'SAT/ACT Mean',
       description: 'Mean ACT Score by State',
+      subMeasure: '',
+      calculation: 'Mean ACT Score by State',
       unit: 'Score',
-      source: 'College Board, Inc.'
+      source: 'College Board, Inc.',
+      availableSince: '2013'
     },
     {
       categoryId: educationCategory[0].id,
+      raNumber: '1004',
       name: '2-Year Degree Graduation Rate',
       description: 'Attaining degree after 150% of 2-year period',
+      subMeasure: '',
+      calculation: '% attaining degree after 150% of 2-year period',
       unit: '%',
-      source: 'NCES/IPEDS'
+      source: 'NCES/IPEDS',
+      availableSince: '2012'
     },
     {
       categoryId: educationCategory[0].id,
+      raNumber: '1005',
       name: '4-Year Degree Graduation Rate',
       description: 'Attaining degree after 150% of 4-year period',
+      subMeasure: '',
+      calculation: '% attaining degree after 150% of 4-year period',
       unit: '%',
-      source: 'NCES/IPEDS'
+      source: 'NCES/IPEDS',
+      availableSince: '2012'
     },
     {
       categoryId: educationCategory[0].id,
+      raNumber: '1006',
       name: 'Professional/Advanced Degrees',
       description: 'Percentage of Total Adult Population',
+      subMeasure: '',
+      calculation: '% of Total Adult Population',
       unit: '%',
-      source: 'NCES'
+      source: 'NCES',
+      availableSince: '2012'
     },
     
     // Economy (10 measures)
     {
       categoryId: economyCategory[0].id,
+      raNumber: '2001',
       name: 'Real GDP',
       description: 'Gross State Product in Current Year Dollars',
+      subMeasure: '',
+      calculation: 'Gross State Product in Current Year Dollars',
       unit: '$',
-      source: 'BEA'
+      source: 'BEA',
+      availableSince: '2003'
     },
     {
       categoryId: economyCategory[0].id,
+      raNumber: '2002',
       name: 'Economic Diversity',
       description: 'Simpson index',
+      subMeasure: '',
+      calculation: 'Simpson index',
       unit: 'Index',
-      source: 'BEA'
+      source: 'BEA',
+      availableSince: '2007'
     },
     {
       categoryId: economyCategory[0].id,
+      raNumber: '2003',
       name: 'Business Competitiveness Index',
       description: 'American Legislative Exchange Council',
+      subMeasure: '',
+      calculation: 'American Legislative Exchange Council',
       unit: 'Index',
-      source: 'ALEC'
+      source: 'ALEC',
+      availableSince: '2012'
     },
     {
       categoryId: economyCategory[0].id,
+      raNumber: '2004',
       name: 'Household Income',
       description: 'Household Income Per Capita',
+      subMeasure: '',
+      calculation: 'Household Income Per Capita',
       unit: '$',
-      source: 'US Census Bureau'
+      source: 'US Census Bureau',
+      availableSince: '1984'
     },
     {
       categoryId: economyCategory[0].id,
+      raNumber: '2005',
       name: 'Unemployment Rate',
       description: 'Mean percentage of Labor Force Unemployed',
+      subMeasure: '',
+      calculation: 'Mean % of Labor Force Unemployed',
       unit: '%',
-      source: 'BLS'
+      source: 'BLS',
+      availableSince: '2012'
     },
     {
       categoryId: economyCategory[0].id,
+      raNumber: '2006',
       name: 'Net Job Growth',
       description: 'Jobs Gained minus Jobs Lost in a Year',
+      subMeasure: '',
+      calculation: '# Jobs Gained - # Jobs Lost in a Year',
       unit: 'Jobs',
-      source: 'BLS'
+      source: 'BLS',
+      availableSince: '2011'
     },
     {
       categoryId: economyCategory[0].id,
+      raNumber: '2007',
       name: 'Income Inequality',
       description: 'Gini Coefficient',
+      subMeasure: '',
+      calculation: 'Gini Coefficient',
       unit: 'Index',
-      source: 'US Census Bureau'
+      source: 'US Census Bureau',
+      availableSince: '1979'
     },
     {
       categoryId: economyCategory[0].id,
+      raNumber: '2008',
       name: 'New Firms',
       description: 'Number of new firms registered in previous year',
+      subMeasure: '',
+      calculation: '# of new firms registered in previous year',
       unit: 'Count',
-      source: 'Small Business Administration'
+      source: 'Small Business Administration',
+      availableSince: '1998'
     },
     {
       categoryId: economyCategory[0].id,
+      raNumber: '2009',
       name: 'Venture Capital Investment',
       description: 'Number of Deals or Total Investment in Dollars',
+      subMeasure: '',
+      calculation: '# of Deals or Total Investment in Dollars',
       unit: '$',
-      source: 'PwC'
+      source: 'PwC',
+      availableSince: '2002'
     },
     {
       categoryId: economyCategory[0].id,
+      raNumber: '2010',
       name: 'Rate of Poverty',
       description: 'Percentage of population 18+ below poverty line',
+      subMeasure: '',
+      calculation: '% of population 18+ below poverty line',
       unit: '%',
-      source: 'US Census Bureau'
+      source: 'US Census Bureau',
+      availableSince: '2012'
     },
     
     // Public Safety (7 measures)
     {
       categoryId: publicSafetyCategory[0].id,
+      raNumber: '3001',
       name: 'Violent Crimes',
       description: 'FBI Violent Crime Index per 1,000 persons',
+      subMeasure: '',
+      calculation: 'FBI Violent Crime Index (per 1,000 persons)',
       unit: 'per 1,000',
-      source: 'BJS'
+      source: 'BJS',
+      availableSince: '1997'
     },
     {
       categoryId: publicSafetyCategory[0].id,
+      raNumber: '3002',
       name: 'Property Crimes',
       description: 'FBI Property Crime Index per 1,000 persons',
+      subMeasure: '',
+      calculation: 'FBI Property Crime Index (per 1,000 persons)',
       unit: 'per 1,000',
-      source: 'BJS'
+      source: 'BJS',
+      availableSince: '1997'
     },
     {
       categoryId: publicSafetyCategory[0].id,
+      raNumber: '3003',
       name: 'Recidivism Rate',
       description: 'Percentage reoffending within 3 years of release',
+      subMeasure: '',
+      calculation: '% reoffending within 3 years of release',
       unit: '%',
-      source: 'BJS'
+      source: 'BJS',
+      availableSince: ''
     },
     {
       categoryId: publicSafetyCategory[0].id,
+      raNumber: '3004',
       name: 'Rate of Incarceration',
       description: 'Prisoners per 100,000',
+      subMeasure: '',
+      calculation: 'Prisoners per 100,000',
       unit: 'per 100,000',
-      source: 'BJS'
+      source: 'BJS',
+      availableSince: ''
     },
     {
       categoryId: publicSafetyCategory[0].id,
+      raNumber: '3005',
       name: 'Cost of Corrections System',
       description: 'Dollars spent on corrections annually per capita',
+      subMeasure: '',
+      calculation: 'Dollars spent on corrections annually per capita',
       unit: '$',
-      source: 'US Census Bureau'
+      source: 'US Census Bureau',
+      availableSince: ''
     },
     {
       categoryId: publicSafetyCategory[0].id,
+      raNumber: '3006',
       name: 'Traffic Fatalities',
       description: 'Deaths per 100 million vehicle miles travelled',
+      subMeasure: '',
+      calculation: 'Deaths per 100 million vehicle miles travelled',
       unit: 'per 100M miles',
-      source: 'US Census Bureau'
+      source: 'US Census Bureau',
+      availableSince: '1990'
     },
     {
       categoryId: publicSafetyCategory[0].id,
+      raNumber: '3007',
       name: 'Child Maltreatment',
       description: 'Number of Child Abuse/Neglect Cases per capita',
+      subMeasure: '',
+      calculation: '# of Child Abuse/Neglect Cases per capita',
       unit: 'per capita',
-      source: 'HHS Children\'s Bureau'
+      source: 'HHS Children\'s Bureau',
+      availableSince: '2003'
     },
     
     // Health (9 measures)
     {
       categoryId: healthCategory[0].id,
+      raNumber: '5001',
       name: 'Cost of Healthcare',
       description: 'Spending per capita in real dollars',
+      subMeasure: '',
+      calculation: 'Spending per capita in real dollars',
       unit: '$',
-      source: 'Kaiser Family Foundation'
+      source: 'Kaiser Family Foundation',
+      availableSince: '1991'
     },
     {
       categoryId: healthCategory[0].id,
+      raNumber: '5002',
       name: 'Rate of Obesity',
       description: 'Percentage of Total Adult Population',
+      subMeasure: '',
+      calculation: '% of Total Adult Population',
       unit: '%',
-      source: 'CDC BRFSS'
+      source: 'CDC BRFSS',
+      availableSince: '2011'
     },
     {
       categoryId: healthCategory[0].id,
+      raNumber: '5003',
       name: 'Quality of Health',
       description: 'America\'s Health Rankings Index',
+      subMeasure: '',
+      calculation: 'America\'s Health Rankings Index',
       unit: 'Index',
-      source: 'United Health Foundation'
+      source: 'United Health Foundation',
+      availableSince: ''
     },
     {
       categoryId: healthCategory[0].id,
+      raNumber: '5004',
       name: 'Infant Mortality Rate',
       description: 'Rate per 1,000 births annually',
+      subMeasure: '',
+      calculation: 'Rate per 1,000 births annually',
       unit: 'per 1,000',
-      source: 'US Census Bureau'
+      source: 'US Census Bureau',
+      availableSince: '1990'
     },
     {
       categoryId: healthCategory[0].id,
+      raNumber: '5005',
       name: 'Uninsured',
       description: 'Percentage of population uninsured',
+      subMeasure: '',
+      calculation: '% of population uninsured',
       unit: '%',
-      source: 'US Census Bureau'
+      source: 'US Census Bureau',
+      availableSince: '1990'
     },
     {
       categoryId: healthCategory[0].id,
+      raNumber: '5006',
       name: 'Smokers',
       description: 'Percentage of Adult population who smoke',
+      subMeasure: '',
+      calculation: '% of Adult population who smoke',
       unit: '%',
-      source: 'CDC'
+      source: 'CDC',
+      availableSince: '1990'
     },
     {
       categoryId: healthCategory[0].id,
+      raNumber: '5007',
       name: 'Workplace Injuries',
       description: 'Number of injuries per 100 employees',
+      subMeasure: '',
+      calculation: '# injuries per 100 employees',
       unit: 'per 100',
-      source: 'BLS'
+      source: 'BLS',
+      availableSince: ''
     },
     {
       categoryId: healthCategory[0].id,
+      raNumber: '5008',
       name: 'Quality of Life / Happiness Index',
       description: 'Gallup-Healthways Wellness Survey',
+      subMeasure: '',
+      calculation: 'Gallup-Healthways Wellness Survey',
       unit: 'Index',
-      source: 'CDC'
+      source: 'CDC',
+      availableSince: '2008'
     },
     {
       categoryId: healthCategory[0].id,
+      raNumber: '5009',
       name: 'Food Insecurity',
       description: 'Percentage of households in low/very low security',
+      subMeasure: '',
+      calculation: '% of households in low/very low security',
       unit: '%',
-      source: 'USDA'
+      source: 'USDA',
+      availableSince: '2010'
     },
     
     // Environment (4 measures)
     {
       categoryId: environmentCategory[0].id,
+      raNumber: '4001',
       name: 'Renewable Energy',
       description: 'Percentage Green Megawatts / Total Generated',
+      subMeasure: '',
+      calculation: '% Green Megawatts / Total Generated',
       unit: '%',
-      source: 'EIA'
+      source: 'EIA',
+      availableSince: '2006'
     },
     {
       categoryId: environmentCategory[0].id,
+      raNumber: '4002',
       name: 'Carbon Dioxide Emissions',
       description: 'Millions of Metric Tons Produced',
+      subMeasure: '',
+      calculation: 'Millions of Metric Tons Produced',
       unit: 'MMT',
-      source: 'EIA'
+      source: 'EIA',
+      availableSince: '2000'
     },
     {
       categoryId: environmentCategory[0].id,
+      raNumber: '4003',
       name: 'Water Quality Index',
       description: 'Water quality assessment',
+      subMeasure: '',
+      calculation: '',
       unit: 'Index',
-      source: 'USGS'
+      source: 'USGS',
+      availableSince: '2002'
     },
     {
       categoryId: environmentCategory[0].id,
+      raNumber: '4004',
       name: 'Air Quality',
       description: 'National Ambient Air Quality Standards',
+      subMeasure: '',
+      calculation: 'National Ambient Air Quality Standards',
       unit: 'AQI',
-      source: 'EPA'
+      source: 'EPA',
+      availableSince: '2010'
     },
     
     // Infrastructure (1 measure)
     {
       categoryId: infrastructureCategory[0].id,
+      raNumber: '6001',
       name: 'Infrastructure Index',
       description: 'Index created from 2007 data',
+      subMeasure: '',
+      calculation: 'Index created from 2007 data',
       unit: 'Index',
-      source: 'US Chamber of Commerce'
+      source: 'US Chamber of Commerce',
+      availableSince: '2011'
     },
     
     // Government (13 measures)
     {
       categoryId: governmentCategory[0].id,
+      raNumber: '7001',
       name: 'State Debt',
       description: 'Percentage total state debt / GDP',
+      subMeasure: '',
+      calculation: '% total state debt / GDP',
       unit: '%',
-      source: 'US Census Bureau'
+      source: 'US Census Bureau',
+      availableSince: '2003'
     },
     {
       categoryId: governmentCategory[0].id,
+      raNumber: '7002',
       name: 'Citizen Tax Burden',
       description: 'Tax revenue per capita',
+      subMeasure: '',
+      calculation: 'Tax revenue per capita',
       unit: '$',
-      source: 'Tax Foundation'
+      source: 'Tax Foundation',
+      availableSince: '1977'
     },
     {
       categoryId: governmentCategory[0].id,
+      raNumber: '7003',
       name: 'Unfunded Pension Liabilities',
       description: 'Percentage of pension liabilities unfunded',
+      subMeasure: '',
+      calculation: '% of pension liabilities unfunded',
       unit: '%',
-      source: 'Morningstar'
+      source: 'Morningstar',
+      availableSince: '2007'
     },
     {
       categoryId: governmentCategory[0].id,
+      raNumber: '7004',
       name: 'Federal Dependency',
       description: 'Percentage of revenue from federal grants',
+      subMeasure: '',
+      calculation: '% of revenue from federal grants',
       unit: '%',
-      source: 'US Census Bureau'
+      source: 'US Census Bureau',
+      availableSince: ''
     },
     {
       categoryId: governmentCategory[0].id,
+      raNumber: '7005',
       name: 'Credit Rating',
       description: 'State Government Credit Rating',
+      subMeasure: '',
+      calculation: 'State Government Credit Rating',
       unit: 'Rating',
-      source: 'Standard & Poor\'s'
+      source: 'Standard & Poor\'s',
+      availableSince: '2001'
     },
     {
       categoryId: governmentCategory[0].id,
+      raNumber: '7006',
       name: 'State Employees',
       description: 'Percentage Full-time Employees / Population',
+      subMeasure: '',
+      calculation: '% Full-time Employees / Population',
       unit: '%',
-      source: 'US Census Bureau'
+      source: 'US Census Bureau',
+      availableSince: '1997'
     },
     {
       categoryId: governmentCategory[0].id,
+      raNumber: '7007',
       name: 'Financial Records Online',
       description: 'Online financial transparency',
+      subMeasure: '',
+      calculation: '',
       unit: 'Binary',
-      source: 'PIRG'
+      source: 'PIRG',
+      availableSince: ''
     },
     {
       categoryId: governmentCategory[0].id,
+      raNumber: '7008',
       name: 'Government Use of Technology',
       description: 'Grade from Center for Digital Government',
+      subMeasure: '',
+      calculation: 'Grade from Center for Digital Government',
       unit: 'Grade',
-      source: 'Center for Digital Government'
+      source: 'Center for Digital Government',
+      availableSince: '2012'
     },
     {
       categoryId: governmentCategory[0].id,
+      raNumber: '7009',
       name: 'Governor\'s Goals Online',
       description: 'Binary (Yes/No)',
+      subMeasure: '',
+      calculation: 'Binary (Yes/No)',
       unit: 'Binary',
-      source: 'State Websites'
+      source: 'State Websites',
+      availableSince: '2013'
     },
     {
       categoryId: governmentCategory[0].id,
+      raNumber: '7010',
       name: 'Citizen Customer Satisfaction',
       description: 'Polling Data',
+      subMeasure: '',
+      calculation: 'Polling Data',
       unit: 'Score',
-      source: 'State Websites'
+      source: 'State Websites',
+      availableSince: '2014'
     },
     {
       categoryId: governmentCategory[0].id,
+      raNumber: '7011',
       name: 'Government Open Data',
       description: 'Number of Performance Measures and Data online',
+      subMeasure: '',
+      calculation: '# of Performance Measures and Data online',
       unit: 'Count',
-      source: 'State Websites'
+      source: 'State Websites',
+      availableSince: '2013'
     },
     {
       categoryId: governmentCategory[0].id,
+      raNumber: '7012',
       name: 'Government Spending as % of GDP',
       description: 'Dollar Expenditures / State GDP',
+      subMeasure: '',
+      calculation: '$ Expenditures / State GDP',
       unit: '%',
-      source: 'US Census Bureau'
+      source: 'US Census Bureau',
+      availableSince: '2003'
     },
     {
       categoryId: governmentCategory[0].id,
+      raNumber: '7013',
       name: 'Tax Inequality Index',
       description: 'Effective state/local taxes by income group',
+      subMeasure: '',
+      calculation: 'Effective state/local taxes by income group',
       unit: 'Index',
-      source: 'ITEP'
+      source: 'ITEP',
+      availableSince: ''
     },
   ];
 
@@ -659,7 +851,5 @@ export async function seedDatabase() {
     }
   }
 
-  console.log('✅ Database seeded successfully!');
-}
-
- 
+  console.log('✅ Database seeded successfully with complete data!');
+} 

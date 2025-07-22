@@ -1,29 +1,54 @@
 "use client"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { User, ArrowRight, Star, Clock } from "lucide-react"
 import { useSelection } from "@/lib/context"
+import { useSearchParams } from "next/navigation"
 
-// Mock data for Economy category measures
-const ECONOMY_MEASURES = [
-  { id: 8, name: "Real GDP", available: false },
-  { id: 9, name: "GDP Growth Rate", available: false },
-  { id: 10, name: "Economic Diversity", available: false },
-  { id: 11, name: "Business Competitiveness", available: false },
-  { id: 12, name: "Household Income", available: false },
-  { id: 13, name: "Affordable Housing", available: false },
-  { id: 14, name: "Unemployment Rate", available: true },
-  { id: 15, name: "Net Job Growth", available: true },
-  { id: 16, name: "Income Inequality", available: true },
-  { id: 17, name: "New Firms", available: false },
-  { id: 18, name: "Venture Capital Investment", available: false },
-  { id: 19, name: "Adult Poverty", available: false },
-  { id: 20, name: "Child Poverty", available: false },
-  { id: 21, name: "Food Insecurity", available: false },
-  { id: 22, name: "Homelessness", available: true },
-]
+interface Statistic {
+  id: number;
+  name: string;
+  raNumber: string;
+  description: string;
+  unit: string;
+  availableSince: string;
+  category: string;
+  source: string;
+  sourceUrl: string;
+}
 
 export default function MeasureSelection() {
   const { selectedMeasure, setSelectedMeasure, favorites, toggleFavorite, user, signOut } = useSelection()
+  const searchParams = useSearchParams()
+  const category = searchParams.get('category')
+  
+  const [statistics, setStatistics] = useState<Statistic[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    async function fetchStatistics() {
+      try {
+        const response = await fetch('/api/statistics')
+        if (!response.ok) {
+          throw new Error('Failed to fetch statistics')
+        }
+        const data = await response.json()
+        
+        // Filter by category if specified
+        const filteredData = category 
+          ? data.filter((stat: Statistic) => stat.category === category)
+          : data
+        
+        setStatistics(filteredData)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to fetch statistics')
+      } finally {
+        setLoading(false)
+      }
+    }
+    
+    fetchStatistics()
+  }, [category])
 
   const handleMeasureSelect = (measureId: number) => {
     setSelectedMeasure(measureId)
@@ -49,7 +74,7 @@ export default function MeasureSelection() {
         </div>
         
         {/* User info */}
-        <div className="flex items-center gap-2 text-sm text-gray-600">
+        <div className="flex items-center gap-2 text-sm text-black">
           <User className="w-4 h-4" />
           <span>{user?.email}</span>
           <button 
@@ -86,62 +111,77 @@ export default function MeasureSelection() {
         {/* Instructions */}
         <div className="w-full max-w-md mb-6">
           <p className="text-black text-center text-sm">
-            Choose a measure from the Economy category
+            {category ? `Choose a measure from the ${category} category` : 'Choose a measure'}
           </p>
         </div>
 
         {/* Measure grid */}
         <div className="w-full max-w-md mb-6">
-          <div className="grid grid-cols-1 gap-3">
-            {ECONOMY_MEASURES.map((measure) => (
-              <div
-                key={measure.id}
-                className={`relative p-4 rounded-md border cursor-pointer transition-colors ${
-                  selectedMeasure === measure.id
-                    ? 'bg-red-600 text-white border-red-600'
-                    : measure.available
-                    ? 'bg-white text-black border-gray-300 hover:bg-gray-50'
-                    : 'bg-gray-100 text-gray-700 border-gray-200'
-                }`}
-                onClick={() => measure.available && handleMeasureSelect(measure.id)}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${
-                      selectedMeasure === measure.id
-                        ? 'bg-white text-red-600'
-                        : 'bg-gray-200 text-gray-700'
-                    }`}>
-                      {measure.id}
+          {loading && (
+            <div className="text-center py-4">
+              <p className="text-black">Loading measures...</p>
+            </div>
+          )}
+          
+          {error && (
+            <div className="text-center py-4">
+              <p className="text-red-600">Error: {error}</p>
+            </div>
+          )}
+          
+          {!loading && !error && (
+            <div className="grid grid-cols-1 gap-3">
+              {statistics.map((statistic) => (
+                <div
+                  key={statistic.id}
+                  className={`relative p-4 rounded-md border cursor-pointer transition-colors ${
+                    selectedMeasure === statistic.id
+                      ? 'bg-red-600 text-white border-red-600'
+                      : 'bg-white text-black border-gray-300 hover:bg-gray-50'
+                  }`}
+                  onClick={() => handleMeasureSelect(statistic.id)}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${
+                        selectedMeasure === statistic.id
+                          ? 'bg-white text-red-600'
+                          : 'bg-gray-200 text-black'
+                      }`}>
+                        {statistic.raNumber || statistic.id}
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="font-medium">{statistic.name}</span>
+                        <span className="text-xs text-gray-600">{statistic.unit}</span>
+                      </div>
                     </div>
-                    <span className="font-medium">{measure.name}</span>
+                    
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          toggleFavorite(statistic.id)
+                        }}
+                        className={`p-1 rounded ${
+                          favorites.includes(statistic.id)
+                            ? 'text-yellow-500'
+                            : 'text-gray-600 hover:text-yellow-500'
+                        }`}
+                      >
+                        <Star className={`w-4 h-4 ${favorites.includes(statistic.id) ? 'fill-current' : ''}`} />
+                      </button>
+                    </div>
                   </div>
                   
-                  <div className="flex items-center gap-2">
-                    {!measure.available && (
-                      <div className="flex items-center gap-1 text-xs text-gray-600">
-                        <Clock className="w-3 h-3" />
-                        <span>Data unavailable</span>
-                      </div>
-                    )}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        toggleFavorite(measure.id)
-                      }}
-                      className={`p-1 rounded ${
-                        favorites.includes(measure.id)
-                          ? 'text-yellow-500'
-                          : 'text-gray-400 hover:text-yellow-500'
-                      }`}
-                    >
-                      <Star className={`w-4 h-4 ${favorites.includes(measure.id) ? 'fill-current' : ''}`} />
-                    </button>
-                  </div>
+                  {statistic.description && (
+                    <div className="mt-2 text-xs text-gray-600">
+                      {statistic.description}
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Navigation buttons */}
@@ -165,7 +205,7 @@ export default function MeasureSelection() {
 
       {/* Footer */}
       <div className="bg-white px-4 py-4 text-center">
-        <p className="text-xs text-gray-500">
+        <p className="text-xs text-black">
           © 2025 The Great American Report Card. All rights reserved.
         </p>
       </div>

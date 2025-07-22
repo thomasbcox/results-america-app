@@ -35,7 +35,7 @@ const TOP_PERFORMERS = [
 export default function ResultsPage() {
   const { user, signOut } = useSelection()
 
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ value: number }>; label?: string }) => {
     if (active && payload && payload.length) {
       const stateValue = payload[0]?.value
       const nationalValue = payload[1]?.value
@@ -44,9 +44,9 @@ export default function ResultsPage() {
       return (
         <div className="bg-white p-3 border border-gray-300 rounded-md shadow-lg">
           <p className="font-medium text-black">Year: {label}</p>
-          <p className="text-gray-600">State: {stateValue?.toFixed(2)}%</p>
-          <p className="text-gray-600">National: {nationalValue?.toFixed(2)}%</p>
-          <p className="text-gray-600">Difference: {difference?.toFixed(2)}</p>
+                  <p className="text-black">State: {stateValue?.toFixed(2)}%</p>
+        <p className="text-black">National: {nationalValue?.toFixed(2)}%</p>
+        <p className="text-black">Difference: {difference?.toFixed(2)}</p>
         </div>
       )
     }
@@ -73,7 +73,7 @@ export default function ResultsPage() {
         </div>
         
         {/* User info */}
-        <div className="flex items-center gap-2 text-sm text-gray-600">
+        <div className="flex items-center gap-2 text-sm text-black">
           <User className="w-4 h-4" />
           <span>{user?.email}</span>
           <button 
@@ -98,11 +98,11 @@ export default function ResultsPage() {
           </a>
           <div className="flex items-center gap-4">
             <span className="text-green-600 text-sm">Using real Supabase data</span>
-            <button className="flex items-center gap-2 text-gray-600 hover:text-gray-700 text-sm">
+            <button className="flex items-center gap-2 text-black hover:text-gray-700 text-sm">
               <Share2 className="w-4 h-4" />
               Share
             </button>
-            <button className="flex items-center gap-2 text-gray-600 hover:text-gray-700 text-sm">
+            <button className="flex items-center gap-2 text-black hover:text-gray-700 text-sm">
               <Download className="w-4 h-4" />
               Export Data
             </button>
@@ -130,11 +130,11 @@ export default function ResultsPage() {
               
               {/* Action buttons */}
               <div className="flex gap-2 mb-4">
-                <button className="flex items-center gap-2 px-3 py-1 text-sm text-gray-600 hover:text-gray-700 border border-gray-300 rounded">
+                <button className="flex items-center gap-2 px-3 py-1 text-sm text-black hover:text-gray-700 border border-gray-300 rounded">
                   <Share2 className="w-3 h-3" />
                   Share
                 </button>
-                <button className="flex items-center gap-2 px-3 py-1 text-sm text-gray-600 hover:text-gray-700 border border-gray-300 rounded">
+                <button className="flex items-center gap-2 px-3 py-1 text-sm text-black hover:text-gray-700 border border-gray-300 rounded">
                   <Download className="w-3 h-3" />
                   Download
                 </button>
@@ -157,7 +157,7 @@ export default function ResultsPage() {
               
               {/* State rank */}
               <div className="flex justify-between items-center mb-4">
-                <span className="text-sm text-gray-600">State Rank:</span>
+                <span className="text-sm text-black">State Rank:</span>
                 <span className="bg-gray-200 px-3 py-1 rounded font-medium">#25</span>
               </div>
               
@@ -166,7 +166,7 @@ export default function ResultsPage() {
                 <h5 className="text-sm font-medium text-black mb-2">Top Performing States:</h5>
                 <div className="space-y-1">
                   {TOP_PERFORMERS.map((state, index) => (
-                    <div key={state.code} className="text-sm text-gray-600">
+                    <div key={state.code} className="text-sm text-black">
                       {index + 1}. {state.name} /{state.code}
                     </div>
                   ))}
@@ -180,7 +180,7 @@ export default function ResultsPage() {
                     <div key={i} className="w-3 h-3 text-blue-600">★</div>
                   ))}
                 </div>
-                <span className="text-xs text-gray-500">RESULTS AMERICA</span>
+                <span className="text-xs text-black">RESULTS AMERICA</span>
               </div>
             </div>
           </div>
@@ -201,11 +201,11 @@ export default function ResultsPage() {
               
               {/* Action buttons */}
               <div className="flex gap-2 mb-4">
-                <button className="flex items-center gap-2 px-3 py-1 text-sm text-gray-600 hover:text-gray-700 border border-gray-300 rounded">
+                <button className="flex items-center gap-2 px-3 py-1 text-sm text-black hover:text-gray-700 border border-gray-300 rounded">
                   <Share2 className="w-3 h-3" />
                   Share
                 </button>
-                <button className="flex items-center gap-2 px-3 py-1 text-sm text-gray-600 hover:text-gray-700 border border-gray-300 rounded">
+                <button className="flex items-center gap-2 px-3 py-1 text-sm text-black hover:text-gray-700 border border-gray-300 rounded">
                   <Download className="w-3 h-3" />
                   Download
                 </button>
@@ -228,7 +228,7 @@ export default function ResultsPage() {
               
               {/* State rank */}
               <div className="flex justify-between items-center mb-4">
-                <span className="text-sm text-gray-600">State Rank:</span>
+                <span className="text-sm text-black">State Rank:</span>
                 <span className="bg-gray-200 px-3 py-1 rounded font-medium">#16</span>
               </div>
               
@@ -237,7 +237,7 @@ export default function ResultsPage() {
                 <h5 className="text-sm font-medium text-black mb-2">Top Performing States:</h5>
                 <div className="space-y-1">
                   {TOP_PERFORMERS.map((state, index) => (
-                    <div key={state.code} className="text-sm text-gray-600">
+                    <div key={state.code} className="text-sm text-black">
                       {index + 1}. {state.name} /{state.code}
                     </div>
                   ))}
@@ -251,7 +251,7 @@ export default function ResultsPage() {
                     <div key={i} className="w-3 h-3 text-blue-600">★</div>
                   ))}
                 </div>
-                <span className="text-xs text-gray-500">RESULTS AMERICA</span>
+                <span className="text-xs text-black">RESULTS AMERICA</span>
               </div>
             </div>
           </div>
@@ -260,7 +260,7 @@ export default function ResultsPage() {
 
       {/* Footer */}
       <div className="bg-white px-4 py-4 text-center">
-        <p className="text-xs text-gray-500">
+        <p className="text-xs text-black">
           © 2025 The Great American Report Card. All rights reserved.
         </p>
       </div>

@@ -1,92 +1,59 @@
 "use client"
-import { useState } from "react"
-import { User, ArrowRight, GraduationCap, DollarSign, Shield, Building, Heart, TrendingUp, Eye } from "lucide-react"
+import { useState, useEffect } from "react"
+import { User, ArrowRight, GraduationCap, DollarSign, ShieldCheck, Building2, Heart, TrendingUp, Eye } from "lucide-react"
 import { useSelection } from "@/lib/context"
 
-const CATEGORIES = [
-  {
-    id: "education",
-    name: "Education",
-    icon: GraduationCap,
-    description: "Academic performance, graduation rates, and educational outcomes",
-    measures: [
-      "High School Graduation Rate", "College Readiness", "Student-Teacher Ratio",
-      "Standardized Test Scores", "Early Childhood Education", "Higher Education Attainment"
-    ]
-  },
-  {
-    id: "economy",
-    name: "Economy",
-    icon: DollarSign,
-    description: "Economic indicators, employment, and financial health",
-    measures: [
-      "Real GDP", "GDP Growth Rate", "Economic Diversity", "Business Competitiveness",
-      "Household Income", "Affordable Housing", "Unemployment Rate", "Net Job Growth",
-      "Income Inequality", "New Firms", "Venture Capital Investment", "Adult Poverty"
-    ]
-  },
-  {
-    id: "public-safety",
-    name: "Public Safety",
-    icon: Shield,
-    description: "Crime rates, law enforcement, and community safety",
-    measures: [
-      "Violent Crime Rate", "Property Crime Rate", "Police Officers per Capita",
-      "Recidivism Rate", "Emergency Response Time", "Community Policing"
-    ]
-  },
-  {
-    id: "environment",
-    name: "Environment",
-    icon: Building,
-    description: "Environmental quality, sustainability, and natural resources",
-    measures: [
-      "Air Quality Index", "Water Quality", "Renewable Energy Usage",
-      "Carbon Emissions", "Waste Management", "Protected Land Area"
-    ]
-  },
-  {
-    id: "health",
-    name: "Health",
-    icon: Heart,
-    description: "Healthcare access, outcomes, and public health",
-    measures: [
-      "Life Expectancy", "Infant Mortality Rate", "Healthcare Access",
-      "Mental Health Services", "Preventive Care", "Health Insurance Coverage"
-    ]
-  },
-  {
-    id: "government-efficiency",
-    name: "Government Efficiency",
-    icon: TrendingUp,
-    description: "Government performance, efficiency, and service delivery",
-    measures: [
-      "Budget Efficiency", "Service Delivery Time", "Citizen Satisfaction",
-      "Digital Services", "Infrastructure Investment", "Regulatory Efficiency"
-    ]
-  },
-  {
-    id: "government-transparency",
-    name: "Government Transparency",
-    icon: Eye,
-    description: "Open government, accountability, and public access",
-    measures: [
-      "Public Records Access", "Financial Disclosure", "Meeting Transparency",
-      "Whistleblower Protection", "Ethics Enforcement", "Public Participation"
-    ]
-  }
-]
+interface Category {
+  id: number;
+  name: string;
+  description: string;
+  icon: string;
+  sortOrder: number;
+  statisticCount?: number;
+}
+
+const iconMap: { [key: string]: React.ComponentType<{ className?: string }> } = {
+  'GraduationCap': GraduationCap,
+  'DollarSign': DollarSign,
+  'ShieldCheck': ShieldCheck,
+  'Building2': Building2,
+  'Heart': Heart,
+  'TrendingUp': TrendingUp,
+  'Eye': Eye,
+}
 
 export default function CategorySelection() {
   const { selectedCategory, setSelectedCategory, user, signOut } = useSelection()
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null)
+  const [categories, setCategories] = useState<Category[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    async function fetchCategories() {
+      try {
+        const response = await fetch('/api/categories?withStats=true')
+        if (!response.ok) {
+          throw new Error('Failed to fetch categories')
+        }
+        const data = await response.json()
+        setCategories(data)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to fetch categories')
+      } finally {
+        setLoading(false)
+      }
+    }
+    
+    fetchCategories()
+  }, [])
 
   const handleCategorySelect = (categoryId: string) => {
     setSelectedCategory(categoryId)
   }
 
-  const getCategoryIcon = (icon: any) => {
-    const IconComponent = icon
+  const getCategoryIcon = (iconName: string) => {
+    const IconComponent = iconMap[iconName] || Eye
     return <IconComponent className="w-5 h-5" />
   }
 
@@ -110,7 +77,7 @@ export default function CategorySelection() {
         </div>
         
         {/* User info */}
-        <div className="flex items-center gap-2 text-sm text-gray-600">
+        <div className="flex items-center gap-2 text-sm text-black">
           <User className="w-4 h-4" />
           <span>{user?.email}</span>
           <button 
@@ -153,14 +120,26 @@ export default function CategorySelection() {
 
         {/* Category buttons */}
         <div className="w-full max-w-md mb-6 space-y-3">
-          {CATEGORIES.map((category) => (
+          {loading && (
+            <div className="text-center py-4">
+              <p className="text-black">Loading categories...</p>
+            </div>
+          )}
+          
+          {error && (
+            <div className="text-center py-4">
+              <p className="text-red-600">Error: {error}</p>
+            </div>
+          )}
+          
+          {!loading && !error && categories.map((category) => (
             <div key={category.id} className="relative">
               <button
-                onClick={() => handleCategorySelect(category.id)}
-                onMouseEnter={() => setHoveredCategory(category.id)}
+                onClick={() => handleCategorySelect(category.name)}
+                onMouseEnter={() => setHoveredCategory(category.name)}
                 onMouseLeave={() => setHoveredCategory(null)}
                 className={`w-full flex items-center justify-between p-4 rounded-md border transition-colors ${
-                  selectedCategory === category.id
+                  selectedCategory === category.name
                     ? 'bg-red-600 text-white border-red-600'
                     : 'bg-gray-100 text-black border-gray-300 hover:bg-gray-200'
                 }`}
@@ -173,17 +152,15 @@ export default function CategorySelection() {
               </button>
 
               {/* Tooltip */}
-              {hoveredCategory === category.id && (
+              {hoveredCategory === category.name && (
                 <div className="absolute left-full top-0 ml-2 w-64 bg-white border border-gray-300 rounded-md p-3 shadow-lg z-10">
                   <h4 className="font-medium text-black mb-2">{category.name} Includes:</h4>
-                  <ul className="text-sm text-black space-y-1">
-                    {category.measures.map((measure, index) => (
-                      <li key={index} className="flex items-start">
-                        <span className="text-gray-400 mr-2">•</span>
-                        {measure}
-                      </li>
-                    ))}
-                  </ul>
+                  <p className="text-sm text-black">{category.description}</p>
+                  {category.statisticCount && (
+                    <p className="text-sm text-gray-600 mt-2">
+                      {category.statisticCount} measures available
+                    </p>
+                  )}
                 </div>
               )}
             </div>
@@ -211,7 +188,7 @@ export default function CategorySelection() {
 
       {/* Footer */}
       <div className="bg-white px-4 py-4 text-center">
-        <p className="text-xs text-gray-500">
+        <p className="text-xs text-black">
           © 2025 The Great American Report Card. All rights reserved.
         </p>
       </div>

@@ -1,22 +1,40 @@
 "use client"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { ArrowLeft, X, User, ArrowRight } from "lucide-react"
 import { useSelection } from "@/lib/context"
+import Link from "next/link"
 
-const STATES = [
-  "Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut", 
-  "Delaware", "Florida", "Georgia", "Hawaii", "Idaho", "Illinois", "Indiana", "Iowa", 
-  "Kansas", "Kentucky", "Louisiana", "Maine", "Maryland", "Massachusetts", "Michigan", 
-  "Minnesota", "Mississippi", "Missouri", "Montana", "Nebraska", "Nevada", "New Hampshire", 
-  "New Jersey", "New Mexico", "New York", "North Carolina", "North Dakota", "Ohio", 
-  "Oklahoma", "Oregon", "Pennsylvania", "Rhode Island", "South Carolina", "South Dakota", 
-  "Tennessee", "Texas", "Utah", "Vermont", "Virginia", "Washington", "West Virginia", 
-  "Wisconsin", "Wyoming"
-]
+interface State {
+  id: number;
+  name: string;
+  abbreviation: string;
+}
 
 export default function StateSelection() {
   const { selectedStates, setSelectedStates, user, signOut } = useSelection()
   const [showDropdown, setShowDropdown] = useState(false)
+  const [states, setStates] = useState<State[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    async function fetchStates() {
+      try {
+        const response = await fetch('/api/states')
+        if (!response.ok) {
+          throw new Error('Failed to fetch states')
+        }
+        const data = await response.json()
+        setStates(data)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to fetch states')
+      } finally {
+        setLoading(false)
+      }
+    }
+    
+    fetchStates()
+  }, [])
 
   const handleStateSelect = (state: string) => {
     if (selectedStates.includes(state)) {
@@ -55,7 +73,7 @@ export default function StateSelection() {
         </div>
         
         {/* User info */}
-        <div className="flex items-center gap-2 text-sm text-gray-600">
+        <div className="flex items-center gap-2 text-sm text-black">
           <User className="w-4 h-4" />
           <span>{user?.email}</span>
           <button 
@@ -81,7 +99,7 @@ export default function StateSelection() {
               e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 250'%3E%3Crect width='400' height='250' fill='%23e5e7eb'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='%236b7280' font-family='sans-serif' font-size='16'%3EUnited States Map%3C/text%3E%3C/svg%3E"
             }}
           />
-          <div className="absolute top-2 right-2 bg-white px-2 py-1 rounded text-xs font-medium text-gray-700">
+                      <div className="absolute top-2 right-2 bg-white px-2 py-1 rounded text-xs font-medium text-black">
             STATES OF USA
           </div>
         </div>
@@ -102,34 +120,48 @@ export default function StateSelection() {
 
         {/* State selection */}
         <div className="w-full max-w-md mb-6">
-          <div className="relative">
-            <button
-              onClick={() => setShowDropdown(!showDropdown)}
-              className="w-full bg-white border border-gray-300 rounded-md px-4 py-3 text-left flex justify-between items-center hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
-            >
-              <span className="text-black">
-                {selectedStates.length === 0 
-                  ? "Select a state (maximum 4, or none for all states)"
-                  : selectedStates[selectedStates.length - 1]
-                }
-              </span>
-              <div className="w-4 h-4 text-gray-400">▼</div>
-            </button>
+          {loading && (
+            <div className="text-center py-4">
+              <p className="text-black">Loading states...</p>
+            </div>
+          )}
+          
+          {error && (
+            <div className="text-center py-4">
+              <p className="text-red-600">Error: {error}</p>
+            </div>
+          )}
+          
+          {!loading && !error && (
+            <div className="relative">
+              <button
+                onClick={() => setShowDropdown(!showDropdown)}
+                className="w-full bg-white border border-gray-300 rounded-md px-4 py-3 text-left flex justify-between items-center hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
+              >
+                <span className="text-black">
+                  {selectedStates.length === 0 
+                    ? "Select a state (maximum 4, or none for all states)"
+                    : selectedStates[selectedStates.length - 1]
+                  }
+                </span>
+                <div className="w-4 h-4 text-gray-600">▼</div>
+              </button>
 
-            {showDropdown && (
-              <div className="absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-md mt-1 max-h-60 overflow-y-auto z-10">
-                {STATES.map((state) => (
-                  <button
-                    key={state}
-                    onClick={() => handleStateSelect(state)}
-                    className="w-full px-4 py-2 text-left hover:bg-gray-100 focus:outline-none focus:bg-gray-100 text-black"
-                  >
-                    {state}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+              {showDropdown && (
+                <div className="absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-md mt-1 max-h-60 overflow-y-auto z-10">
+                  {states.map((state) => (
+                    <button
+                      key={state.id}
+                      onClick={() => handleStateSelect(state.name)}
+                      className="w-full px-4 py-2 text-left hover:bg-gray-100 focus:outline-none focus:bg-gray-100 text-black"
+                    >
+                      {state.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Selected states display */}
           {selectedStates.length > 0 && (
@@ -151,7 +183,7 @@ export default function StateSelection() {
                 ))}
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-700">
+                <span className="text-sm text-black">
                   {selectedStates.length} of 4 selected
                 </span>
                 <button
@@ -167,24 +199,24 @@ export default function StateSelection() {
 
         {/* Navigation buttons */}
         <div className="w-full max-w-md flex gap-4">
-          <a
+          <Link
             href="/"
             className="flex-1 bg-white border border-gray-300 text-black font-medium py-3 px-6 rounded-md text-center hover:bg-gray-50 transition-colors"
           >
             Back
-          </a>
-          <a
+          </Link>
+          <Link
             href="/category"
             className="flex-1 bg-blue-600 text-white font-medium py-3 px-6 rounded-md text-center hover:bg-blue-700 transition-colors"
           >
             Continue
-          </a>
+          </Link>
         </div>
       </div>
 
       {/* Footer */}
       <div className="bg-white px-4 py-4 text-center">
-        <p className="text-xs text-gray-500">
+        <p className="text-xs text-black">
           © 2025 The Great American Report Card. All rights reserved.
         </p>
       </div>

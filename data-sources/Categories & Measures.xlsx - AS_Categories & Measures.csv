@@ -1,0 +1,67 @@
+,,,,,,
+,,,,,,
+,,,,,,
+,Categories & Measures,,,,,
+,,,,,,
+,EDUCATION,,,,,
+,RA#,Measure,Sub Measure,Calculation,Data Source,Available Since
+,1001,K-8 Testing,"Reading, Writing, and Math Skills at Grades 4 and 8",Scale Score from NAEP,Department of Education,1992
+,1002,HS Graduation Rate,,% Averaged Freshman Graduation Rate,Department of Education,1986
+,1003,SAT/ACT Mean,,Mean ACT Score by State,"College Board, Inc.",2013
+,1004,2-Year Degree Graduation Rate,,% attaining degree after 150% of 2-year period,NCES/IPEDS or College Completion,2012
+,1005,4-Year Degree Graduation Rate,,% attaining degree after 150% of 4-year period,NCES/IPEDS or College Completion,2012
+,1006,Professional/Advanced Degrees,,% of Total Adult Population,NCES,2012
+,2001,Real GDP,,Gross State Product in Current Year Dollars,BEA,2003
+,2002,Economic Diversity,,Simpson index,BEA,2007
+,2003,Business Competitiveness Index,,American Legislative Exchange Council,ALEC,2012
+,2004,Household Income,,Household Income Per Capita,US Census Bureau,1984
+,2005,Unemployment Rate,,Mean % of Labor Force Unemployed,BLS,2012
+,2006,Net Job Growth,,# Jobs Gained - # Jobs Lost in a Year,BLS,2011
+,2007,Income Inequality,,Gini Coefficient,US Census Bureau,1979
+,2008,New Firms,,# of new firms registered in previous year,Small Business Administration,1998
+,2009,Venture Capital Investment,,# of Deals or Total Investment in Dollars,PwC,2002
+,2010,Rate of Poverty,,% of population 18+ below poverty line,US Census Bureau,2012
+,PUBLIC SAFETY,,,,,
+,RA#,Measure,Sub Measure,Calculation,Data Source,Available Since
+,3001,Violent Crimes,,"FBI Violent Crime Index (per 1,000 persons)",BJS,1997
+,3002,Property Crimes,,"FBI Property Crime Index (per 1,000 persons)",BJS,1997
+,3003,Recidivism Rate,,% reoffending within 3 years of release,BJS,
+,3004,Rate of Incarceration,,"Prisoners per 100,000",BJS,
+,3005,Cost of Corrections System,,Dollars spent on corrections annually per capita,US Census Bureau,
+,3006,Traffic Fatalities,,Deaths per 100 million vehicle miles travelled,US Census Bureau,1990
+,3007,Child Maltreatment,,# of Child Abuse/Neglect Cases per capita,HHS Children’s Bureau,2003
+,HEALTH,,,,,
+,RA#,Measure,Sub Measure,Calculation,Data Source,Available Since
+,5001,Cost of Healthcare,,Spending per capita in real dollars,Kaiser Family Foundation,1991
+,5002,Rate of Obesity,,% of Total Adult Population,CDC BRFSS,2011
+,5003,Quality of Health,,America’s Health Rankings Index,United Health Foundation,
+,5004,Infant Mortality Rate,,"Rate per 1,000 births annually",US Census Bureau,1990
+,5005,Uninsured,,% of population uninsured,US Census Bureau,1990
+,5006,Smokers,,% of Adult population who smoke,CDC,1990
+,5007,Workplace Injuries,,# injuries per 100 employees,BLS,
+,5008,Quality of Life / Happiness Index,,Gallup-Healthways Wellness Survey,CDC,2008
+,5009,Food Insecurity,,% of households in low/very low security,USDA,2010
+,ENVIRONMENT,,,,,
+,RA#,Measure,Sub Measure,Calculation,Data Source,Available Since
+,4001,Renewable Energy,,% Green Megawatts / Total Generated,EIA,2006
+,4002,Carbon Dioxide Emissions,,Millions of Metric Tons Produced,EIA,2000
+,4003,Water Quality Index,,,USGS,2002
+,4004,Air Quality,,National Ambient Air Quality Standards,EPA,2010
+,INFRASTRUCTURE,,,,,
+,RA#,Measure,Sub Measure,Calculation,Data Source,Available Since
+,6001,Infrastructure Index,,Index created from 2007 data,US Chamber of Commerce,2011
+,GOVERNMENT,,,,,
+,RA#,Measure,Sub Measure,Calculation,Data Source,Available Since
+,7001,State Debt,,% total state debt / GDP,US Census Bureau,2003
+,7002,Citizen Tax Burden,,Tax revenue per capita,Tax Foundation,1977
+,7003,Unfunded Pension Liabilities,,% of pension liabilities unfunded,Morningstar,2007
+,7004,Federal Dependency,,% of revenue from federal grants,US Census Bureau,
+,7005,Credit Rating,,State Government Credit Rating,Standard & Poor’s,2001
+,7006,State Employees,,% Full-time Employees / Population,US Census Bureau,1997
+,7007,Financial Records Online,,,PIRG,
+,7008,Government Use of Technology,,Grade from Center for Digital Government,Center for Digital Government,2012
+,7009,Governor's Goals Online,,Binary (Yes/No),State Websites,2013
+,7010,Citizen Customer Satisfaction,,Polling Data,State Websites,2014
+,7011,Government Open Data,,# of Performance Measures and Data online,State Websites,2013
+,7012,Government Spending as % of GDP,,$ Expenditures / State GDP,US Census Bureau,2003
+,7013,Tax Inequality Index,,Effective state/local taxes by income group,ITEP,
