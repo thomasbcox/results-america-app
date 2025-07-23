@@ -6,10 +6,21 @@ import { cache } from './cache';
 import { PaginationOptions, PaginatedResult, calculatePagination, applyPagination } from './pagination';
 import { FilterOptions, filterStates } from './filters';
 
+import { CacheMissError } from '../errors';
+import type { StateData } from '@/types/api';
+
 export async function getAllStates(database = db, useCache = true) {
   if (useCache) {
-    const cached = cache.get('states');
-    if (cached) return cached;
+    try {
+      const cached = cache.get<StateData[]>('states');
+      return cached;
+    } catch (error) {
+      if (error instanceof CacheMissError) {
+        // Cache miss, fetch from database
+      } else {
+        throw error;
+      }
+    }
   }
 
   const result = await database.select().from(states).orderBy(states.name);
@@ -25,7 +36,7 @@ export async function getStatesWithPagination(
   options: PaginationOptions, 
   filters: FilterOptions = {}, 
   database = db
-): Promise<PaginatedResult<any>> {
+): Promise<PaginatedResult<StateData>> {
   const allStates = await getAllStates(database);
   const filtered = filterStates(allStates, filters);
   const paginated = applyPagination(filtered, options);

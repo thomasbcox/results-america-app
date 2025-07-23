@@ -8,7 +8,9 @@ export interface FilterOptions {
   sortOrder?: 'asc' | 'desc';
 }
 
-export function filterStatistics(data: any[], filters: FilterOptions): any[] {
+import type { StatisticData, StateData, DataPointData } from '@/types/api';
+
+export function filterStatistics(data: StatisticData[], filters: FilterOptions): StatisticData[] {
   let filtered = [...data];
 
   // Search filter
@@ -30,16 +32,21 @@ export function filterStatistics(data: any[], filters: FilterOptions): any[] {
 
   // Source filter
   if (filters.source) {
+    const sourceFilter = filters.source.toLowerCase();
     filtered = filtered.filter(item => 
-      item.source?.toLowerCase().includes(filters.source?.toLowerCase())
+      item.source?.toLowerCase().includes(sourceFilter)
     );
   }
 
   // Sort
   if (filters.sortBy) {
     filtered.sort((a, b) => {
-      const aVal = a[filters.sortBy!];
-      const bVal = b[filters.sortBy!];
+      const aVal = a[filters.sortBy! as keyof StatisticData];
+      const bVal = b[filters.sortBy! as keyof StatisticData];
+      
+      if (aVal == null && bVal == null) return 0;
+      if (aVal == null) return filters.sortOrder === 'desc' ? -1 : 1;
+      if (bVal == null) return filters.sortOrder === 'desc' ? 1 : -1;
       
       if (aVal < bVal) return filters.sortOrder === 'desc' ? 1 : -1;
       if (aVal > bVal) return filters.sortOrder === 'desc' ? -1 : 1;
@@ -50,7 +57,7 @@ export function filterStatistics(data: any[], filters: FilterOptions): any[] {
   return filtered;
 }
 
-export function filterStates(data: any[], filters: FilterOptions): any[] {
+export function filterStates(data: StateData[], filters: FilterOptions): StateData[] {
   let filtered = [...data];
 
   // Search filter
@@ -65,8 +72,12 @@ export function filterStates(data: any[], filters: FilterOptions): any[] {
   // Sort
   if (filters.sortBy) {
     filtered.sort((a, b) => {
-      const aVal = a[filters.sortBy!];
-      const bVal = b[filters.sortBy!];
+      const aVal = a[filters.sortBy! as keyof StateData];
+      const bVal = b[filters.sortBy! as keyof StateData];
+      
+      if (aVal == null && bVal == null) return 0;
+      if (aVal == null) return filters.sortOrder === 'desc' ? -1 : 1;
+      if (bVal == null) return filters.sortOrder === 'desc' ? 1 : -1;
       
       if (aVal < bVal) return filters.sortOrder === 'desc' ? 1 : -1;
       if (aVal > bVal) return filters.sortOrder === 'desc' ? -1 : 1;
@@ -77,7 +88,7 @@ export function filterStates(data: any[], filters: FilterOptions): any[] {
   return filtered;
 }
 
-export function filterDataPoints(data: any[], filters: FilterOptions): any[] {
+export function filterDataPoints(data: DataPointData[], filters: FilterOptions): DataPointData[] {
   let filtered = [...data];
 
   // Year filter
@@ -87,9 +98,9 @@ export function filterDataPoints(data: any[], filters: FilterOptions): any[] {
 
   // State filter
   if (filters.state) {
+    const stateFilter = filters.state.toLowerCase();
     filtered = filtered.filter(item => 
-      item.stateName?.toLowerCase().includes(filters.state?.toLowerCase()) ||
-      item.stateAbbreviation?.toLowerCase().includes(filters.state?.toLowerCase())
+      item.stateName?.toLowerCase().includes(stateFilter)
     );
   }
 

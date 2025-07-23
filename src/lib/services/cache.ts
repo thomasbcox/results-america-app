@@ -1,3 +1,5 @@
+import { CacheMissError } from '../errors';
+
 interface CacheEntry<T> {
   data: T;
   timestamp: number;
@@ -5,7 +7,7 @@ interface CacheEntry<T> {
 }
 
 class Cache {
-  private cache = new Map<string, CacheEntry<any>>();
+  private cache = new Map<string, CacheEntry<unknown>>();
   private defaultTTL = 5 * 60 * 1000; // 5 minutes
 
   set<T>(key: string, data: T, ttl: number = this.defaultTTL): void {
@@ -16,17 +18,30 @@ class Cache {
     });
   }
 
-  get<T>(key: string): T | null {
+  get<T>(key: string): T {
     const entry = this.cache.get(key);
-    if (!entry) return null;
+    if (!entry) {
+      throw new CacheMissError(`Cache entry not found for key: ${key}`, key);
+    }
 
     const isExpired = Date.now() - entry.timestamp > entry.ttl;
     if (isExpired) {
       this.cache.delete(key);
-      return null;
+      throw new CacheMissError(`Cache entry expired for key: ${key}`, key);
     }
 
-    return entry.data;
+    return entry.data as T;
+  }
+
+  getOptional<T>(key: string): T | null {
+    try {
+      return this.get<T>(key);
+    } catch (error) {
+      if (error instanceof CacheMissError) {
+        return null;
+      }
+      throw error;
+    }
   }
 
   delete(key: string): void {

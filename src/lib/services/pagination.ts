@@ -16,7 +16,7 @@ export interface PaginatedResult<T> {
   };
 }
 
-export function calculatePagination(options: PaginationOptions, total: number): PaginatedResult<any>['pagination'] {
+export function calculatePagination<T>(options: PaginationOptions, total: number): PaginatedResult<T>['pagination'] {
   const { page, limit } = options;
   const offset = options.offset || (page - 1) * limit;
   const totalPages = Math.ceil(total / limit);

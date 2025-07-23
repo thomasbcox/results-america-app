@@ -1,7 +1,8 @@
 import { categories, dataSources, states, statistics } from '../db/schema';
 import { eq } from 'drizzle-orm';
+import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 
-export async function createDataSource(db, overrides = {}) {
+export async function createDataSource(db: BetterSQLite3Database, overrides = {}) {
   const [src] = await db.insert(dataSources).values({
     name: 'TestSource',
     url: 'https://test.com',
@@ -10,7 +11,7 @@ export async function createDataSource(db, overrides = {}) {
   return src;
 }
 
-export async function createCategory(db, overrides = {}) {
+export async function createCategory(db: BetterSQLite3Database, overrides = {}) {
   const [cat] = await db.insert(categories).values({
     name: 'TestCat',
     icon: 'TestIcon',
@@ -19,7 +20,7 @@ export async function createCategory(db, overrides = {}) {
   return cat;
 }
 
-export async function createState(db, overrides = {}) {
+export async function createState(db: BetterSQLite3Database, overrides = {}) {
   const [st] = await db.insert(states).values({
     name: 'Testland',
     abbreviation: 'TL',
@@ -28,7 +29,7 @@ export async function createState(db, overrides = {}) {
   return st;
 }
 
-export async function createStatistic(db, { categoryId, dataSourceId, ...overrides }) {
+export async function createStatistic(db: BetterSQLite3Database, { categoryId, dataSourceId, ...overrides }: { categoryId: number; dataSourceId: number; [key: string]: unknown }) {
   const [stat] = await db.insert(statistics).values({
     name: 'Test Stat',
     raNumber: '9999',
@@ -40,7 +41,7 @@ export async function createStatistic(db, { categoryId, dataSourceId, ...overrid
   return stat;
 }
 
-export async function clearAllTestData(db) {
+export async function clearAllTestData(db: BetterSQLite3Database) {
   // Delete in FK-safe order
   await db.delete(statistics);
   await db.delete(states);

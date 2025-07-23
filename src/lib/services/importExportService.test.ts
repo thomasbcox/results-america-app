@@ -1,16 +1,18 @@
 import { createTestDb } from '../db/testDb';
 import * as importExportService from './importExportService';
 import { clearAllTestData } from './testUtils';
+import * as statesService from './statesService';
+import * as categoriesService from './categoriesService';
 
 let db;
 
 beforeEach(async () => {
   db = createTestDb();
   // Mock the service functions to use the test database
-  jest.spyOn(require('./statesService'), 'createState').mockImplementation(async (data) => {
+  jest.spyOn(statesService, 'createState').mockImplementation(async (data) => {
     return [{ id: 1, ...data }];
   });
-  jest.spyOn(require('./categoriesService'), 'createCategory').mockImplementation(async (data) => {
+  jest.spyOn(categoriesService, 'createCategory').mockImplementation(async (data) => {
     return [{ id: 1, ...data }];
   });
 });

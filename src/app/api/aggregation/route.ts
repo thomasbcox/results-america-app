@@ -7,7 +7,7 @@ import {
   getTrendData 
 } from '@/lib/services/aggregationService';
 
-export async function GET(request?: Request) {
+export async function GET(request: Request) {
   try {
     const url = new URL(request?.url || '');
     const type = url.searchParams.get('type');

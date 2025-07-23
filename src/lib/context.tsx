@@ -13,6 +13,7 @@ interface SelectionContextType {
   selectedCategory: string | null
   selectedMeasure: number | null
   favorites: number[]
+  sessionExpiryWarning: boolean
   signIn: (email: string, name?: string) => void
   signOut: () => void
   setSelectedStates: (states: string[]) => void
@@ -20,6 +21,7 @@ interface SelectionContextType {
   setSelectedMeasure: (measure: number | null) => void
   toggleFavorite: (measureId: number) => void
   clearSelections: () => void
+  dismissSessionWarning: () => void
 }
 
 const SelectionContext = createContext<SelectionContextType | undefined>(undefined)
@@ -42,6 +44,7 @@ export function SelectionProvider({ children }: { children: ReactNode }) {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [selectedMeasure, setSelectedMeasure] = useState<number | null>(null)
   const [favorites, setFavorites] = useState<number[]>([])
+  const [sessionExpiryWarning, setSessionExpiryWarning] = useState(false)
 
   // Load user and selections from localStorage on mount
   useEffect(() => {
@@ -161,6 +164,15 @@ export function SelectionProvider({ children }: { children: ReactNode }) {
     setSelectedStates([])
     setSelectedCategory(null)
     setSelectedMeasure(null)
+    setFavorites([])
+    localStorage.removeItem('selectedStates')
+    localStorage.removeItem('selectedCategory')
+    localStorage.removeItem('selectedMeasure')
+    localStorage.removeItem('favorites')
+  }
+
+  const dismissSessionWarning = () => {
+    setSessionExpiryWarning(false)
   }
 
   return (
@@ -170,13 +182,15 @@ export function SelectionProvider({ children }: { children: ReactNode }) {
       selectedCategory,
       selectedMeasure,
       favorites,
+      sessionExpiryWarning,
       signIn,
       signOut,
       setSelectedStates,
       setSelectedCategory,
       setSelectedMeasure,
       toggleFavorite,
-      clearSelections
+      clearSelections,
+      dismissSessionWarning
     }}>
       {children}
     </SelectionContext.Provider>

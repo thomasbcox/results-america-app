@@ -1,14 +1,14 @@
 import { NextResponse } from 'next/server';
 import { getAllStates, getStatesWithPagination, searchStates } from '@/lib/services/statesService';
 
-export async function GET(request?: Request) {
+export async function GET(request: Request) {
   try {
     const url = new URL(request?.url || '');
     const page = parseInt(url.searchParams.get('page') || '1');
     const limit = parseInt(url.searchParams.get('limit') || '50');
     const search = url.searchParams.get('search');
-    const sortBy = url.searchParams.get('sortBy');
-    const sortOrder = url.searchParams.get('sortOrder') as 'asc' | 'desc' || 'asc';
+    const sortBy = url.searchParams.get('sortBy') || undefined;
+    const sortOrder = (url.searchParams.get('sortOrder') as 'asc' | 'desc') || 'asc';
 
     // Handle search
     if (search) {

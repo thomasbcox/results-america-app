@@ -1,3 +1,4 @@
+import { db } from '../db/index';
 import { createState } from './statesService';
 import { createCategory, getAllCategories } from './categoriesService';
 import { getAllStatisticsWithSources } from './statisticsService';
@@ -23,7 +24,6 @@ export interface ExportOptions {
 
 export async function importStatesFromCSV(csvData: string): Promise<ImportResult> {
   const lines = csvData.split('\n').filter(line => line.trim());
-  const headers = lines[0].split(',').map(h => h.trim());
   const data = lines.slice(1);
   
   const errors: string[] = [];
@@ -57,7 +57,6 @@ export async function importStatesFromCSV(csvData: string): Promise<ImportResult
 
 export async function importCategoriesFromCSV(csvData: string): Promise<ImportResult> {
   const lines = csvData.split('\n').filter(line => line.trim());
-  const headers = lines[0].split(',').map(h => h.trim());
   const data = lines.slice(1);
   
   const errors: string[] = [];
@@ -94,10 +93,26 @@ export async function importCategoriesFromCSV(csvData: string): Promise<ImportRe
   };
 }
 
+import type { StateData, CategoryData, StatisticData, DataPointData } from '@/types/api';
+
 export async function exportData(options: ExportOptions): Promise<string> {
   const { format, includeMetadata = true, filters } = options;
   
-  let data: any = {};
+  const data: {
+    metadata?: {
+      exportedAt: string;
+      format: string;
+      filters?: ExportOptions['filters'];
+    };
+    states: StateData[];
+    categories: CategoryData[];
+    statistics: StatisticData[];
+    dataPoints?: DataPointData[];
+  } = {
+    states: [],
+    categories: [],
+    statistics: []
+  };
 
   if (includeMetadata) {
     data.metadata = {
@@ -108,23 +123,61 @@ export async function exportData(options: ExportOptions): Promise<string> {
   }
 
   // Export states
-  data.states = await getAllStates();
+  const rawStates = await getAllStates(db, false); // Don't use cache for export
+  data.states = rawStates.map(state => ({
+    id: state.id,
+    name: state.name,
+    abbreviation: state.abbreviation,
+    population: undefined,
+    region: undefined
+  }));
 
   // Export categories
-  data.categories = await getAllCategories();
+  const rawCategories = await getAllCategories(db); // This doesn't use cache
+  data.categories = rawCategories.map(category => ({
+    id: category.id,
+    name: category.name,
+    description: category.description || '',
+    icon: category.icon || '',
+    sortOrder: category.sortOrder || 0,
+    statisticCount: undefined,
+    hasData: undefined
+  }));
 
   // Export statistics
-  data.statistics = await getAllStatisticsWithSources();
+  const rawStatistics = await getAllStatisticsWithSources(db);
+  data.statistics = rawStatistics.map(stat => ({
+    id: stat.id,
+    name: stat.name,
+    raNumber: stat.raNumber || '',
+    description: stat.description || '',
+    unit: stat.unit,
+    availableSince: stat.availableSince || '',
+    category: stat.category || '',
+    source: stat.source || '',
+    sourceUrl: stat.sourceUrl || '',
+    hasData: undefined
+  }));
 
   // Export data points if filters are provided
   if (filters) {
     if (filters.category) {
-      const categoryStats = data.statistics.filter((s: any) => s.category === filters.category);
+      const categoryStats = data.statistics.filter((s: StatisticData) => s.category === filters.category);
       data.dataPoints = [];
       
       for (const stat of categoryStats) {
-        const points = await getDataPointsForStatistic(stat.id, filters.year);
-        data.dataPoints.push(...points);
+        const rawPoints = await getDataPointsForStatistic(stat.id, filters.year);
+        const transformedPoints = rawPoints.map(point => ({
+          id: point.id,
+          stateId: 0, // Not available in the query result
+          stateName: point.stateName || '',
+          statisticId: stat.id, // Use the current statistic ID
+          statisticName: stat.name, // Use the current statistic name
+          value: point.value,
+          year: point.year,
+          source: stat.source // Use the current statistic source
+        }));
+        data.dataPoints.push(...transformedPoints);
       }
     }
   }
@@ -138,27 +191,32 @@ export async function exportData(options: ExportOptions): Promise<string> {
   }
 }
 
-function convertToCSV(data: any): string {
+function convertToCSV(data: {
+  states: StateData[];
+  categories: CategoryData[];
+  statistics: StatisticData[];
+  dataPoints?: DataPointData[];
+}): string {
   const lines: string[] = [];
   
   // States CSV
   lines.push('=== STATES ===');
-  lines.push('id,name,abbreviation,isActive');
-  data.states.forEach((state: any) => {
-    lines.push(`${state.id},${state.name},${state.abbreviation},${state.isActive}`);
+  lines.push('id,name,abbreviation');
+  data.states.forEach((state: StateData) => {
+    lines.push(`${state.id},${state.name},${state.abbreviation}`);
   });
   
   lines.push('');
   lines.push('=== CATEGORIES ===');
-  lines.push('id,name,description,icon,sortOrder,isActive');
-  data.categories.forEach((category: any) => {
-    lines.push(`${category.id},${category.name},${category.description},${category.icon},${category.sortOrder},${category.isActive}`);
+  lines.push('id,name,description,icon,sortOrder');
+  data.categories.forEach((category: CategoryData) => {
+    lines.push(`${category.id},${category.name},${category.description},${category.icon},${category.sortOrder}`);
   });
   
   lines.push('');
   lines.push('=== STATISTICS ===');
   lines.push('id,name,raNumber,description,unit,category,source');
-  data.statistics.forEach((stat: any) => {
+  data.statistics.forEach((stat: StatisticData) => {
     lines.push(`${stat.id},${stat.name},${stat.raNumber},${stat.description},${stat.unit},${stat.category},${stat.source}`);
   });
   
@@ -166,7 +224,7 @@ function convertToCSV(data: any): string {
     lines.push('');
     lines.push('=== DATA POINTS ===');
     lines.push('id,value,year,stateName,statisticName');
-    data.dataPoints.forEach((point: any) => {
+    data.dataPoints.forEach((point: DataPointData) => {
       lines.push(`${point.id},${point.value},${point.year},${point.stateName},${point.statisticName}`);
     });
   }

@@ -842,11 +842,11 @@ export async function seedDatabaseComplete() {
       }
 
       await db.insert(dataPoints).values({
+        importSessionId: 1, // Default import session
         year: 2023,
         stateId: state.id,
         statisticId: stat.id,
         value: Math.round(value * 100) / 100, // Round to 2 decimal places
-        source: stat.source,
       });
     }
   }

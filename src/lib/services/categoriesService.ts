@@ -13,17 +13,32 @@ export async function getCategoryById(id: number, database = db) {
 }
 
 export async function getCategoriesWithStatistics(database = db) {
-  return database.select({
+  // First get all categories
+  const allCategories = await database.select({
     id: categories.id,
     name: categories.name,
     description: categories.description,
     icon: categories.icon,
     sortOrder: categories.sortOrder,
-    statisticCount: statistics.id,
   })
     .from(categories)
-    .leftJoin(statistics, eq(categories.id, statistics.categoryId))
     .orderBy(categories.sortOrder);
+
+  // Then get statistics count for each category
+  const categoriesWithStats = await Promise.all(
+    allCategories.map(async (category) => {
+      const stats = await database.select({ id: statistics.id })
+        .from(statistics)
+        .where(eq(statistics.categoryId, category.id));
+      
+      return {
+        ...category,
+        statisticCount: stats.length
+      };
+    })
+  );
+
+  return categoriesWithStats;
 }
 
 export async function createCategory(data: { name: string; description?: string; icon?: string; sortOrder?: number }, database = db) {

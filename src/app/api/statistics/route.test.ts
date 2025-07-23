@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import { GET } from './route';
+import type { StatisticData } from '@/types/api';
 
 describe('/api/statistics', () => {
   it('should return all statistics with sources', async () => {
@@ -34,7 +35,7 @@ describe('/api/statistics', () => {
     expect(Array.isArray(data)).toBe(true);
     
     // Check that statistics have source information
-    const statsWithSources = data.filter((stat: any) => stat.source);
+    const statsWithSources = data.filter((stat: StatisticData) => stat.source);
     expect(statsWithSources.length).toBeGreaterThan(0);
   });
 }); 

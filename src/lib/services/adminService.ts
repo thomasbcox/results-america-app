@@ -1,6 +1,10 @@
 import { db } from '../db/index';
 import { states, categories, statistics, dataPoints, dataSources, importSessions } from '../db/schema';
 import { cache } from './cache';
+import { eq, sql, notInArray } from 'drizzle-orm';
+import { getAllStates } from './statesService';
+import { getAllCategories } from './categoriesService';
+import { getAllStatisticsWithSources } from './statisticsService';
 
 export interface SystemStats {
   totalStates: number;
@@ -51,7 +55,7 @@ export async function getSystemStats(): Promise<SystemStats> {
     totalDataPoints: dataPointsCount,
     totalDataSources: dataSourcesCount,
     totalImportSessions: importSessionsCount,
-    lastImportDate: lastImport[0]?.importDate,
+    lastImportDate: lastImport[0]?.importDate || undefined,
     cacheSize: 0 // TODO: Implement cache size tracking
   };
 }
@@ -63,7 +67,7 @@ export async function checkDataIntegrity(): Promise<DataIntegrityCheck> {
   const orphanedDataPoints = await db.select()
     .from(dataPoints)
     .leftJoin(statistics, eq(dataPoints.statisticId, statistics.id))
-    .where(eq(statistics.id, null))
+    .where(sql`${statistics.id} IS NULL`)
     .then(r => r.length);
 
   if (orphanedDataPoints > 0) {
@@ -74,7 +78,7 @@ export async function checkDataIntegrity(): Promise<DataIntegrityCheck> {
   const missingSources = await db.select()
     .from(statistics)
     .leftJoin(dataSources, eq(statistics.dataSourceId, dataSources.id))
-    .where(eq(dataSources.id, null))
+    .where(sql`${dataSources.id} IS NULL`)
     .then(r => r.length);
 
   if (missingSources > 0) {
@@ -121,9 +125,9 @@ export async function rebuildCache(): Promise<void> {
   
   // Rebuild cache by fetching all data
   await Promise.all([
-    getAllStates(),
-    getAllCategories(),
-    getAllStatisticsWithSources()
+    getAllStates(db), // Don't use cache during rebuild
+    getAllCategories(db), // Don't use cache during rebuild
+    getAllStatisticsWithSources(db) // This doesn't use cache
   ]);
 }
 
@@ -148,7 +152,4 @@ export async function cleanupOrphanedData(): Promise<{ cleaned: number; errors: 
   return { cleaned, errors };
 }
 
-import { eq, sql, notInArray } from 'drizzle-orm';
-import { getAllStates } from './statesService';
-import { getAllCategories } from './categoriesService';
-import { getAllStatisticsWithSources } from './statisticsService'; 
+ 

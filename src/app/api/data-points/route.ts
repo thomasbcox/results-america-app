@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getDataPointsForState, getDataPointsForStatistic, getDataPointsForComparison } from '@/lib/services/dataPointsService';
 
-export async function GET(request?: Request) {
+export async function GET(request: Request) {
   try {
     const url = new URL(request?.url || '');
     const stateId = url.searchParams.get('stateId');

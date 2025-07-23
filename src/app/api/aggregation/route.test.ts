@@ -39,7 +39,7 @@ describe('/api/aggregation', () => {
     expect(response.status).toBe(200);
     expect(Array.isArray(data)).toBe(true);
     if (data.length > 0) {
-      expect(data[0]).toHaveProperty('state');
+      expect(data[0]).toHaveProperty('name');
       expect(data[0]).toHaveProperty('value');
       expect(data[0]).toHaveProperty('rank');
     }
@@ -54,7 +54,7 @@ describe('/api/aggregation', () => {
     expect(response.status).toBe(200);
     expect(Array.isArray(data)).toBe(true);
     if (data.length > 0) {
-      expect(data[0]).toHaveProperty('state');
+      expect(data[0]).toHaveProperty('name');
       expect(data[0]).toHaveProperty('value');
       expect(data[0]).toHaveProperty('rank');
     }

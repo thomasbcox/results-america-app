@@ -122,7 +122,12 @@ export default function MainMenu() {
           </div>
         )
       default:
-        return null
+        return (
+          <div className="bg-white p-6 rounded-lg shadow-md">
+            <h3 className="text-lg font-semibold text-black mb-4">Unknown Tab</h3>
+            <p className="text-black">Please select a valid tab from the navigation above.</p>
+          </div>
+        )
     }
   }
 

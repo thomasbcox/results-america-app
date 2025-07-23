@@ -1,5 +1,6 @@
 "use client"
 import { useState, useEffect } from "react"
+import Link from "next/link"
 import { User, ArrowRight, GraduationCap, DollarSign, ShieldCheck, Building2, Heart, TrendingUp, Eye } from "lucide-react"
 import { useSelection } from "@/lib/context"
 
@@ -10,6 +11,7 @@ interface Category {
   icon: string;
   sortOrder: number;
   statisticCount?: number;
+  hasData?: boolean;
 }
 
 const iconMap: { [key: string]: React.ComponentType<{ className?: string }> } = {
@@ -28,28 +30,60 @@ export default function CategorySelection() {
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [retryCount, setRetryCount] = useState(0)
+
+  console.log('CategorySelection - User:', user)
+  console.log('CategorySelection - Selected category:', selectedCategory)
 
   useEffect(() => {
     async function fetchCategories() {
       try {
-        const response = await fetch('/api/categories?withStats=true')
+        console.log('Fetching categories...')
+        const response = await fetch('/api/categories?withStats=true&withAvailability=true', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        })
+        console.log('Response status:', response.status)
         if (!response.ok) {
-          throw new Error('Failed to fetch categories')
+          throw new Error(`Failed to fetch categories: ${response.status}`)
         }
         const data = await response.json()
+        console.log('Categories loaded:', data)
         setCategories(data)
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to fetch categories')
-      } finally {
-        setLoading(false)
-      }
+              } catch (err) {
+          console.error('Error fetching categories:', err)
+          setError(err instanceof Error ? err.message : 'Failed to fetch categories')
+          
+          // Retry up to 3 times
+          if (retryCount < 3) {
+            setTimeout(() => {
+              setRetryCount(prev => prev + 1)
+              setLoading(true)
+              setError(null)
+            }, 1000)
+          }
+        } finally {
+          setLoading(false)
+        }
     }
     
-    fetchCategories()
-  }, [])
+    // Add a small delay to ensure the component is fully mounted
+    const timer = setTimeout(() => {
+      fetchCategories()
+    }, 100)
+    
+    return () => clearTimeout(timer)
+  }, [retryCount])
 
-  const handleCategorySelect = (categoryId: string) => {
-    setSelectedCategory(categoryId)
+  const handleCategorySelect = (categoryName: string, hasData: boolean) => {
+    if (!hasData) {
+      console.log('Category has no data, cannot select:', categoryName)
+      return
+    }
+    console.log('Category selected:', categoryName)
+    setSelectedCategory(categoryName)
   }
 
   const getCategoryIcon = (iconName: string) => {
@@ -79,14 +113,24 @@ export default function CategorySelection() {
         {/* User info */}
         <div className="flex items-center gap-2 text-sm text-black">
           <User className="w-4 h-4" />
-          <span>{user?.email}</span>
-          <button 
-            onClick={handleSignOut}
-            className="flex items-center gap-1 text-blue-600 hover:text-blue-700"
-          >
-            Sign out
-            <ArrowRight className="w-3 h-3" />
-          </button>
+          <span>{user?.email || 'Not logged in'}</span>
+          {user ? (
+            <button 
+              onClick={handleSignOut}
+              className="flex items-center gap-1 text-blue-600 hover:text-blue-700"
+            >
+              Sign out
+              <ArrowRight className="w-3 h-3" />
+            </button>
+          ) : (
+            <Link 
+              href="/"
+              className="flex items-center gap-1 text-blue-600 hover:text-blue-700"
+            >
+              Sign in
+              <ArrowRight className="w-3 h-3" />
+            </Link>
+          )}
         </div>
       </div>
 
@@ -95,7 +139,7 @@ export default function CategorySelection() {
         {/* Hero image */}
         <div className="w-full max-w-md mb-6">
           <img 
-            src="/state-capitol-building.jpg" 
+            src="/state-capitol-building.png" 
             alt="State Capitol Building"
             className="w-full h-48 object-cover rounded-lg shadow-md"
             onError={(e) => {
@@ -116,6 +160,11 @@ export default function CategorySelection() {
           <p className="text-black text-center text-sm">
             Choose a category to see state performance measures
           </p>
+          {selectedCategory && (
+            <p className="text-green-600 text-center text-sm mt-2 font-medium">
+              ✓ Selected: {selectedCategory}
+            </p>
+          )}
         </div>
 
         {/* Category buttons */}
@@ -128,27 +177,43 @@ export default function CategorySelection() {
           
           {error && (
             <div className="text-center py-4">
-              <p className="text-red-600">Error: {error}</p>
+              <p className="text-red-600 mb-2">Error: {error}</p>
+              <button
+                onClick={() => {
+                  setRetryCount(0)
+                  setLoading(true)
+                  setError(null)
+                }}
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              >
+                Retry
+              </button>
             </div>
           )}
           
           {!loading && !error && categories.map((category) => (
             <div key={category.id} className="relative">
               <button
-                onClick={() => handleCategorySelect(category.name)}
+                onClick={() => handleCategorySelect(category.name, category.hasData || false)}
                 onMouseEnter={() => setHoveredCategory(category.name)}
                 onMouseLeave={() => setHoveredCategory(null)}
+                disabled={!category.hasData}
                 className={`w-full flex items-center justify-between p-4 rounded-md border transition-colors ${
-                  selectedCategory === category.name
-                    ? 'bg-red-600 text-white border-red-600'
-                    : 'bg-gray-100 text-black border-gray-300 hover:bg-gray-200'
+                  !category.hasData
+                    ? 'bg-gray-200 text-gray-500 border-gray-300 cursor-not-allowed opacity-60'
+                    : selectedCategory === category.name
+                    ? 'bg-red-600 text-white border-red-600 shadow-md cursor-pointer'
+                    : 'bg-gray-100 text-black border-gray-300 hover:bg-gray-200 cursor-pointer'
                 }`}
               >
                 <div className="flex items-center gap-3">
                   {getCategoryIcon(category.icon)}
                   <span className="font-medium">{category.name}</span>
+                  {selectedCategory === category.name && (
+                    <div className="w-2 h-2 bg-white rounded-full"></div>
+                  )}
                 </div>
-                <div className="text-xs">i</div>
+                <div className="text-xs opacity-60">i</div>
               </button>
 
               {/* Tooltip */}
@@ -159,6 +224,11 @@ export default function CategorySelection() {
                   {category.statisticCount && (
                     <p className="text-sm text-gray-600 mt-2">
                       {category.statisticCount} measures available
+                    </p>
+                  )}
+                  {category.hasData === false && (
+                    <p className="text-sm text-red-600 mt-2 font-medium">
+                      ⚠️ No data available for this category
                     </p>
                   )}
                 </div>
@@ -175,13 +245,20 @@ export default function CategorySelection() {
           >
             Back
           </a>
-          {selectedCategory && (
+          {selectedCategory ? (
             <a
-              href={`/measure?category=${selectedCategory}`}
+              href={`/measure?category=${encodeURIComponent(selectedCategory)}`}
               className="flex-1 bg-blue-600 text-white font-medium py-3 px-6 rounded-md text-center hover:bg-blue-700 transition-colors"
             >
               Continue
             </a>
+          ) : (
+            <button
+              disabled
+              className="flex-1 bg-gray-300 text-gray-500 font-medium py-3 px-6 rounded-md text-center cursor-not-allowed"
+            >
+              Continue
+            </button>
           )}
         </div>
       </div>

@@ -13,8 +13,12 @@ describe('cache', () => {
     expect(retrieved).toEqual(testData);
   });
 
-  it('should return null for non-existent key', () => {
-    const retrieved = cache.get('non-existent');
+  it('should throw CacheMissError for non-existent key', () => {
+    expect(() => cache.get('non-existent')).toThrow('Cache entry not found for key: non-existent');
+  });
+
+  it('should return null for non-existent key using getOptional', () => {
+    const retrieved = cache.getOptional('non-existent');
     expect(retrieved).toBeNull();
   });
 
@@ -22,8 +26,7 @@ describe('cache', () => {
     cache.set('test-key', { data: 'test' });
     cache.delete('test-key');
     
-    const retrieved = cache.get('test-key');
-    expect(retrieved).toBeNull();
+    expect(() => cache.get('test-key')).toThrow('Cache entry not found for key: test-key');
   });
 
   it('should clear all data', () => {
@@ -31,8 +34,8 @@ describe('cache', () => {
     cache.set('key2', { data: 'test2' });
     cache.clear();
     
-    expect(cache.get('key1')).toBeNull();
-    expect(cache.get('key2')).toBeNull();
+    expect(() => cache.get('key1')).toThrow('Cache entry not found for key: key1');
+    expect(() => cache.get('key2')).toThrow('Cache entry not found for key: key2');
   });
 
   it('should expire data after TTL', async () => {
@@ -46,7 +49,7 @@ describe('cache', () => {
     await new Promise(resolve => setTimeout(resolve, 20));
     
     // Should be expired
-    expect(cache.get('expire-test')).toBeNull();
+    expect(() => cache.get('expire-test')).toThrow('Cache entry expired for key: expire-test');
   });
 
   it('should use default TTL when not specified', () => {

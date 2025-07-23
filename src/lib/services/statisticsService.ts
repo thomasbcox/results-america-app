@@ -25,11 +25,36 @@ export async function getStatisticById(id: number, database = db) {
   return result[0] || null;
 }
 
-export async function createStatistic(data: any, database = db) {
+// Database operation types that match the schema
+interface CreateStatisticData {
+  name: string;
+  raNumber?: string;
+  categoryId: number;
+  dataSourceId?: number;
+  description?: string;
+  subMeasure?: string;
+  calculation?: string;
+  unit: string;
+  availableSince?: string;
+}
+
+interface UpdateStatisticData {
+  name?: string;
+  raNumber?: string;
+  categoryId?: number;
+  dataSourceId?: number;
+  description?: string;
+  subMeasure?: string;
+  calculation?: string;
+  unit?: string;
+  availableSince?: string;
+}
+
+export async function createStatistic(data: CreateStatisticData, database = db) {
   return database.insert(statistics).values(data).returning();
 }
 
-export async function updateStatistic(id: number, data: any, database = db) {
+export async function updateStatistic(id: number, data: UpdateStatisticData, database = db) {
   return database.update(statistics).set(data).where(eq(statistics.id, id)).returning();
 }
 
