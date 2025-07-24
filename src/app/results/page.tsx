@@ -6,6 +6,7 @@ import { User, ArrowRight, ArrowLeft, Share2, Download, Star } from "lucide-reac
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Line, ComposedChart, Legend } from 'recharts'
 import { useSelection } from "@/lib/context"
 import ProgressIndicator from "@/components/ProgressIndicator"
+import DataQualityIndicator from "@/components/DataQualityIndicator"
 import type { MeasureData, ChartData, ChartDataPoint, StatePerformance, StatisticData } from "@/types/api"
 
 // Helper function to transform API data for charts
@@ -400,9 +401,19 @@ export default function ResultsPage() {
                 
                 {/* Card content */}
                 <div className="p-4">
-                  <h4 className="text-lg font-semibold text-black mb-4">
-                    {measureDetails?.name || 'Loading...'} {measureDetails?.unit ? `(${measureDetails.unit})` : ''}
-                  </h4>
+                  <div className="flex items-start justify-between mb-4">
+                    <h4 className="text-lg font-semibold text-black">
+                      {measureDetails?.name || 'Loading...'} {measureDetails?.unit ? `(${measureDetails.unit})` : ''}
+                    </h4>
+                    <DataQualityIndicator
+                      dataQuality={measureDetails?.dataQuality || 'mock'}
+                      provenance={measureDetails?.provenance}
+                      sourceUrl={measureDetails?.sourceUrl}
+                      showBadge={true}
+                      showIcon={true}
+                      size="md"
+                    />
+                  </div>
                   
                   {/* Action buttons */}
                   <div className="flex gap-2 mb-4">
@@ -476,9 +487,19 @@ export default function ResultsPage() {
                 
                 {/* Card content */}
                 <div className="p-4">
-                  <h4 className="text-lg font-semibold text-black mb-4">
-                    {measureDetails?.name || 'Loading...'} {measureDetails?.unit ? `(${measureDetails.unit})` : ''}
-                  </h4>
+                  <div className="flex items-start justify-between mb-4">
+                    <h4 className="text-lg font-semibold text-black">
+                      {measureDetails?.name || 'Loading...'} {measureDetails?.unit ? `(${measureDetails.unit})` : ''}
+                    </h4>
+                    <DataQualityIndicator
+                      dataQuality={measureDetails?.dataQuality || 'mock'}
+                      provenance={measureDetails?.provenance}
+                      sourceUrl={measureDetails?.sourceUrl}
+                      showBadge={true}
+                      showIcon={true}
+                      size="md"
+                    />
+                  </div>
                   
                   {/* Action buttons */}
                   <div className="flex gap-2 mb-4">

@@ -35,12 +35,17 @@ describe('aggregationService', () => {
     const state2 = await createState(db, { name: 'State B', abbreviation: 'SB' });
     const state3 = await createState(db, { name: 'State C', abbreviation: 'SC' });
     
-    // Mock data points service to return test data
-    jest.spyOn(dataPointsService, 'getDataPointsForStatistic').mockResolvedValue([
+    const mockDataPoints = [
       { id: 1, value: 100, year: 2023, stateName: 'State A', statisticId },
       { id: 2, value: 200, year: 2023, stateName: 'State B', statisticId },
       { id: 3, value: 150, year: 2023, stateName: 'State C', statisticId }
-    ]);
+    ];
+    
+    // Mock data points service to return test data
+    jest.spyOn(dataPointsService, 'getDataPointsForStatistic').mockResolvedValue(mockDataPoints);
+    
+    // Mock the NationalAverageService to return the expected average
+    jest.spyOn(aggregationService.NationalAverageService, 'getNationalAverage').mockResolvedValue(150);
 
     const result = await aggregationService.getStatisticComparison(statisticId, 2023);
 

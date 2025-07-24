@@ -48,6 +48,8 @@ export interface StatisticData {
   source: string;
   sourceUrl: string;
   hasData?: boolean;
+  dataQuality?: 'mock' | 'real';
+  provenance?: string;
 }
 
 export interface DataPointData {

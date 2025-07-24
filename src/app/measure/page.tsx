@@ -3,6 +3,7 @@ import { useState, useEffect, Suspense } from "react"
 import { User, ArrowRight, Star, Clock } from "lucide-react"
 import { useSelection } from "@/lib/context"
 import { useSearchParams } from "next/navigation"
+import DataQualityIndicator from "@/components/DataQualityIndicator"
 
 interface Statistic {
   id: number;
@@ -15,6 +16,8 @@ interface Statistic {
   source: string;
   sourceUrl: string;
   hasData?: boolean;
+  dataQuality?: 'mock' | 'real';
+  provenance?: string;
 }
 
 function MeasureSelectionContent() {
@@ -245,7 +248,17 @@ function MeasureSelectionContent() {
                   
                   {/* Card content */}
                   <div className="p-4">
-                    <h4 className="font-semibold text-black mb-2">{statistic.name}</h4>
+                    <div className="flex items-start justify-between mb-2">
+                      <h4 className="font-semibold text-black">{statistic.name}</h4>
+                      <DataQualityIndicator
+                        dataQuality={statistic.dataQuality || 'mock'}
+                        provenance={statistic.provenance}
+                        sourceUrl={statistic.sourceUrl}
+                        showBadge={true}
+                        showIcon={true}
+                        size="sm"
+                      />
+                    </div>
                     <p className="text-gray-600 text-sm mb-3 line-clamp-3">{statistic.description}</p>
                     
                     <div className="space-y-2 text-sm">

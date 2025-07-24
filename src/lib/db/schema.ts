@@ -81,6 +81,8 @@ export const statistics = sqliteTable('statistics', {
   calculation: text('calculation'), // How the measure is calculated
   unit: text('unit').notNull(),
   availableSince: text('available_since'), // When data became available
+  dataQuality: text('data_quality', { enum: ['mock', 'real'] }).default('mock'), // Data quality indicator
+  provenance: text('provenance'), // Data source and methodology information
   isActive: integer('is_active').default(1),
 });
 

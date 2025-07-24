@@ -86,7 +86,9 @@ export function createTestDb() {
       calculation TEXT,
       unit TEXT NOT NULL,
       available_since TEXT,
-      is_active INTEGER DEFAULT 1
+      is_active INTEGER DEFAULT 1,
+      data_quality TEXT DEFAULT 'mock',
+      provenance TEXT
     );
     
     CREATE TABLE IF NOT EXISTS import_sessions (
@@ -107,6 +109,17 @@ export function createTestDb() {
       state_id INTEGER NOT NULL REFERENCES states(id),
       statistic_id INTEGER NOT NULL REFERENCES statistics(id),
       value REAL NOT NULL
+    );
+    
+    CREATE TABLE IF NOT EXISTS national_averages (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      statistic_id INTEGER NOT NULL REFERENCES statistics(id),
+      year INTEGER NOT NULL,
+      value REAL NOT NULL,
+      calculation_method TEXT NOT NULL DEFAULT 'arithmetic_mean',
+      state_count INTEGER NOT NULL,
+      last_calculated INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
+      UNIQUE(statistic_id, year)
     );
   `;
   

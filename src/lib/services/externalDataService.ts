@@ -120,7 +120,9 @@ export class ExternalDataService {
         raNumber: '2001',
         description: 'Real GDP by state in millions of dollars',
         unit: 'millions of dollars',
-        availableSince: '2017'
+        availableSince: '2017',
+        dataQuality: 'real',
+        provenance: 'Bureau of Economic Analysis (BEA) - Real GDP by State. Data represents real gross domestic product in millions of chained 2012 dollars. Methodology: BEA calculates real GDP using chain-weighted price indexes to remove the effects of inflation.'
       });
 
       // Create import session
@@ -214,7 +216,9 @@ export class ExternalDataService {
         raNumber: '2002',
         description: 'Total employment by state',
         unit: 'thousands of jobs',
-        availableSince: '2017'
+        availableSince: '2017',
+        dataQuality: 'real',
+        provenance: 'Bureau of Labor Statistics (BLS) - Total Employment by State. Data represents total nonfarm employment in thousands of jobs. Methodology: BLS conducts monthly surveys of businesses and government agencies to estimate employment levels.'
       });
 
       // Create import session
@@ -306,7 +310,9 @@ export class ExternalDataService {
         raNumber: '3001',
         description: 'Total population by state',
         unit: 'persons',
-        availableSince: '2017'
+        availableSince: '2017',
+        dataQuality: 'real',
+        provenance: 'US Census Bureau - Population Estimates Program. Data represents annual population estimates for all states. Methodology: Census Bureau uses administrative records, surveys, and demographic analysis to produce annual population estimates between decennial censuses.'
       });
 
       // Create import session
@@ -402,6 +408,8 @@ export class ExternalDataService {
     description: string;
     unit: string;
     availableSince: string;
+    dataQuality?: 'mock' | 'real';
+    provenance?: string;
   }) {
     const [existing] = await db.select().from(statistics).where(eq(statistics.name, data.name)).limit(1);
     
@@ -409,6 +417,8 @@ export class ExternalDataService {
     
     const [newStatistic] = await db.insert(statistics).values({
       ...data,
+      dataQuality: data.dataQuality || 'mock',
+      provenance: data.provenance || null,
       isActive: 1
     }).returning();
     

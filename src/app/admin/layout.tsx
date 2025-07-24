@@ -11,7 +11,8 @@ import {
   Settings,
   LogOut,
   User,
-  Download
+  Download,
+  BarChart
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -21,6 +22,7 @@ const navItems = [
   { href: '/admin/users', label: 'Users', icon: Users },
   { href: '/admin/data', label: 'Data', icon: Database },
   { href: '/admin/external-data', label: 'External Data', icon: Download },
+  { href: '/admin/statistics', label: 'Statistics', icon: BarChart },
   { href: '/admin/analytics', label: 'Analytics', icon: BarChart3 },
   { href: '/admin/settings', label: 'Settings', icon: Settings },
 ];
