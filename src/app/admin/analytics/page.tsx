@@ -71,29 +71,34 @@ export default function Analytics() {
 
   if (loading) {
     return (
-      <div className="container mx-auto p-6">
-        <div className="flex items-center justify-center h-64">
-          <RefreshCw className="h-8 w-8 animate-spin text-blue-600" />
-          <span className="ml-2 text-lg">Loading analytics...</span>
-        </div>
+      <div className="flex items-center justify-center h-64">
+        <RefreshCw className="h-8 w-8 animate-spin text-blue-600" />
+        <span className="ml-2 text-lg">Loading analytics...</span>
       </div>
     );
   }
 
-  if (!analytics) {
-    return (
-      <div className="container mx-auto p-6">
-        <div className="text-center">
-          <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No Analytics Data</h3>
-          <p className="text-gray-600">Analytics data is not available yet.</p>
+  // Show coming soon message since analytics API doesn't exist yet
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Analytics Dashboard</h1>
+          <p className="text-gray-600 mt-2">Monitor system usage and performance</p>
         </div>
       </div>
-    );
-  }
+
+      <div className="text-center py-12">
+        <BarChart3 className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+        <h3 className="text-xl font-medium text-gray-900 mb-2">Analytics Coming Soon</h3>
+        <p className="text-gray-600 mb-4">Advanced analytics and usage tracking will be available in a future update.</p>
+        <Badge variant="secondary">Under Development</Badge>
+      </div>
+    </div>
+  );
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Analytics Dashboard</h1>

@@ -114,7 +114,7 @@ export default function AdminDashboard() {
     integrity.orphanedDataPoints + integrity.missingSources + integrity.duplicateStates + integrity.duplicateCategories : 0;
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
@@ -311,7 +311,7 @@ export default function AdminDashboard() {
             <Button 
               variant="outline" 
               className="h-auto p-4 flex flex-col items-center"
-              onClick={() => window.open('/admin/users', '_blank')}
+              onClick={() => window.location.href = '/admin/users'}
             >
               <Users className="h-6 w-6 mb-2" />
               <span>User Management</span>
@@ -319,23 +319,24 @@ export default function AdminDashboard() {
             <Button 
               variant="outline" 
               className="h-auto p-4 flex flex-col items-center"
-              onClick={() => window.open('/admin/data', '_blank')}
+              onClick={() => window.location.href = '/admin/data'}
             >
               <Database className="h-6 w-6 mb-2" />
               <span>Data Management</span>
             </Button>
             <Button 
               variant="outline" 
-              className="h-auto p-4 flex flex-col items-center"
-              onClick={() => window.open('/admin/analytics', '_blank')}
+              className="h-auto p-4 flex flex-col items-center opacity-50 cursor-not-allowed"
+              disabled
             >
               <BarChart3 className="h-6 w-6 mb-2" />
               <span>Usage Analytics</span>
+              <Badge variant="secondary" className="text-xs mt-1">Coming Soon</Badge>
             </Button>
             <Button 
               variant="outline" 
               className="h-auto p-4 flex flex-col items-center"
-              onClick={() => window.open('/admin/settings', '_blank')}
+              onClick={() => window.location.href = '/admin/settings'}
             >
               <Shield className="h-6 w-6 mb-2" />
               <span>System Settings</span>
