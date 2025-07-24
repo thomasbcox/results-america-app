@@ -3,42 +3,18 @@ import { middleware } from './middleware';
 import { AuthService } from './lib/services/authService';
 import { db } from './lib/db/index';
 import { users, sessions, passwordResetTokens, userActivityLogs } from './lib/db/schema';
-import bcrypt from 'bcryptjs';
 import { eq } from 'drizzle-orm';
-
-// Mock bcrypt
-jest.mock('bcryptjs', () => ({
-  default: {
-    hash: jest.fn(),
-    compare: jest.fn(),
-  },
-}));
-
-// Mock crypto
-jest.mock('crypto', () => ({
-  randomBytes: jest.fn(() => ({
-    toString: () => 'mock-token-1234567890abcdef',
-  })),
-}));
+import { setupAuthTest, cleanupDatabase } from './lib/test-setup';
 
 describe('middleware', () => {
+  setupAuthTest();
+
   beforeEach(async () => {
-    // Clear all tables before each test
-    await db.delete(userActivityLogs);
-    await db.delete(passwordResetTokens);
-    await db.delete(sessions);
-    await db.delete(users);
-    
-    // Reset mocks
-    jest.clearAllMocks();
+    await cleanupDatabase(db);
   });
 
   afterEach(async () => {
-    // Clean up after each test
-    await db.delete(userActivityLogs);
-    await db.delete(passwordResetTokens);
-    await db.delete(sessions);
-    await db.delete(users);
+    await cleanupDatabase(db);
   });
 
   it('should allow access to bootstrap page without authentication', async () => {
@@ -60,10 +36,6 @@ describe('middleware', () => {
   });
 
   it('should allow access to admin routes with valid session', async () => {
-    const mockHash = 'hashed-password-123';
-    (bcrypt.hash as any).mockResolvedValue(mockHash);
-    (bcrypt.compare as any).mockResolvedValue(true);
-
     // Create admin user and login
     await AuthService.bootstrapAdminUser('admin@example.com', 'Admin', 'password123');
     const loginResult = await AuthService.login({
@@ -94,10 +66,6 @@ describe('middleware', () => {
   });
 
   it('should allow access to admin API routes with valid session', async () => {
-    const mockHash = 'hashed-password-123';
-    (bcrypt.hash as any).mockResolvedValue(mockHash);
-    (bcrypt.compare as any).mockResolvedValue(true);
-
     // Create admin user and login
     await AuthService.bootstrapAdminUser('admin@example.com', 'Admin', 'password123');
     const loginResult = await AuthService.login({
@@ -117,7 +85,7 @@ describe('middleware', () => {
     expect(response?.status).toBe(200);
   });
 
-  it('should redirect to login for invalid session', async () => {
+  it('should redirect to login for invalid session token', async () => {
     const request = new NextRequest('http://localhost:3000/admin', {
       headers: {
         'Cookie': 'session_token=invalid-token',
@@ -131,27 +99,7 @@ describe('middleware', () => {
     expect(response?.headers.get('location')).toContain('/login');
   });
 
-  it('should allow access to non-admin routes', async () => {
-    const request = new NextRequest('http://localhost:3000/');
-    const response = await middleware(request);
-
-    expect(response).toBeInstanceOf(NextResponse);
-    expect(response?.status).toBe(200);
-  });
-
-  it('should allow access to public API routes', async () => {
-    const request = new NextRequest('http://localhost:3000/api/states');
-    const response = await middleware(request);
-
-    expect(response).toBeInstanceOf(NextResponse);
-    expect(response?.status).toBe(200);
-  });
-
-  it('should handle expired session', async () => {
-    const mockHash = 'hashed-password-123';
-    (bcrypt.hash as any).mockResolvedValue(mockHash);
-    (bcrypt.compare as any).mockResolvedValue(true);
-
+  it('should redirect to login for expired session', async () => {
     // Create admin user and login
     await AuthService.bootstrapAdminUser('admin@example.com', 'Admin', 'password123');
     const loginResult = await AuthService.login({
@@ -177,8 +125,29 @@ describe('middleware', () => {
     expect(response?.headers.get('location')).toContain('/login');
   });
 
-  it('should handle missing cookie header gracefully', async () => {
-    const request = new NextRequest('http://localhost:3000/admin');
+  it('should allow access to non-admin routes', async () => {
+    const request = new NextRequest('http://localhost:3000/api/states');
+    const response = await middleware(request);
+
+    expect(response).toBeInstanceOf(NextResponse);
+    expect(response?.status).toBe(200);
+  });
+
+  it('should allow access to public routes', async () => {
+    const request = new NextRequest('http://localhost:3000/');
+    const response = await middleware(request);
+
+    expect(response).toBeInstanceOf(NextResponse);
+    expect(response?.status).toBe(200);
+  });
+
+  it('should handle malformed cookies gracefully', async () => {
+    const request = new NextRequest('http://localhost:3000/admin', {
+      headers: {
+        'Cookie': 'malformed-cookie',
+      },
+    });
+
     const response = await middleware(request);
 
     expect(response).toBeInstanceOf(NextResponse);
@@ -186,13 +155,8 @@ describe('middleware', () => {
     expect(response?.headers.get('location')).toContain('/login');
   });
 
-  it('should handle malformed cookie header gracefully', async () => {
-    const request = new NextRequest('http://localhost:3000/admin', {
-      headers: {
-        'Cookie': 'invalid-cookie-format',
-      },
-    });
-
+  it('should handle missing cookie header gracefully', async () => {
+    const request = new NextRequest('http://localhost:3000/admin');
     const response = await middleware(request);
 
     expect(response).toBeInstanceOf(NextResponse);

@@ -1,10 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
-import { Badge } from '@/components/ui/Badge';
-import { Alert, AlertDescription } from '@/components/ui/Alert';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface User {
   id: number;
@@ -31,11 +31,16 @@ export default function UsersPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const [newUser, setNewUser] = useState({
+  const [newUser, setNewUser] = useState<{
+    email: string;
+    name: string;
+    password: string;
+    role: 'admin' | 'user' | 'viewer';
+  }>({
     email: '',
     name: '',
     password: '',
-    role: 'user' as const,
+    role: 'user',
   });
 
   useEffect(() => {
@@ -72,7 +77,7 @@ export default function UsersPage() {
         throw new Error(error.error || 'Failed to create user');
       }
 
-      setNewUser({ email: '', name: '', password: '', role: 'user' });
+      setNewUser({ email: '', name: '', password: '', role: 'user' as 'admin' | 'user' | 'viewer' });
       setShowCreateForm(false);
       fetchUsers();
     } catch (err) {
@@ -240,7 +245,7 @@ export default function UsersPage() {
                   <label className="block text-sm font-medium text-foreground mb-1">Role</label>
                   <select
                     value={newUser.role}
-                    onChange={(e) => setNewUser({ ...newUser, role: e.target.value as any })}
+                    onChange={(e) => setNewUser({ ...newUser, role: e.target.value as 'admin' | 'user' | 'viewer' })}
                     className="w-full px-3 py-2 border border-input bg-background text-foreground rounded-md"
                   >
                     <option value="user">User</option>

@@ -3,7 +3,17 @@ import { AuthService } from '@/lib/services/authService';
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, name, password } = await request.json();
+    let body;
+    try {
+      body = await request.json();
+    } catch (jsonError) {
+      return NextResponse.json(
+        { error: 'Invalid JSON' },
+        { status: 400 }
+      );
+    }
+
+    const { email, name, password } = body;
 
     if (!email || !name || !password) {
       return NextResponse.json(
@@ -35,7 +45,7 @@ export async function POST(request: NextRequest) {
         updatedAt: adminUser.updatedAt,
       },
       message: 'Admin user created successfully'
-    });
+    }, { status: 201 });
   } catch (error) {
     console.error('Bootstrap admin error:', error);
     

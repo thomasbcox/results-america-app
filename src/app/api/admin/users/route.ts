@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
 
     if (!sessionToken) {
       return NextResponse.json(
-        { error: 'Not authenticated' },
+        { error: 'Authentication required' },
         { status: 401 }
       );
     }
@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
 
     if (!sessionToken) {
       return NextResponse.json(
-        { error: 'Not authenticated' },
+        { error: 'Authentication required' },
         { status: 401 }
       );
     }
@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
         updatedAt: newUser.updatedAt,
       },
       message: 'User created successfully'
-    });
+    }, { status: 201 });
   } catch (error) {
     console.error('Create user error:', error);
     

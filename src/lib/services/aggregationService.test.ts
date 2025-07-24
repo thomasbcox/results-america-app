@@ -86,11 +86,17 @@ describe('aggregationService', () => {
 
   it('should get state comparison', async () => {
     jest.spyOn(dataPointsService, 'getDataPointsForState').mockResolvedValue([
-      { id: 1, value: 100, year: 2023, stateName: 'State A', statisticId }
-    ]);
-    
-    jest.spyOn(statisticsService, 'getAllStatisticsWithSources').mockResolvedValue([
-      { id: statisticId, name: 'Test Stat', category: 'Education' }
+      { 
+        id: 1, 
+        value: 100, 
+        year: 2023, 
+        statisticName: 'Test Stat',
+        statisticUnit: 'test',
+        categoryName: 'Education',
+        sourceName: 'Test Source',
+        sourceUrl: 'http://test.com',
+        importDate: new Date()
+      }
     ]);
 
     const result = await aggregationService.getStateComparison(stateId, 2023);

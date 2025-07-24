@@ -4,14 +4,15 @@ import { AuthService } from '@/lib/services/authService';
 // Get specific user (admin only)
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const sessionToken = request.cookies.get('session_token')?.value;
 
     if (!sessionToken) {
       return NextResponse.json(
-        { error: 'Not authenticated' },
+        { error: 'Authentication required' },
         { status: 401 }
       );
     }
@@ -25,7 +26,7 @@ export async function GET(
       );
     }
 
-    const userId = parseInt(params.id);
+    const userId = parseInt(id);
     const targetUser = await AuthService.getUserById(userId);
 
     if (!targetUser) {
@@ -60,14 +61,15 @@ export async function GET(
 // Update user (admin only)
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const sessionToken = request.cookies.get('session_token')?.value;
 
     if (!sessionToken) {
       return NextResponse.json(
-        { error: 'Not authenticated' },
+        { error: 'Authentication required' },
         { status: 401 }
       );
     }
@@ -81,7 +83,7 @@ export async function PUT(
       );
     }
 
-    const userId = parseInt(params.id);
+    const userId = parseInt(id);
     const updates = await request.json();
 
     const updatedUser = await AuthService.updateUser(userId, updates);
@@ -119,14 +121,15 @@ export async function PUT(
 // Delete user (admin only)
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const sessionToken = request.cookies.get('session_token')?.value;
 
     if (!sessionToken) {
       return NextResponse.json(
-        { error: 'Not authenticated' },
+        { error: 'Authentication required' },
         { status: 401 }
       );
     }
@@ -140,7 +143,7 @@ export async function DELETE(
       );
     }
 
-    const userId = parseInt(params.id);
+    const userId = parseInt(id);
     const success = await AuthService.deleteUser(userId);
 
     if (!success) {

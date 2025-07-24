@@ -45,18 +45,16 @@ export async function getStatisticComparison(statisticId: number, year: number =
 
 export async function getStateComparison(stateId: number, year: number = 2023): Promise<ChartData> {
   const dataPoints = await getDataPointsForState(stateId, year);
-  const statistics = await getAllStatisticsWithSources();
   
   // Group by category
   const categoryData: { [key: string]: number[] } = {};
   
   dataPoints.forEach(dp => {
-    const stat = statistics.find(s => s.name === dp.statisticName);
-    if (stat && stat.category) {
-      if (!categoryData[stat.category]) {
-        categoryData[stat.category] = [];
+    if (dp.categoryName) {
+      if (!categoryData[dp.categoryName]) {
+        categoryData[dp.categoryName] = [];
       }
-      categoryData[stat.category].push(dp.value);
+      categoryData[dp.categoryName].push(dp.value);
     }
   });
 

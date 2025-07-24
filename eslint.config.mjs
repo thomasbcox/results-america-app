@@ -11,6 +11,44 @@ const compat = new FlatCompat({
 
 const eslintConfig = [
   ...compat.extends("next/core-web-vitals", "next/typescript"),
+  {
+    rules: {
+      // Prevent the import path issues we just fixed
+      "@typescript-eslint/no-explicit-any": "error",
+      "@typescript-eslint/no-unused-vars": ["warn", { 
+        "argsIgnorePattern": "^_",
+        "varsIgnorePattern": "^_",
+        "caughtErrorsIgnorePattern": "^_"
+      }],
+      
+      // Prevent common Next.js issues
+      "@next/next/no-img-element": "warn",
+      "react-hooks/exhaustive-deps": "warn",
+      
+      // Enforce proper TypeScript usage
+      "@typescript-eslint/no-var-requires": "error",
+      
+      // Prevent common React issues
+      "react/jsx-key": "error",
+      "react/no-unescaped-entities": "warn",
+    },
+  },
+  {
+    files: ["**/api/**/*.ts", "**/api/**/*.tsx"],
+    rules: {
+      // Ensure API routes are thin wrappers
+      "max-lines-per-function": ["warn", { "max": 50 }],
+      "complexity": ["warn", { "max": 10 }],
+    },
+  },
+  {
+    files: ["**/services/**/*.ts"],
+    rules: {
+      // Allow more complexity in service layer
+      "max-lines-per-function": ["warn", { "max": 100 }],
+      "complexity": ["warn", { "max": 20 }],
+    },
+  },
 ];
 
 export default eslintConfig;
