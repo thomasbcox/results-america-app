@@ -1,108 +1,47 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Results America Project
 
-## Getting Started
+This directory contains the Results America application in the `results-america-app` subdirectory.
 
-First, run the development server:
+## 🚀 Quick Start
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
-
-Open [http://localhost:3050](http://localhost:3050) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Development Workflow
-
-### Pre-commit Validation
-
-Before committing code, run the validation script to catch common issues:
+Use the `dev.sh` script to run commands from this directory:
 
 ```bash
-npm run validate
+# Start development server (default)
+./dev.sh
+
+# Or explicitly
+./dev.sh dev
+
+# Other commands
+./dev.sh build        # Build for production
+./dev.sh test         # Run tests
+./dev.sh lint         # Run ESLint
+./dev.sh validate     # Run validation
+./dev.sh db:studio    # Open database studio
+./dev.sh help         # Show all commands
 ```
 
-This will check for:
-- ✅ Correct UI component import paths
-- ✅ Next.js 15 dynamic route types
-- ✅ No explicit `any` types in production code
-- ✅ TypeScript compilation
-- ✅ ESLint compliance
+## 📁 Project Structure
 
-### Building for Production
-
-The build process automatically runs validation:
-
-```bash
-npm run build
+```
+results_america_cursor/
+├── results-america-app/     # Main Next.js application
+│   ├── src/
+│   ├── package.json
+│   └── ...
+├── dev.sh                   # Development command launcher
+└── README.md               # This file
 ```
 
-This will:
-1. Run pre-build validation
-2. Compile the application
-3. Generate optimized production build
+## 🌐 Development Server
 
-## Database Management
+Once started, the development server will be available at:
+- **Local**: http://localhost:3050
+- **Network**: http://your-ip:3050
 
-```bash
-# Generate new migrations
-npm run db:generate
+## 📝 Notes
 
-# Run migrations
-npm run db:migrate
-
-# Open database studio
-npm run db:studio
-
-# Seed database
-npm run db:seed
-```
-
-## Testing
-
-```bash
-# Run all tests
-npm test
-
-# Run tests in watch mode
-npm run test:watch
-```
-
-## Deployment
-
-### Vercel Deployment
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-### Pre-deployment Checklist
-
-Before deploying to production:
-
-1. ✅ Run validation: `npm run validate`
-2. ✅ Run tests: `npm test`
-3. ✅ Check build: `npm run build`
-4. ✅ Verify database migrations are up to date
-5. ✅ Ensure environment variables are configured
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- The `dev.sh` script automatically navigates to the correct directory
+- All git operations should be done from within `results-america-app/`
+- The development server runs on port 3050 (not the default 3000) 
