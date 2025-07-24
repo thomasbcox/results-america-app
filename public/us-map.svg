@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 250" width="400" height="250">
+  <!-- Background -->
+  <rect width="400" height="250" fill="#f8fafc"/>
+  
+  <!-- Simple US outline -->
+  <path d="M50 50 L350 50 L350 200 L50 200 Z" fill="#e2e8f0" stroke="#64748b" stroke-width="2"/>
+  
+  <!-- Alaska (simplified) -->
+  <rect x="320" y="180" width="60" height="40" fill="#e2e8f0" stroke="#64748b" stroke-width="1"/>
+  
+  <!-- Hawaii (simplified) -->
+  <circle cx="80" cy="220" r="15" fill="#e2e8f0" stroke="#64748b" stroke-width="1"/>
+  
+  <!-- State grid lines (simplified) -->
+  <g stroke="#cbd5e1" stroke-width="0.5" opacity="0.5">
+    <!-- Vertical lines -->
+    <line x1="100" y1="50" x2="100" y2="200"/>
+    <line x1="150" y1="50" x2="150" y2="200"/>
+    <line x1="200" y1="50" x2="200" y2="200"/>
+    <line x1="250" y1="50" x2="250" y2="200"/>
+    <line x1="300" y1="50" x2="300" y2="200"/>
+    
+    <!-- Horizontal lines -->
+    <line x1="50" y1="80" x2="350" y2="80"/>
+    <line x1="50" y1="110" x2="350" y2="110"/>
+    <line x1="50" y1="140" x2="350" y2="140"/>
+    <line x1="50" y1="170" x2="350" y2="170"/>
+  </g>
+  
+  <!-- Title -->
+  <text x="200" y="30" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#1e293b">
+    United States
+  </text>
+  
+  <!-- Subtitle -->
+  <text x="200" y="240" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#64748b">
+    Select states to compare
+  </text>
+</svg> 

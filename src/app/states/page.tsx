@@ -91,7 +91,7 @@ export default function StateSelection() {
         {/* US Map */}
         <div className="w-full max-w-md mb-6 relative">
           <img 
-            src="/us-map.jpg" 
+            src="/us-map.svg" 
             alt="United States Map"
             className="w-full h-64 object-cover rounded-lg shadow-md"
             onError={(e) => {
@@ -99,7 +99,7 @@ export default function StateSelection() {
               e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 250'%3E%3Crect width='400' height='250' fill='%23e5e7eb'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='%236b7280' font-family='sans-serif' font-size='16'%3EUnited States Map%3C/text%3E%3C/svg%3E"
             }}
           />
-                      <div className="absolute top-2 right-2 bg-white px-2 py-1 rounded text-xs font-medium text-black">
+          <div className="absolute top-2 right-2 bg-white px-2 py-1 rounded text-xs font-medium text-black">
             STATES OF USA
           </div>
         </div>
