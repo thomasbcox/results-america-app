@@ -1,12 +1,12 @@
 // Global test setup for authentication tests
 import { jest } from '@jest/globals';
 
-// Create mock functions
-const mockHash = jest.fn();
-const mockCompare = jest.fn();
+// Create mock functions with proper typing
+const mockHash = jest.fn() as jest.MockedFunction<(...args: any[]) => Promise<string>>;
+const mockCompare = jest.fn() as jest.MockedFunction<(...args: any[]) => Promise<boolean>>;
 const mockRandomBytes = jest.fn(() => ({
   toString: () => 'mock-token-1234567890abcdef',
-}));
+})) as jest.MockedFunction<(...args: any[]) => { toString: () => string }>;
 
 // Mock bcrypt globally - this needs to be hoisted
 jest.mock('bcryptjs', () => ({
@@ -40,7 +40,7 @@ export const setupAuthTest = () => {
 };
 
 // Test data factories
-export const createTestUserData = (overrides: any = {}) => ({
+export const createTestUserData = (overrides: Record<string, any> = {}) => ({
   email: `test-${Date.now()}@example.com`,
   name: 'Test User',
   password: 'password123',
@@ -48,7 +48,7 @@ export const createTestUserData = (overrides: any = {}) => ({
   ...overrides,
 });
 
-export const createTestAdminData = (overrides: any = {}) => ({
+export const createTestAdminData = (overrides: Record<string, any> = {}) => ({
   email: `admin-${Date.now()}@example.com`,
   name: 'Admin User',
   password: 'admin123',

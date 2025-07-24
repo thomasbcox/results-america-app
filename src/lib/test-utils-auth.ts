@@ -52,7 +52,7 @@ export const setupAuthTest = () => {
 };
 
 // Common test data for authentication
-export const createTestUserData = (overrides: any = {}) => ({
+export const createTestUserData = (overrides: Record<string, any> = {}) => ({
   email: `test-${Date.now()}@example.com`,
   name: 'Test User',
   password: 'password123',
@@ -60,7 +60,7 @@ export const createTestUserData = (overrides: any = {}) => ({
   ...overrides,
 });
 
-export const createTestAdminData = (overrides: any = {}) => ({
+export const createTestAdminData = (overrides: Record<string, any> = {}) => ({
   email: `admin-${Date.now()}@example.com`,
   name: 'Admin User',
   password: 'admin123',
