@@ -1,30 +1,36 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { POST } from './route';
 import { AuthService } from '@/lib/services/authService';
-import { db } from '@/lib/db/index';
-import { users, sessions, passwordResetTokens, userActivityLogs } from '@/lib/db/schema';
+import { createTestDatabase, createTestUserData } from '@/lib/testUtils';
 
 describe('POST /api/auth/login', () => {
+  let testDb: any;
+
   beforeEach(async () => {
-    // Clear all tables before each test
-    await db.delete(userActivityLogs);
-    await db.delete(passwordResetTokens);
-    await db.delete(sessions);
-    await db.delete(users);
+    // Setup test database with proper dependency order
+    const testDatabase = createTestDatabase();
+    testDb = testDatabase.db;
+    
+    // Clear any existing data in reverse dependency order
+    await testDatabase.clearAllData();
+    
+    // Populate foundation data in dependency order
+    await testDatabase.populateFoundationData();
   });
 
   afterEach(async () => {
-    // Clean up after each test
-    await db.delete(userActivityLogs);
-    await db.delete(passwordResetTokens);
-    await db.delete(sessions);
-    await db.delete(users);
+    // Clean up in reverse dependency order
+    if (testDb) {
+      const testDatabase = createTestDatabase();
+      await testDatabase.clearAllData();
+    }
   });
 
   it('should login user successfully', async () => {
-    // Create a user
+    // Create a user with unique email
+    const uniqueEmail = `test-${Date.now()}-${Math.random().toString(36).substr(2, 9)}@example.com`;
     await AuthService.createUser({
-      email: 'test@example.com',
+      email: uniqueEmail,
       name: 'Test User',
       password: 'password123',
     });
@@ -35,7 +41,7 @@ describe('POST /api/auth/login', () => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        email: 'test@example.com',
+        email: uniqueEmail,
         password: 'password123',
       }),
     });
@@ -45,7 +51,7 @@ describe('POST /api/auth/login', () => {
 
     expect(response.status).toBe(200);
     expect(data.user).toBeDefined();
-    expect(data.user.email).toBe('test@example.com');
+    expect(data.user.email).toBe(uniqueEmail);
     expect(data.message).toBe('Login successful');
     expect(response.cookies.get('session_token')).toBeDefined();
   });
@@ -87,9 +93,10 @@ describe('POST /api/auth/login', () => {
   });
 
   it('should reject login with invalid credentials', async () => {
-    // Create a user
+    // Create a user with unique email
+    const uniqueEmail = `test-${Date.now()}-${Math.random().toString(36).substr(2, 9)}@example.com`;
     await AuthService.createUser({
-      email: 'test@example.com',
+      email: uniqueEmail,
       name: 'Test User',
       password: 'password123',
     });

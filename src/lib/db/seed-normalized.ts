@@ -2,8 +2,26 @@ import { db } from './index';
 import { states, categories, dataSources, statistics, importSessions, dataPoints } from './schema';
 import { eq, and } from 'drizzle-orm';
 
+/**
+ * DEPENDENCY-BASED DATABASE SEEDING
+ * 
+ * This function follows the proper dependency order to avoid foreign key violations:
+ * 
+ * GROUP 1: Foundation Tables (No Foreign Keys)
+ * - states, categories, data_sources
+ * 
+ * GROUP 2: First-Level Dependencies
+ * - statistics (depends on categories and data_sources)
+ * - import_sessions (depends on data_sources)
+ * 
+ * GROUP 3: Second-Level Dependencies
+ * - data_points (depends on import_sessions, states, and statistics)
+ * 
+ * IMPORTANT: Always maintain this order when modifying this function!
+ */
+
 export async function seedDatabaseNormalized() {
-  console.log('🌱 Seeding normalized database...');
+  console.log('🌱 Seeding normalized database in dependency order...');
 
   // Insert states (all 50 states in alphabetical order)
   const stateData = [

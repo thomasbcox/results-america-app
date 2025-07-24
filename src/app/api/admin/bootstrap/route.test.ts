@@ -1,24 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { POST } from './route';
 import { AuthService } from '@/lib/services/authService';
-import { db } from '@/lib/db/index';
-import { users, sessions, passwordResetTokens, userActivityLogs } from '@/lib/db/schema';
+import { createTestDatabase, createTestAdminData } from '@/lib/testUtils';
 
 describe('POST /api/admin/bootstrap', () => {
+  let testDb: any;
+
   beforeEach(async () => {
-    // Clear all tables before each test
-    await db.delete(userActivityLogs);
-    await db.delete(passwordResetTokens);
-    await db.delete(sessions);
-    await db.delete(users);
+    // Setup test database with proper dependency order
+    const testDatabase = createTestDatabase();
+    testDb = testDatabase.db;
+    
+    // Clear any existing data in reverse dependency order
+    await testDatabase.clearAllData();
+    
+    // Populate foundation data in dependency order
+    await testDatabase.populateFoundationData();
   });
 
   afterEach(async () => {
-    // Clean up after each test
-    await db.delete(userActivityLogs);
-    await db.delete(passwordResetTokens);
-    await db.delete(sessions);
-    await db.delete(users);
+    // Clean up in reverse dependency order
+    if (testDb) {
+      const testDatabase = createTestDatabase();
+      await testDatabase.clearAllData();
+    }
   });
 
   it('should create admin user successfully', async () => {

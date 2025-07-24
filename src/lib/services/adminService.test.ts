@@ -5,24 +5,29 @@ import {
   checkDataIntegrity 
 } from './adminService';
 import { AuthService } from './authService';
-import { db } from '../db/index';
-import { users, sessions, passwordResetTokens, userActivityLogs } from '../db/schema';
+import { createTestDatabase } from '../testUtils';
 
 describe('adminService', () => {
+  let testDb: any;
+
   beforeEach(async () => {
-    // Clear all tables before each test
-    await db.delete(userActivityLogs);
-    await db.delete(passwordResetTokens);
-    await db.delete(sessions);
-    await db.delete(users);
+    // Setup test database with proper dependency order
+    const testDatabase = createTestDatabase();
+    testDb = testDatabase.db;
+    
+    // Clear any existing data in reverse dependency order
+    await testDatabase.clearAllData();
+    
+    // Populate foundation data in dependency order
+    await testDatabase.populateFoundationData();
   });
 
   afterEach(async () => {
-    // Clean up after each test
-    await db.delete(userActivityLogs);
-    await db.delete(passwordResetTokens);
-    await db.delete(sessions);
-    await db.delete(users);
+    // Clean up in reverse dependency order
+    if (testDb) {
+      const testDatabase = createTestDatabase();
+      await testDatabase.clearAllData();
+    }
   });
 
   describe('System Statistics', () => {
@@ -65,8 +70,9 @@ describe('adminService', () => {
 
   describe('User Management Integration', () => {
     it('should handle admin operations with user system', async () => {
-      // Create admin user
-      await AuthService.bootstrapAdminUser('admin@example.com', 'Admin', 'password123');
+      // Create admin user with unique email
+      const uniqueEmail = `admin-${Date.now()}-${Math.random().toString(36).substr(2, 9)}@example.com`;
+      await AuthService.bootstrapAdminUser(uniqueEmail, 'Admin', 'password123');
 
       // Test that admin operations work with user system
       const stats = await getSystemStats();
