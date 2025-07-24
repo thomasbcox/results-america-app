@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, real, blob } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, real, blob, uniqueIndex } from 'drizzle-orm/sqlite-core';
 import { sql } from 'drizzle-orm';
 
 // User authentication tables
@@ -107,6 +107,20 @@ export const dataPoints = sqliteTable('data_points', {
   // ✅ REMOVED: lastUpdated (now comes from import_sessions.import_date)
 });
 
+// ✅ NEW: National averages table for storing pre-computed national averages
+export const nationalAverages = sqliteTable('national_averages', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  statisticId: integer('statistic_id').notNull().references(() => statistics.id),
+  year: integer('year').notNull(),
+  value: real('value').notNull(),
+  calculationMethod: text('calculation_method').notNull().default('arithmetic_mean'), // arithmetic_mean, weighted, etc.
+  stateCount: integer('state_count').notNull(), // Number of states included in calculation
+  lastCalculated: integer('last_calculated', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (table) => ({
+  // Composite unique constraint to ensure one average per statistic per year
+  uniqueConstraint: uniqueIndex('idx_national_average_unique').on(table.statisticId, table.year),
+}));
+
 // Indexes for performance
 export const indexes = {
   dataPointsLookup: 'idx_data_points_lookup',
@@ -115,4 +129,6 @@ export const indexes = {
   statisticsByCategory: 'idx_statistics_category',
   statisticsBySource: 'idx_statistics_source',
   dataPointsByImport: 'idx_data_points_import',
+  nationalAveragesByStatistic: 'idx_national_averages_statistic',
+  nationalAveragesByYear: 'idx_national_averages_year',
 }; 

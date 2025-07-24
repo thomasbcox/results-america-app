@@ -10,7 +10,8 @@ import {
   Shield, 
   Settings,
   LogOut,
-  User
+  User,
+  Download
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -19,6 +20,7 @@ const navItems = [
   { href: '/admin', label: 'Dashboard', icon: BarChart3 },
   { href: '/admin/users', label: 'Users', icon: Users },
   { href: '/admin/data', label: 'Data', icon: Database },
+  { href: '/admin/external-data', label: 'External Data', icon: Download },
   { href: '/admin/analytics', label: 'Analytics', icon: BarChart3 },
   { href: '/admin/settings', label: 'Settings', icon: Settings },
 ];

@@ -18,7 +18,8 @@
     "deploy:setup": "tsx scripts/deploy-setup.ts",
     "deploy:seed": "tsx scripts/deploy-seed.ts",
     "test": "jest",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "test:external-import": "tsx scripts/test-external-import.ts"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.4",

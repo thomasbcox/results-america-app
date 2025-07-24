@@ -1,6 +1,9 @@
 import { getDataPointsForStatistic, getDataPointsForState } from './dataPointsService';
 import { getAllStates } from './statesService';
 import { getAllStatisticsWithSources } from './statisticsService';
+import { db } from '../db/index';
+import { nationalAverages, statistics } from '../db/schema';
+import { eq, and } from 'drizzle-orm';
 
 export interface ChartData {
   labels: string[];
@@ -21,6 +24,96 @@ export interface ComparisonData {
   median: number;
 }
 
+export class NationalAverageService {
+  /**
+   * Get national average for a statistic and year, using stored value if available
+   */
+  static async getNationalAverage(statisticId: number, year: number): Promise<number> {
+    // First, try to get stored value
+    const stored = await this.getStoredNationalAverage(statisticId, year);
+    if (stored) return stored.value;
+    
+    // If not stored, compute and store
+    return await this.computeAndStoreNationalAverage(statisticId, year);
+  }
+  
+  /**
+   * Get stored national average from database
+   */
+  static async getStoredNationalAverage(statisticId: number, year: number): Promise<{ value: number; stateCount: number } | null> {
+    const [average] = await db.select({
+      value: nationalAverages.value,
+      stateCount: nationalAverages.stateCount
+    })
+    .from(nationalAverages)
+    .where(and(
+      eq(nationalAverages.statisticId, statisticId),
+      eq(nationalAverages.year, year)
+    ))
+    .limit(1);
+    
+    return average || null;
+  }
+  
+  /**
+   * Compute national average from data points and store it
+   */
+  static async computeAndStoreNationalAverage(statisticId: number, year: number): Promise<number> {
+    const dataPoints = await getDataPointsForStatistic(statisticId, year);
+    const values = dataPoints.map(dp => dp.value);
+    
+    if (values.length === 0) {
+      throw new Error(`No data points found for statistic ${statisticId} in year ${year}`);
+    }
+    
+    const average = values.reduce((sum, val) => sum + val, 0) / values.length;
+    
+    // Store for future use
+    await db.insert(nationalAverages).values({
+      statisticId,
+      year,
+      value: average,
+      stateCount: values.length,
+      calculationMethod: 'arithmetic_mean'
+    }).onConflictDoUpdate({
+      target: [nationalAverages.statisticId, nationalAverages.year],
+      set: {
+        value: average,
+        stateCount: values.length,
+        lastCalculated: new Date()
+      }
+    });
+    
+    return average;
+  }
+  
+  /**
+   * Recalculate and store national averages for all statistics in a given year
+   */
+  static async recalculateAllNationalAverages(year: number): Promise<void> {
+    const allStatistics = await getAllStatisticsWithSources();
+    
+    for (const stat of allStatistics) {
+      try {
+        await this.computeAndStoreNationalAverage(stat.id, year);
+      } catch (error) {
+        console.warn(`Failed to calculate national average for statistic ${stat.id} in year ${year}:`, error);
+      }
+    }
+  }
+  
+  /**
+   * Recalculate national averages when new data is imported
+   */
+  static async recalculateNationalAveragesForStatistic(statisticId: number, year: number): Promise<void> {
+    try {
+      await this.computeAndStoreNationalAverage(statisticId, year);
+    } catch (error) {
+      console.warn(`Failed to recalculate national average for statistic ${statisticId} in year ${year}:`, error);
+    }
+  }
+}
+
 export async function getStatisticComparison(statisticId: number, year: number = 2023): Promise<ComparisonData> {
   const dataPoints = await getDataPointsForStatistic(statisticId, year);
   
@@ -28,7 +121,9 @@ export async function getStatisticComparison(statisticId: number, year: number =
   const states = dataPoints.map(dp => dp.stateName).filter((name): name is string => name !== null);
   
   const sortedValues = [...values].sort((a, b) => a - b);
-  const average = values.reduce((sum, val) => sum + val, 0) / values.length;
+  
+  // Use the new national average service
+  const average = await NationalAverageService.getNationalAverage(statisticId, year);
   const min = Math.min(...values);
   const max = Math.max(...values);
   const median = sortedValues[Math.floor(sortedValues.length / 2)];
