@@ -7,23 +7,11 @@ describe('POST /api/admin/bootstrap', () => {
   let testDb: any;
 
   beforeEach(async () => {
-    // Setup test database with proper dependency order
-    const testDatabase = createTestDatabase();
-    testDb = testDatabase.db;
-    
-    // Clear any existing data in reverse dependency order
-    await testDatabase.clearAllData();
-    
-    // Populate foundation data in dependency order
-    await testDatabase.populateFoundationData();
+    testDb = await createTestDatabase();
   });
 
   afterEach(async () => {
-    // Clean up in reverse dependency order
-    if (testDb) {
-      const testDatabase = createTestDatabase();
-      await testDatabase.clearAllData();
-    }
+    await testDb.cleanup();
   });
 
   it('should create admin user successfully', async () => {
