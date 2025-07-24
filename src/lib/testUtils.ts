@@ -1,4 +1,5 @@
 import { createTestDb } from './db/testDb';
+import bcrypt from 'bcryptjs';
 import { 
   users, 
   sessions, 
@@ -86,7 +87,6 @@ export function createTestDatabase(): TestDatabase {
     ]).onConflictDoNothing();
 
     // Create test users
-    const bcrypt = require('bcryptjs');
     const hashedPassword = await bcrypt.hash('password123', 10);
     
     await db.insert(users).values([
@@ -171,7 +171,6 @@ export const createTestAdminData = (overrides: Record<string, any> = {}) => ({
 
 // Helper to create a test user in the database (after foundation data exists)
 export async function createTestUser(db: any, userData: any) {
-  const bcrypt = require('bcryptjs');
   const hashedPassword = await bcrypt.hash(userData.password, 10);
   
   const [user] = await db.insert(users).values({
