@@ -56,7 +56,12 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    if (error instanceof Error && error.message.includes('unique')) {
+    // Handle SQLite unique constraint errors
+    if (error instanceof Error && (
+      error.message.includes('unique') || 
+      error.message.includes('SQLITE_CONSTRAINT_UNIQUE') ||
+      error.message.includes('UNIQUE constraint failed')
+    )) {
       return NextResponse.json(
         { error: 'User with this email already exists' },
         { status: 409 }

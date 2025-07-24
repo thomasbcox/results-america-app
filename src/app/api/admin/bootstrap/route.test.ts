@@ -22,13 +22,14 @@ describe('POST /api/admin/bootstrap', () => {
   });
 
   it('should create admin user successfully', async () => {
+    const uniqueEmail = `admin-${Date.now()}-${Math.random().toString(36).substr(2, 9)}@example.com`;
     const request = new NextRequest('http://localhost:3000/api/admin/bootstrap', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        email: 'admin@example.com',
+        email: uniqueEmail,
         name: 'Admin User',
         password: 'admin123',
       }),
@@ -39,7 +40,7 @@ describe('POST /api/admin/bootstrap', () => {
 
     expect(response.status).toBe(201);
     expect(data.user).toBeDefined();
-    expect(data.user.email).toBe('admin@example.com');
+    expect(data.user.email).toBe(uniqueEmail);
     expect(data.user.name).toBe('Admin User');
     expect(data.user.role).toBe('admin');
     expect(data.message).toBe('Admin user created successfully');
