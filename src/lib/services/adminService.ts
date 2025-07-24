@@ -152,4 +152,45 @@ export async function cleanupOrphanedData(): Promise<{ cleaned: number; errors: 
   return { cleaned, errors };
 }
 
+export async function getAnalyticsData(range: string = '24h') {
+  // For now, return mock analytics data
+  // In a real implementation, you would track requests in a separate table
+  const now = new Date();
+  const mockData = {
+    totalRequests: 15420,
+    requestsToday: 1247,
+    requestsThisWeek: 8923,
+    requestsThisMonth: 15420,
+    averageResponseTime: 245.6,
+    cacheHitRate: 78.3,
+    topEndpoints: [
+      { endpoint: '/api/states', requests: 3420, avgResponseTime: 156.2 },
+      { endpoint: '/api/categories', requests: 2890, avgResponseTime: 134.8 },
+      { endpoint: '/api/statistics', requests: 2156, avgResponseTime: 198.4 },
+      { endpoint: '/api/data-points', requests: 1890, avgResponseTime: 312.7 },
+      { endpoint: '/api/aggregation', requests: 1567, avgResponseTime: 445.2 }
+    ],
+    topStates: [
+      { state: 'California', requests: 2340 },
+      { state: 'Texas', requests: 1890 },
+      { state: 'New York', requests: 1670 },
+      { state: 'Florida', requests: 1450 },
+      { state: 'Illinois', requests: 1230 }
+    ],
+    topCategories: [
+      { category: 'Economy', requests: 4560 },
+      { category: 'Education', requests: 3890 },
+      { category: 'Health', requests: 3120 },
+      { category: 'Public Safety', requests: 2340 },
+      { category: 'Government', requests: 1890 }
+    ],
+    hourlyRequests: Array.from({ length: 24 }, (_, i) => ({
+      hour: i,
+      requests: Math.floor(Math.random() * 100) + 20
+    }))
+  };
+
+  return mockData;
+}
+
  

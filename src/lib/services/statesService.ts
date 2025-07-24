@@ -23,13 +23,20 @@ export async function getAllStates(database = db, useCache = true) {
     }
   }
 
-  const result = await database.select().from(states).orderBy(states.name);
-  
-  if (useCache) {
-    cache.set('states', result);
+  try {
+    console.log('🔍 Fetching states from database...');
+    const result = await database.select().from(states).orderBy(states.name);
+    console.log(`✅ Found ${result.length} states in database`);
+    
+    if (useCache) {
+      cache.set('states', result);
+    }
+    
+    return result;
+  } catch (error) {
+    console.error('❌ Error fetching states from database:', error);
+    throw new Error(`Failed to fetch states: ${error}`);
   }
-  
-  return result;
 }
 
 export async function getStatesWithPagination(

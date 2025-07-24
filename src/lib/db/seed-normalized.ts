@@ -1,6 +1,6 @@
 import { db } from './index';
 import { states, categories, dataSources, statistics, importSessions, dataPoints } from './schema';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 
 export async function seedDatabaseNormalized() {
   console.log('🌱 Seeding normalized database...');
@@ -59,10 +59,16 @@ export async function seedDatabaseNormalized() {
     { name: 'Wyoming', abbreviation: 'WY' },
   ];
 
-  console.log('📍 Inserting states...');
+  console.log('📍 Checking and inserting states...');
+  let statesInserted = 0;
   for (const state of stateData) {
-    await db.insert(states).values(state);
+    const existingState = await db.select().from(states).where(eq(states.abbreviation, state.abbreviation)).limit(1);
+    if (existingState.length === 0) {
+      await db.insert(states).values(state);
+      statesInserted++;
+    }
   }
+  console.log(`   ${statesInserted} new states inserted`);
 
   // Insert categories (matching the actual data source)
   const categoryData = [
@@ -75,10 +81,16 @@ export async function seedDatabaseNormalized() {
     { name: 'Government', description: 'Government efficiency and transparency', icon: 'Landmark', sortOrder: 7 },
   ];
 
-  console.log('📊 Inserting categories...');
+  console.log('📊 Checking and inserting categories...');
+  let categoriesInserted = 0;
   for (const category of categoryData) {
-    await db.insert(categories).values(category);
+    const existingCategory = await db.select().from(categories).where(eq(categories.name, category.name)).limit(1);
+    if (existingCategory.length === 0) {
+      await db.insert(categories).values(category);
+      categoriesInserted++;
+    }
   }
+  console.log(`   ${categoriesInserted} new categories inserted`);
 
   // ✅ NORMALIZED: Insert data sources
   const dataSourceData = [
@@ -111,10 +123,16 @@ export async function seedDatabaseNormalized() {
     { name: 'ITEP', description: 'Institute on Taxation and Economic Policy', url: 'https://itep.org' },
   ];
 
-  console.log('🔗 Inserting data sources...');
+  console.log('🔗 Checking and inserting data sources...');
+  let dataSourcesInserted = 0;
   for (const source of dataSourceData) {
-    await db.insert(dataSources).values(source);
+    const existingSource = await db.select().from(dataSources).where(eq(dataSources.name, source.name)).limit(1);
+    if (existingSource.length === 0) {
+      await db.insert(dataSources).values(source);
+      dataSourcesInserted++;
+    }
   }
+  console.log(`   ${dataSourcesInserted} new data sources inserted`);
 
   // Get category and source IDs for statistics
   const educationCategory = await db.select().from(categories).where(eq(categories.name, 'Education')).limit(1);
@@ -721,10 +739,16 @@ export async function seedDatabaseNormalized() {
     },
   ];
 
-  console.log('📈 Inserting statistics...');
+  console.log('📈 Checking and inserting statistics...');
+  let statisticsInserted = 0;
   for (const stat of statisticData) {
-    await db.insert(statistics).values(stat);
+    const existingStat = await db.select().from(statistics).where(eq(statistics.raNumber, stat.raNumber)).limit(1);
+    if (existingStat.length === 0) {
+      await db.insert(statistics).values(stat);
+      statisticsInserted++;
+    }
   }
+  console.log(`   ${statisticsInserted} new statistics inserted`);
 
   // ✅ NORMALIZED: Create import session
   const importSession = await db.insert(importSessions).values({
@@ -740,190 +764,208 @@ export async function seedDatabaseNormalized() {
   const allStatistics = await db.select().from(statistics);
 
   // Generate sample data points for 2023 (all 50 states)
-  console.log('📊 Inserting data points...');
+  console.log('📊 Checking and inserting data points...');
+  let dataPointsInserted = 0;
   for (const state of allStates) {
     for (const stat of allStatistics) {
-      // Generate realistic sample data based on statistic type
-      let value: number;
-      
-      switch (stat.name) {
-        // Education
-        case 'HS Graduation Rate':
-          value = 85 + Math.random() * 10; // 85-95%
-          break;
-        case '2-Year Degree Graduation Rate':
-          value = 30 + Math.random() * 20; // 30-50%
-          break;
-        case '4-Year Degree Graduation Rate':
-          value = 50 + Math.random() * 20; // 50-70%
-          break;
-        case 'Professional/Advanced Degrees':
-          value = 10 + Math.random() * 10; // 10-20%
-          break;
-        case 'SAT/ACT Mean':
-          value = 20 + Math.random() * 6; // 20-26
-          break;
-        case 'K-8 Testing':
-          value = 200 + Math.random() * 50; // 200-250 scale score
-          break;
-        
-        // Economy
-        case 'Unemployment Rate':
-          value = 3 + Math.random() * 4; // 3-7%
-          break;
-        case 'Household Income':
-          value = 50000 + Math.random() * 50000; // $50k-$100k
-          break;
-        case 'Real GDP':
-          value = 100000 + Math.random() * 900000; // $100k-$1M
-          break;
-        case 'Rate of Poverty':
-          value = 8 + Math.random() * 12; // 8-20%
-          break;
-        case 'Net Job Growth':
-          value = -50000 + Math.random() * 100000; // -50k to +50k
-          break;
-        case 'Economic Diversity':
-          value = 0.3 + Math.random() * 0.4; // 0.3-0.7 index
-          break;
-        case 'Business Competitiveness Index':
-          value = 50 + Math.random() * 50; // 50-100 index
-          break;
-        case 'Income Inequality':
-          value = 0.3 + Math.random() * 0.2; // 0.3-0.5 Gini
-          break;
-        case 'New Firms':
-          value = 1000 + Math.random() * 9000; // 1k-10k
-          break;
-        case 'Venture Capital Investment':
-          value = 1000000 + Math.random() * 9000000; // $1M-$10M
-          break;
-        
-        // Public Safety
-        case 'Violent Crimes':
-          value = 2 + Math.random() * 6; // 2-8 per 1,000
-          break;
-        case 'Property Crimes':
-          value = 15 + Math.random() * 25; // 15-40 per 1,000
-          break;
-        case 'Recidivism Rate':
-          value = 30 + Math.random() * 30; // 30-60%
-          break;
-        case 'Rate of Incarceration':
-          value = 200 + Math.random() * 400; // 200-600 per 100k
-          break;
-        case 'Cost of Corrections System':
-          value = 100 + Math.random() * 200; // $100-$300 per capita
-          break;
-        case 'Traffic Fatalities':
-          value = 0.8 + Math.random() * 1.2; // 0.8-2.0 per 100M miles
-          break;
-        case 'Child Maltreatment':
-          value = 5 + Math.random() * 15; // 5-20 per capita
-          break;
-        
-        // Health
-        case 'Uninsured':
-          value = 5 + Math.random() * 15; // 5-20%
-          break;
-        case 'Cost of Healthcare':
-          value = 8000 + Math.random() * 4000; // $8k-$12k per capita
-          break;
-        case 'Rate of Obesity':
-          value = 20 + Math.random() * 15; // 20-35%
-          break;
-        case 'Quality of Health':
-          value = 50 + Math.random() * 50; // 50-100 index
-          break;
-        case 'Infant Mortality Rate':
-          value = 4 + Math.random() * 4; // 4-8 per 1,000
-          break;
-        case 'Smokers':
-          value = 10 + Math.random() * 10; // 10-20%
-          break;
-        case 'Workplace Injuries':
-          value = 2 + Math.random() * 3; // 2-5 per 100
-          break;
-        case 'Quality of Life / Happiness Index':
-          value = 60 + Math.random() * 40; // 60-100 index
-          break;
-        case 'Food Insecurity':
-          value = 8 + Math.random() * 12; // 8-20%
-          break;
-        
-        // Environment
-        case 'Renewable Energy':
-          value = 10 + Math.random() * 30; // 10-40%
-          break;
-        case 'Carbon Dioxide Emissions':
-          value = 50 + Math.random() * 150; // 50-200 MMT
-          break;
-        case 'Water Quality Index':
-          value = 60 + Math.random() * 40; // 60-100 index
-          break;
-        case 'Air Quality':
-          value = 30 + Math.random() * 40; // 30-70 AQI
-          break;
-        
-        // Infrastructure
-        case 'Infrastructure Index':
-          value = 50 + Math.random() * 50; // 50-100 index
-          break;
-        
-        // Government
-        case 'State Debt':
-          value = 5 + Math.random() * 15; // 5-20% of GDP
-          break;
-        case 'Citizen Tax Burden':
-          value = 2000 + Math.random() * 3000; // $2k-$5k per capita
-          break;
-        case 'Unfunded Pension Liabilities':
-          value = 20 + Math.random() * 40; // 20-60%
-          break;
-        case 'Federal Dependency':
-          value = 20 + Math.random() * 30; // 20-50%
-          break;
-        case 'Credit Rating':
-          value = 70 + Math.random() * 30; // 70-100 rating
-          break;
-        case 'State Employees':
-          value = 2 + Math.random() * 3; // 2-5% of population
-          break;
-        case 'Financial Records Online':
-          value = Math.random() > 0.5 ? 1 : 0; // Binary 0 or 1
-          break;
-        case 'Government Use of Technology':
-          value = 60 + Math.random() * 40; // 60-100 grade
-          break;
-        case 'Governor\'s Goals Online':
-          value = Math.random() > 0.5 ? 1 : 0; // Binary 0 or 1
-          break;
-        case 'Citizen Customer Satisfaction':
-          value = 60 + Math.random() * 40; // 60-100 score
-          break;
-        case 'Government Open Data':
-          value = 10 + Math.random() * 40; // 10-50 count
-          break;
-        case 'Government Spending as % of GDP':
-          value = 10 + Math.random() * 10; // 10-20%
-          break;
-        case 'Tax Inequality Index':
-          value = 0.3 + Math.random() * 0.4; // 0.3-0.7 index
-          break;
-        
-        default:
-          value = 50 + Math.random() * 50; // Generic 50-100
-      }
+      // Check if data point already exists for this state, statistic, and year
+      const existingDataPoint = await db.select()
+        .from(dataPoints)
+        .where(
+          and(
+            eq(dataPoints.stateId, state.id),
+            eq(dataPoints.statisticId, stat.id),
+            eq(dataPoints.year, 2023)
+          )
+        )
+        .limit(1);
 
-      await db.insert(dataPoints).values({
-        importSessionId: importSession[0].id,
-        year: 2023,
-        stateId: state.id,
-        statisticId: stat.id,
-        value: Math.round(value * 100) / 100, // Round to 2 decimal places
-      });
+      if (existingDataPoint.length === 0) {
+        // Generate realistic sample data based on statistic type
+        let value: number;
+        
+        switch (stat.name) {
+          // Education
+          case 'HS Graduation Rate':
+            value = 85 + Math.random() * 10; // 85-95%
+            break;
+          case '2-Year Degree Graduation Rate':
+            value = 30 + Math.random() * 20; // 30-50%
+            break;
+          case '4-Year Degree Graduation Rate':
+            value = 50 + Math.random() * 20; // 50-70%
+            break;
+          case 'Professional/Advanced Degrees':
+            value = 10 + Math.random() * 10; // 10-20%
+            break;
+          case 'SAT/ACT Mean':
+            value = 20 + Math.random() * 6; // 20-26
+            break;
+          case 'K-8 Testing':
+            value = 200 + Math.random() * 50; // 200-250 scale score
+            break;
+          
+          // Economy
+          case 'Unemployment Rate':
+            value = 3 + Math.random() * 4; // 3-7%
+            break;
+          case 'Household Income':
+            value = 50000 + Math.random() * 50000; // $50k-$100k
+            break;
+          case 'Real GDP':
+            value = 100000 + Math.random() * 900000; // $100k-$1M
+            break;
+          case 'Rate of Poverty':
+            value = 8 + Math.random() * 12; // 8-20%
+            break;
+          case 'Net Job Growth':
+            value = -50000 + Math.random() * 100000; // -50k to +50k
+            break;
+          case 'Economic Diversity':
+            value = 0.3 + Math.random() * 0.4; // 0.3-0.7 index
+            break;
+          case 'Business Competitiveness Index':
+            value = 50 + Math.random() * 50; // 50-100 index
+            break;
+          case 'Income Inequality':
+            value = 0.3 + Math.random() * 0.2; // 0.3-0.5 Gini
+            break;
+          case 'New Firms':
+            value = 1000 + Math.random() * 9000; // 1k-10k
+            break;
+          case 'Venture Capital Investment':
+            value = 1000000 + Math.random() * 9000000; // $1M-$10M
+            break;
+          
+          // Public Safety
+          case 'Violent Crimes':
+            value = 2 + Math.random() * 6; // 2-8 per 1,000
+            break;
+          case 'Property Crimes':
+            value = 15 + Math.random() * 25; // 15-40 per 1,000
+            break;
+          case 'Recidivism Rate':
+            value = 30 + Math.random() * 30; // 30-60%
+            break;
+          case 'Rate of Incarceration':
+            value = 200 + Math.random() * 400; // 200-600 per 100k
+            break;
+          case 'Cost of Corrections System':
+            value = 100 + Math.random() * 200; // $100-$300 per capita
+            break;
+          case 'Traffic Fatalities':
+            value = 0.8 + Math.random() * 1.2; // 0.8-2.0 per 100M miles
+            break;
+          case 'Child Maltreatment':
+            value = 5 + Math.random() * 15; // 5-20 per capita
+            break;
+          
+          // Health
+          case 'Uninsured':
+            value = 5 + Math.random() * 15; // 5-20%
+            break;
+          case 'Cost of Healthcare':
+            value = 8000 + Math.random() * 4000; // $8k-$12k per capita
+            break;
+          case 'Rate of Obesity':
+            value = 20 + Math.random() * 15; // 20-35%
+            break;
+          case 'Quality of Health':
+            value = 50 + Math.random() * 50; // 50-100 index
+            break;
+          case 'Infant Mortality Rate':
+            value = 4 + Math.random() * 4; // 4-8 per 1,000
+            break;
+          case 'Smokers':
+            value = 10 + Math.random() * 10; // 10-20%
+            break;
+          case 'Workplace Injuries':
+            value = 2 + Math.random() * 3; // 2-5 per 100
+            break;
+          case 'Quality of Life / Happiness Index':
+            value = 60 + Math.random() * 40; // 60-100 index
+            break;
+          case 'Food Insecurity':
+            value = 8 + Math.random() * 12; // 8-20%
+            break;
+          
+          // Environment
+          case 'Renewable Energy':
+            value = 10 + Math.random() * 30; // 10-40%
+            break;
+          case 'Carbon Dioxide Emissions':
+            value = 50 + Math.random() * 150; // 50-200 MMT
+            break;
+          case 'Water Quality Index':
+            value = 60 + Math.random() * 40; // 60-100 index
+            break;
+          case 'Air Quality':
+            value = 30 + Math.random() * 40; // 30-70 AQI
+            break;
+          
+          // Infrastructure
+          case 'Infrastructure Index':
+            value = 50 + Math.random() * 50; // 50-100 index
+            break;
+          
+          // Government
+          case 'State Debt':
+            value = 5 + Math.random() * 15; // 5-20% of GDP
+            break;
+          case 'Citizen Tax Burden':
+            value = 2000 + Math.random() * 3000; // $2k-$5k per capita
+            break;
+          case 'Unfunded Pension Liabilities':
+            value = 20 + Math.random() * 40; // 20-60%
+            break;
+          case 'Federal Dependency':
+            value = 20 + Math.random() * 30; // 20-50%
+            break;
+          case 'Credit Rating':
+            value = 70 + Math.random() * 30; // 70-100 rating
+            break;
+          case 'State Employees':
+            value = 2 + Math.random() * 3; // 2-5% of population
+            break;
+          case 'Financial Records Online':
+            value = Math.random() > 0.5 ? 1 : 0; // Binary 0 or 1
+            break;
+          case 'Government Use of Technology':
+            value = 60 + Math.random() * 40; // 60-100 grade
+            break;
+          case 'Governor\'s Goals Online':
+            value = Math.random() > 0.5 ? 1 : 0; // Binary 0 or 1
+            break;
+          case 'Citizen Customer Satisfaction':
+            value = 60 + Math.random() * 40; // 60-100 score
+            break;
+          case 'Government Open Data':
+            value = 10 + Math.random() * 40; // 10-50 count
+            break;
+          case 'Government Spending as % of GDP':
+            value = 10 + Math.random() * 10; // 10-20%
+            break;
+          case 'Tax Inequality Index':
+            value = 0.3 + Math.random() * 0.4; // 0.3-0.7 index
+            break;
+          
+          default:
+            value = 50 + Math.random() * 50; // Generic 50-100
+        }
+
+        await db.insert(dataPoints).values({
+          importSessionId: importSession[0].id,
+          year: 2023,
+          stateId: state.id,
+          statisticId: stat.id,
+          value: Math.round(value * 100) / 100, // Round to 2 decimal places
+        });
+        dataPointsInserted++;
+      }
     }
   }
+  console.log(`   ${dataPointsInserted} new data points inserted`);
 
   console.log('✅ Normalized database seeded successfully!');
+  console.log(`📊 Summary: ${statesInserted} states, ${categoriesInserted} categories, ${dataSourcesInserted} sources, ${statisticsInserted} statistics, ${dataPointsInserted} data points`);
 } 

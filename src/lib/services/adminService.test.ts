@@ -1,11 +1,23 @@
 import { createTestDb } from '../db/testDb';
 import * as adminService from './adminService';
 import { createDataSource, createCategory, createState, createStatistic, clearAllTestData } from './testUtils';
+import { AuthService } from './authService';
+import bcrypt from 'bcryptjs';
+
+// Mock bcrypt
+jest.mock('bcryptjs', () => ({
+  default: {
+    hash: jest.fn(),
+    compare: jest.fn(),
+  },
+}));
 
 let db;
 
 beforeEach(async () => {
   db = createTestDb();
+      // Reset mocks
+    jest.clearAllMocks();
 });
 
 afterEach(async () => {
@@ -71,5 +83,48 @@ describe('adminService', () => {
     expect(result).toHaveProperty('errors');
     expect(Array.isArray(result.errors)).toBe(true);
     expect(typeof result.cleaned).toBe('number');
+  });
+
+  describe('User Management Integration', () => {
+    it('should include user statistics in system stats', async () => {
+      const mockHash = 'hashed-password-123';
+      (bcrypt.hash as any).mockResolvedValue(mockHash);
+
+      // Create some users
+      await AuthService.bootstrapAdminUser('admin@example.com', 'Admin', 'password123');
+      await AuthService.createUser({
+        email: 'user1@example.com',
+        name: 'User 1',
+        password: 'password123',
+      });
+      await AuthService.createUser({
+        email: 'user2@example.com',
+        name: 'User 2',
+        password: 'password123',
+      });
+
+      const stats = await adminService.getSystemStats();
+
+      expect(stats).toHaveProperty('totalUsers');
+      expect(stats).toHaveProperty('activeUsers');
+      expect(stats).toHaveProperty('adminUsers');
+      expect(stats.totalUsers).toBeGreaterThanOrEqual(3);
+      expect(stats.adminUsers).toBeGreaterThanOrEqual(1);
+    });
+
+    it('should handle user management in admin operations', async () => {
+      const mockHash = 'hashed-password-123';
+      (bcrypt.hash as any).mockResolvedValue(mockHash);
+
+      // Create admin user
+      await AuthService.bootstrapAdminUser('admin@example.com', 'Admin', 'password123');
+
+      // Test that admin operations work with user system
+      const stats = await adminService.getSystemStats();
+      expect(stats.adminUsers).toBeGreaterThan(0);
+
+      const integrity = await adminService.checkDataIntegrity();
+      expect(integrity).toBeDefined();
+    });
   });
 }); 

@@ -15,6 +15,13 @@
       "when": 1753160884592,
       "tag": "0001_colossal_retro_girl",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1753309959552,
+      "tag": "0002_cultured_boomer",
+      "breakpoints": true
     }
   ]
 }

@@ -1,33 +1,57 @@
 import { NextResponse } from 'next/server';
 import { clearCache, rebuildCache } from '@/lib/services/adminService';
 
-export async function DELETE() {
+export async function POST() {
   try {
+    console.log('🔄 Starting cache rebuild from admin API...');
+    
+    // Clear existing cache
     await clearCache();
-    return NextResponse.json({ 
-      message: 'Cache cleared successfully',
+    console.log('🗑️ Cache cleared');
+    
+    // Rebuild cache
+    await rebuildCache();
+    console.log('✅ Cache rebuilt successfully');
+    
+    return NextResponse.json({
+      success: true,
+      message: 'Cache rebuilt successfully',
       timestamp: new Date().toISOString()
     });
   } catch (error) {
-    console.error('Error clearing cache:', error);
+    console.error('❌ Error rebuilding cache from admin API:', error);
     return NextResponse.json(
-      { error: 'Failed to clear cache' },
+      { 
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error occurred during cache rebuild',
+        timestamp: new Date().toISOString()
+      },
       { status: 500 }
     );
   }
 }
 
-export async function POST() {
+export async function DELETE() {
   try {
-    await rebuildCache();
-    return NextResponse.json({ 
-      message: 'Cache rebuilt successfully',
+    console.log('🗑️ Clearing cache from admin API...');
+    
+    await clearCache();
+    
+    console.log('✅ Cache cleared successfully');
+    
+    return NextResponse.json({
+      success: true,
+      message: 'Cache cleared successfully',
       timestamp: new Date().toISOString()
     });
   } catch (error) {
-    console.error('Error rebuilding cache:', error);
+    console.error('❌ Error clearing cache from admin API:', error);
     return NextResponse.json(
-      { error: 'Failed to rebuild cache' },
+      { 
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error occurred while clearing cache',
+        timestamp: new Date().toISOString()
+      },
       { status: 500 }
     );
   }
