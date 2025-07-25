@@ -1,166 +1,74 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { AuthService } from '@/lib/services/authService';
+import { withAdminAuth, withErrorHandling, createSuccessResponse, createNotFoundResponse, createNoContentResponse } from '@/lib/response';
 
 // Get specific user (admin only)
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
-    const sessionToken = request.cookies.get('session_token')?.value;
+async function handleGetUser(authContext: any, request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const userId = parseInt(id);
+  
+  const targetUser = await AuthService.getUserById(userId);
 
-    if (!sessionToken) {
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      );
-    }
-
-    const user = await AuthService.validateSession(sessionToken);
-
-    if (!user || user.role !== 'admin') {
-      return NextResponse.json(
-        { error: 'Admin access required' },
-        { status: 403 }
-      );
-    }
-
-    const userId = parseInt(id);
-    const targetUser = await AuthService.getUserById(userId);
-
-    if (!targetUser) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json({
-      user: {
-        id: targetUser.id,
-        email: targetUser.email,
-        name: targetUser.name,
-        role: targetUser.role,
-        isActive: targetUser.isActive,
-        emailVerified: targetUser.emailVerified,
-        lastLoginAt: targetUser.lastLoginAt,
-        createdAt: targetUser.createdAt,
-        updatedAt: targetUser.updatedAt,
-      }
-    });
-  } catch (error) {
-    console.error('Get user error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+  if (!targetUser) {
+    throw new Error('User not found');
   }
+
+  return createSuccessResponse({
+    user: {
+      id: targetUser.id,
+      email: targetUser.email,
+      name: targetUser.name,
+      role: targetUser.role,
+      isActive: targetUser.isActive,
+      emailVerified: targetUser.emailVerified,
+      lastLoginAt: targetUser.lastLoginAt,
+      createdAt: targetUser.createdAt,
+      updatedAt: targetUser.updatedAt,
+    }
+  });
 }
 
 // Update user (admin only)
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
-    const sessionToken = request.cookies.get('session_token')?.value;
+async function handleUpdateUser(authContext: any, request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const userId = parseInt(id);
+  const updates = await request.json();
 
-    if (!sessionToken) {
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      );
-    }
+  const updatedUser = await AuthService.updateUser(userId, updates);
 
-    const user = await AuthService.validateSession(sessionToken);
-
-    if (!user || user.role !== 'admin') {
-      return NextResponse.json(
-        { error: 'Admin access required' },
-        { status: 403 }
-      );
-    }
-
-    const userId = parseInt(id);
-    const updates = await request.json();
-
-    const updatedUser = await AuthService.updateUser(userId, updates);
-
-    if (!updatedUser) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json({
-      user: {
-        id: updatedUser.id,
-        email: updatedUser.email,
-        name: updatedUser.name,
-        role: updatedUser.role,
-        isActive: updatedUser.isActive,
-        emailVerified: updatedUser.emailVerified,
-        lastLoginAt: updatedUser.lastLoginAt,
-        createdAt: updatedUser.createdAt,
-        updatedAt: updatedUser.updatedAt,
-      },
-      message: 'User updated successfully'
-    });
-  } catch (error) {
-    console.error('Update user error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+  if (!updatedUser) {
+    throw new Error('User not found');
   }
+
+  return createSuccessResponse({
+    user: {
+      id: updatedUser.id,
+      email: updatedUser.email,
+      name: updatedUser.name,
+      role: updatedUser.role,
+      isActive: updatedUser.isActive,
+      emailVerified: updatedUser.emailVerified,
+      lastLoginAt: updatedUser.lastLoginAt,
+      createdAt: updatedUser.createdAt,
+      updatedAt: updatedUser.updatedAt,
+    }
+  }, 'User updated successfully');
 }
 
 // Delete user (admin only)
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
-    const sessionToken = request.cookies.get('session_token')?.value;
+async function handleDeleteUser(authContext: any, request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const userId = parseInt(id);
+  
+  const success = await AuthService.deleteUser(userId);
 
-    if (!sessionToken) {
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      );
-    }
-
-    const user = await AuthService.validateSession(sessionToken);
-
-    if (!user || user.role !== 'admin') {
-      return NextResponse.json(
-        { error: 'Admin access required' },
-        { status: 403 }
-      );
-    }
-
-    const userId = parseInt(id);
-    const success = await AuthService.deleteUser(userId);
-
-    if (!success) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json({
-      message: 'User deleted successfully'
-    });
-  } catch (error) {
-    console.error('Delete user error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+  if (!success) {
+    throw new Error('User not found');
   }
-} 
+
+  return createSuccessResponse(null, 'User deleted successfully');
+}
+
+export const GET = withErrorHandling(withAdminAuth(handleGetUser));
+export const PUT = withErrorHandling(withAdminAuth(handleUpdateUser));
+export const DELETE = withErrorHandling(withAdminAuth(handleDeleteUser)); 
