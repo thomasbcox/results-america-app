@@ -1,145 +1,243 @@
-// Custom error types
-export class AppError extends Error {
+// Enhanced Error Handling System
+// Provides consistent error patterns across all services
+
+export class ServiceError extends Error {
+  public code: string;
+  public statusCode: number;
+  public details?: any;
+  public isOperational: boolean;
+
   constructor(
     message: string,
-    public statusCode: number = 500,
-    public code?: string
+    code: string,
+    statusCode: number = 400,
+    details?: any,
+    isOperational: boolean = true
   ) {
     super(message);
-    this.name = 'AppError';
+    this.name = 'ServiceError';
+    this.code = code;
+    this.statusCode = statusCode;
+    this.details = details;
+    this.isOperational = isOperational;
+  }
+
+  static isServiceError(error: any): error is ServiceError {
+    return error instanceof ServiceError;
   }
 }
 
-export class ValidationError extends AppError {
-  constructor(message: string, public details?: unknown) {
-    super(message, 400, 'VALIDATION_ERROR');
-    this.name = 'ValidationError';
+// Authentication Errors
+export class AuthenticationError extends ServiceError {
+  constructor(message: string = 'Authentication required', details?: any) {
+    super(message, 'AUTHENTICATION_REQUIRED', 401, details);
   }
 }
 
-export class AuthenticationError extends AppError {
-  constructor(message: string = 'Authentication required') {
-    super(message, 401, 'AUTHENTICATION_ERROR');
-    this.name = 'AuthenticationError';
+export class AuthorizationError extends ServiceError {
+  constructor(message: string = 'Access denied', details?: any) {
+    super(message, 'ACCESS_DENIED', 403, details);
   }
 }
 
-export class AuthorizationError extends AppError {
-  constructor(message: string = 'Insufficient permissions') {
-    super(message, 403, 'AUTHORIZATION_ERROR');
-    this.name = 'AuthorizationError';
+export class InvalidCredentialsError extends ServiceError {
+  constructor(message: string = 'Invalid email or password', details?: any) {
+    super(message, 'INVALID_CREDENTIALS', 401, details);
   }
 }
 
-export class NotFoundError extends AppError {
-  constructor(resource: string) {
-    super(`${resource} not found`, 404, 'NOT_FOUND');
-    this.name = 'NotFoundError';
+export class SessionExpiredError extends ServiceError {
+  constructor(message: string = 'Session expired', details?: any) {
+    super(message, 'SESSION_EXPIRED', 401, details);
   }
 }
 
-export class ConflictError extends AppError {
-  constructor(message: string) {
-    super(message, 409, 'CONFLICT');
-    this.name = 'ConflictError';
+// User Management Errors
+export class UserNotFoundError extends ServiceError {
+  constructor(message: string = 'User not found', details?: any) {
+    super(message, 'USER_NOT_FOUND', 404, details);
   }
 }
 
-export class DatabaseError extends AppError {
-  constructor(message: string, public originalError?: unknown) {
-    super(message, 500, 'DATABASE_ERROR');
-    this.name = 'DatabaseError';
+export class UserAlreadyExistsError extends ServiceError {
+  constructor(message: string = 'User already exists', details?: any) {
+    super(message, 'USER_ALREADY_EXISTS', 409, details);
   }
 }
 
-// Error response interface
+export class InvalidUserRoleError extends ServiceError {
+  constructor(message: string = 'Invalid user role', details?: any) {
+    super(message, 'INVALID_USER_ROLE', 400, details);
+  }
+}
+
+// Password Reset Errors
+export class InvalidResetTokenError extends ServiceError {
+  constructor(message: string = 'Invalid or expired reset token', details?: any) {
+    super(message, 'INVALID_RESET_TOKEN', 400, details);
+  }
+}
+
+export class PasswordResetTokenExpiredError extends ServiceError {
+  constructor(message: string = 'Password reset token expired', details?: any) {
+    super(message, 'RESET_TOKEN_EXPIRED', 400, details);
+  }
+}
+
+export class WeakPasswordError extends ServiceError {
+  constructor(message: string = 'Password is too weak', details?: any) {
+    super(message, 'WEAK_PASSWORD', 400, details);
+  }
+}
+
+// Magic Link Errors
+export class InvalidMagicLinkError extends ServiceError {
+  constructor(message: string = 'Invalid magic link', details?: any) {
+    super(message, 'INVALID_MAGIC_LINK', 400, details);
+  }
+}
+
+export class MagicLinkExpiredError extends ServiceError {
+  constructor(message: string = 'Magic link expired', details?: any) {
+    super(message, 'MAGIC_LINK_EXPIRED', 400, details);
+  }
+}
+
+export class MagicLinkAlreadyUsedError extends ServiceError {
+  constructor(message: string = 'Magic link already used', details?: any) {
+    super(message, 'MAGIC_LINK_ALREADY_USED', 400, details);
+  }
+}
+
+// Validation Errors
+export class ValidationError extends ServiceError {
+  constructor(message: string = 'Validation failed', details?: any) {
+    super(message, 'VALIDATION_ERROR', 400, details);
+  }
+}
+
+export class RequiredFieldError extends ServiceError {
+  constructor(field: string, details?: any) {
+    super(`${field} is required`, 'REQUIRED_FIELD', 400, details);
+  }
+}
+
+export class InvalidEmailError extends ServiceError {
+  constructor(message: string = 'Invalid email format', details?: any) {
+    super(message, 'INVALID_EMAIL', 400, details);
+  }
+}
+
+// Database Errors
+export class DatabaseError extends ServiceError {
+  constructor(message: string = 'Database operation failed', details?: any) {
+    super(message, 'DATABASE_ERROR', 500, details, false);
+  }
+}
+
+export class ConstraintViolationError extends ServiceError {
+  constructor(message: string = 'Database constraint violation', details?: any) {
+    super(message, 'CONSTRAINT_VIOLATION', 400, details);
+  }
+}
+
+// External Service Errors
+export class ExternalServiceError extends ServiceError {
+  constructor(message: string = 'External service error', details?: any) {
+    super(message, 'EXTERNAL_SERVICE_ERROR', 502, details, false);
+  }
+}
+
+export class EmailServiceError extends ServiceError {
+  constructor(message: string = 'Email service error', details?: any) {
+    super(message, 'EMAIL_SERVICE_ERROR', 502, details, false);
+  }
+}
+
+// Rate Limiting Errors
+export class RateLimitError extends ServiceError {
+  constructor(message: string = 'Rate limit exceeded', details?: any) {
+    super(message, 'RATE_LIMIT_EXCEEDED', 429, details);
+  }
+}
+
+// System Errors
+export class SystemError extends ServiceError {
+  constructor(message: string = 'System error', details?: any) {
+    super(message, 'SYSTEM_ERROR', 500, details, false);
+  }
+}
+
+export class ConfigurationError extends ServiceError {
+  constructor(message: string = 'Configuration error', details?: any) {
+    super(message, 'CONFIGURATION_ERROR', 500, details, false);
+  }
+}
+
+// Error Factory Functions
+export const createError = {
+  authentication: (message?: string, details?: any) => new AuthenticationError(message, details),
+  authorization: (message?: string, details?: any) => new AuthorizationError(message, details),
+  invalidCredentials: (message?: string, details?: any) => new InvalidCredentialsError(message, details),
+  sessionExpired: (message?: string, details?: any) => new SessionExpiredError(message, details),
+  userNotFound: (message?: string, details?: any) => new UserNotFoundError(message, details),
+  userAlreadyExists: (message?: string, details?: any) => new UserAlreadyExistsError(message, details),
+  invalidUserRole: (message?: string, details?: any) => new InvalidUserRoleError(message, details),
+  invalidResetToken: (message?: string, details?: any) => new InvalidResetTokenError(message, details),
+  passwordResetTokenExpired: (message?: string, details?: any) => new PasswordResetTokenExpiredError(message, details),
+  weakPassword: (message?: string, details?: any) => new WeakPasswordError(message, details),
+  invalidMagicLink: (message?: string, details?: any) => new InvalidMagicLinkError(message, details),
+  magicLinkExpired: (message?: string, details?: any) => new MagicLinkExpiredError(message, details),
+  magicLinkAlreadyUsed: (message?: string, details?: any) => new MagicLinkAlreadyUsedError(message, details),
+  validation: (message?: string, details?: any) => new ValidationError(message, details),
+  requiredField: (field: string, details?: any) => new RequiredFieldError(field, details),
+  invalidEmail: (message?: string, details?: any) => new InvalidEmailError(message, details),
+  database: (message?: string, details?: any) => new DatabaseError(message, details),
+  constraintViolation: (message?: string, details?: any) => new ConstraintViolationError(message, details),
+  externalService: (message?: string, details?: any) => new ExternalServiceError(message, details),
+  emailService: (message?: string, details?: any) => new EmailServiceError(message, details),
+  rateLimit: (message?: string, details?: any) => new RateLimitError(message, details),
+  system: (message?: string, details?: any) => new SystemError(message, details),
+  configuration: (message?: string, details?: any) => new ConfigurationError(message, details),
+};
+
+// Error Response Helper
 export interface ErrorResponse {
   error: string;
-  code?: string;
-  details?: unknown;
+  code: string;
+  statusCode: number;
+  details?: any;
   timestamp: string;
 }
 
-// Error handling utilities
-export function createErrorResponse(error: unknown): ErrorResponse {
-  const timestamp = new Date().toISOString();
-  
-  if (error instanceof AppError) {
-    return {
-      error: error.message,
-      code: error.code,
-      details: error instanceof ValidationError ? error.details : undefined,
-      timestamp,
-    };
-  }
-  
-  if (error instanceof Error) {
-    return {
-      error: error.message,
-      timestamp,
-    };
-  }
-  
-  return {
-    error: 'An unexpected error occurred',
-    timestamp,
+export const createErrorResponse = (error: ServiceError): ErrorResponse => ({
+  error: error.message,
+  code: error.code,
+  statusCode: error.statusCode,
+  details: error.details,
+  timestamp: new Date().toISOString(),
+});
+
+// Error Logging Helper
+export const logError = (error: Error, context?: any) => {
+  const errorInfo = {
+    name: error.name,
+    message: error.message,
+    stack: error.stack,
+    context,
+    timestamp: new Date().toISOString(),
   };
-}
 
-export function getStatusCode(error: unknown): number {
-  if (error instanceof AppError) {
-    return error.statusCode;
+  if (ServiceError.isServiceError(error)) {
+    errorInfo['code'] = error.code;
+    errorInfo['statusCode'] = error.statusCode;
+    errorInfo['isOperational'] = error.isOperational;
   }
+
+  console.error('Application Error:', errorInfo);
   
-  return 500;
-}
-
-// Database error handling
-export function handleDatabaseError(error: unknown): never {
-  if (error instanceof Error) {
-    // Handle SQLite unique constraint errors
-    if (error.message.includes('SQLITE_CONSTRAINT_UNIQUE') || 
-        error.message.includes('UNIQUE constraint failed')) {
-      throw new ConflictError('Resource already exists');
-    }
-    
-    // Handle foreign key constraint errors
-    if (error.message.includes('FOREIGN KEY constraint failed')) {
-      throw new ValidationError('Referenced resource does not exist');
-    }
+  // In production, send to error tracking service
+  if (process.env.NODE_ENV === 'production') {
+    // TODO: Integrate with error tracking service (Sentry, etc.)
   }
-  
-  throw new DatabaseError('Database operation failed', error);
-}
-
-// Authentication error handling
-export function requireAuthentication(sessionToken?: string): void {
-  if (!sessionToken) {
-    throw new AuthenticationError();
-  }
-}
-
-export function requireAdminRole(userRole?: string): void {
-  if (userRole !== 'admin') {
-    throw new AuthorizationError('Admin access required');
-  }
-}
-
-// Common error messages
-export const ErrorMessages = {
-  INVALID_JSON: 'Invalid JSON in request body',
-  MISSING_REQUIRED_FIELD: (field: string) => `Missing required field: ${field}`,
-  INVALID_EMAIL: 'Invalid email format',
-  PASSWORD_TOO_SHORT: 'Password must be at least 8 characters long',
-  USER_NOT_FOUND: 'User not found',
-  STATISTIC_NOT_FOUND: 'Statistic not found',
-  STATE_NOT_FOUND: 'State not found',
-  CATEGORY_NOT_FOUND: 'Category not found',
-  DATA_SOURCE_NOT_FOUND: 'Data source not found',
-  DUPLICATE_EMAIL: 'User with this email already exists',
-  DUPLICATE_STATISTIC: 'Statistic with this RA number already exists',
-  INVALID_TOKEN: 'Invalid or expired token',
-  TOKEN_ALREADY_USED: 'Token has already been used',
-  IMPORT_FAILED: 'Data import failed',
-  EXTERNAL_API_ERROR: 'External API request failed',
-} as const; 
+}; 

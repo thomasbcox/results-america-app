@@ -1,10 +1,10 @@
 #!/usr/bin/env tsx
 
-import { ExternalDataService } from '../src/lib/services/externalDataService';
-import { NationalAverageService } from '../src/lib/services/aggregationService';
-import { db } from '../src/lib/db/index';
-import { nationalAverages, dataPoints, statistics } from '../src/lib/db/schema';
+import { db } from '../src/lib/db';
+import { dataPoints, statistics, nationalAverages } from '../src/lib/db/schema';
 import { eq } from 'drizzle-orm';
+import { importBEAGDPData, importBLSEmploymentData, importCensusPopulationData } from '../src/lib/services/externalDataService';
+import { NationalAverageService } from '../src/lib/services/aggregationService';
 
 async function testExternalDataImport() {
   console.log('🧪 Testing External Data Import System...\n');
@@ -12,8 +12,8 @@ async function testExternalDataImport() {
   try {
     // Test 1: Import BEA GDP Data
     console.log('📊 Test 1: Importing BEA GDP Data...');
-    const gdpJob = await ExternalDataService.importBEAGDPData();
-    console.log(`✅ GDP Import completed: ${gdpJob.importedRecords} records imported`);
+    const gdpJob = await importBEAGDPData();
+    console.log(`✅ GDP Import completed: ${gdpJob.processedRecords} records imported`);
     console.log(`   Status: ${gdpJob.status}`);
     console.log(`   Errors: ${gdpJob.errors.length}`);
     
@@ -23,15 +23,15 @@ async function testExternalDataImport() {
 
     // Test 2: Import BLS Employment Data
     console.log('\n📈 Test 2: Importing BLS Employment Data...');
-    const employmentJob = await ExternalDataService.importBLSEmploymentData();
-    console.log(`✅ Employment Import completed: ${employmentJob.importedRecords} records imported`);
+    const employmentJob = await importBLSEmploymentData();
+    console.log(`✅ Employment Import completed: ${employmentJob.processedRecords} records imported`);
     console.log(`   Status: ${employmentJob.status}`);
     console.log(`   Errors: ${employmentJob.errors.length}`);
 
     // Test 3: Import Census Population Data
     console.log('\n👥 Test 3: Importing Census Population Data...');
-    const populationJob = await ExternalDataService.importCensusPopulationData();
-    console.log(`✅ Population Import completed: ${populationJob.importedRecords} records imported`);
+    const populationJob = await importCensusPopulationData();
+    console.log(`✅ Population Import completed: ${populationJob.processedRecords} records imported`);
     console.log(`   Status: ${populationJob.status}`);
     console.log(`   Errors: ${populationJob.errors.length}`);
 

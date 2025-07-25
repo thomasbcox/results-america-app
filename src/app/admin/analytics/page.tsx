@@ -130,7 +130,7 @@ export default function Analytics() {
             <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{analytics.totalRequests.toLocaleString()}</div>
+            <div className="text-2xl font-bold">{analytics?.totalRequests?.toLocaleString() || '0'}</div>
             <p className="text-xs text-muted-foreground">
               All time requests
             </p>
@@ -143,7 +143,7 @@ export default function Analytics() {
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{analytics.requestsToday.toLocaleString()}</div>
+            <div className="text-2xl font-bold">{analytics?.requestsToday?.toLocaleString() || '0'}</div>
             <p className="text-xs text-muted-foreground">
               Requests in last 24 hours
             </p>
@@ -156,7 +156,7 @@ export default function Analytics() {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{analytics.averageResponseTime.toFixed(2)}ms</div>
+            <div className="text-2xl font-bold">{analytics?.averageResponseTime?.toFixed(2) || '0.00'}ms</div>
             <p className="text-xs text-muted-foreground">
               Average API response time
             </p>
@@ -169,7 +169,7 @@ export default function Analytics() {
             <Eye className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{analytics.cacheHitRate.toFixed(1)}%</div>
+            <div className="text-2xl font-bold">{analytics?.cacheHitRate?.toFixed(1) || '0.0'}%</div>
             <p className="text-xs text-muted-foreground">
               Cache efficiency
             </p>
@@ -185,7 +185,7 @@ export default function Analytics() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {analytics.topEndpoints.map((endpoint, index) => (
+            {analytics?.topEndpoints?.map((endpoint, index) => (
               <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
                 <div className="flex items-center space-x-4">
                   <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
@@ -205,7 +205,11 @@ export default function Analytics() {
                   <div className="text-sm text-gray-500">requests</div>
                 </div>
               </div>
-            ))}
+            )) || (
+              <div className="text-center py-8 text-gray-500">
+                No endpoint data available
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -222,7 +226,7 @@ export default function Analytics() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {analytics.topStates.map((state, index) => (
+              {analytics?.topStates?.map((state, index) => (
                 <div key={index} className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
                     <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center">
@@ -247,7 +251,7 @@ export default function Analytics() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {analytics.topCategories.map((category, index) => (
+              {analytics?.topCategories?.map((category, index) => (
                 <div key={index} className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
                     <div className="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center">
@@ -271,8 +275,8 @@ export default function Analytics() {
         </CardHeader>
         <CardContent>
           <div className="h-64 flex items-end justify-between space-x-1">
-            {analytics.hourlyRequests.map((hour, index) => {
-              const maxRequests = Math.max(...analytics.hourlyRequests.map(h => h.requests));
+            {analytics?.hourlyRequests?.map((hour, index) => {
+              const maxRequests = analytics?.hourlyRequests ? Math.max(...analytics.hourlyRequests.map(h => h.requests)) : 0;
               const height = maxRequests > 0 ? (hour.requests / maxRequests) * 100 : 0;
               
               return (
@@ -296,46 +300,46 @@ export default function Analytics() {
           <CardDescription>System health and performance issues</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {analytics.averageResponseTime > 1000 && (
-              <div className="flex items-center p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <TrendingDown className="h-5 w-5 text-yellow-600 mr-3" />
-                <div>
-                  <h4 className="font-medium text-yellow-800">High Response Time</h4>
-                  <p className="text-sm text-yellow-700">
-                    Average response time is {analytics.averageResponseTime.toFixed(2)}ms, 
-                    consider optimizing database queries or adding caching.
-                  </p>
-                </div>
+          {!analytics ? null : (() => {
+            const a = analytics!;
+            return (
+              <div className="space-y-4">
+                {a.averageResponseTime !== undefined && a.averageResponseTime > 1000 && (
+                  <div className="flex items-center p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <TrendingDown className="h-5 w-5 text-yellow-600 mr-3" />
+                    <div>
+                      <h4 className="font-medium text-yellow-800">High Response Time</h4>
+                      <p className="text-sm text-yellow-700">
+                        Average response time is {a.averageResponseTime.toFixed(2)}ms, consider optimization
+                      </p>
+                    </div>
+                  </div>
+                )}
+                {a.cacheHitRate !== undefined && a.cacheHitRate < 50 && (
+                  <div className="flex items-center p-4 bg-orange-50 border border-orange-200 rounded-lg">
+                    <Eye className="h-5 w-5 text-orange-600 mr-3" />
+                    <div>
+                      <h4 className="font-medium text-orange-800">Low Cache Hit Rate</h4>
+                      <p className="text-sm text-orange-700">
+                        Cache hit rate is {a.cacheHitRate.toFixed(1)}%, consider improving caching strategy
+                      </p>
+                    </div>
+                  </div>
+                )}
+                {a.requestsToday !== undefined && a.requestsToday > 10000 && (
+                  <div className="flex items-center p-4 bg-green-50 border border-green-200 rounded-lg">
+                    <TrendingUp className="h-5 w-5 text-green-600 mr-3" />
+                    <div>
+                      <h4 className="font-medium text-green-800">High Traffic</h4>
+                      <p className="text-sm text-green-700">
+                        {a.requestsToday.toLocaleString()} requests today - excellent engagement!
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
-            
-            {analytics.cacheHitRate < 50 && (
-              <div className="flex items-center p-4 bg-orange-50 border border-orange-200 rounded-lg">
-                <Eye className="h-5 w-5 text-orange-600 mr-3" />
-                <div>
-                  <h4 className="font-medium text-orange-800">Low Cache Hit Rate</h4>
-                  <p className="text-sm text-orange-700">
-                    Cache hit rate is {analytics.cacheHitRate.toFixed(1)}%, 
-                    consider expanding cache coverage for frequently accessed data.
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {analytics.requestsToday > 10000 && (
-              <div className="flex items-center p-4 bg-green-50 border border-green-200 rounded-lg">
-                <TrendingUp className="h-5 w-5 text-green-600 mr-3" />
-                <div>
-                  <h4 className="font-medium text-green-800">High Traffic</h4>
-                  <p className="text-sm text-green-700">
-                    High traffic detected with {analytics.requestsToday.toLocaleString()} requests today. 
-                    System is handling load well.
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
+            );
+          })()}
         </CardContent>
       </Card>
     </div>
