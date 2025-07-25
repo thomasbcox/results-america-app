@@ -1,233 +1,254 @@
 import { db } from '../db/index';
-import { createState } from './statesService';
-import { createCategory, getAllCategories } from './categoriesService';
-import { getAllStatisticsWithSources } from './statisticsService';
-import { getDataPointsForStatistic } from './dataPointsService';
-import { getAllStates } from './statesService';
+import { CategoriesService } from './categoriesService';
+import { StatisticsService } from './statisticsService';
+import { DataPointsService } from './dataPointsService';
+import { StatesService } from './statesService';
+import { importSessions } from '../db/schema';
+import { eq } from 'drizzle-orm';
+import type { 
+  IImportExportService, 
+  ExportFilters, 
+  ExportResult, 
+  ImportDataInput, 
+  ImportResult, 
+  ValidationResult 
+} from '../types/service-interfaces';
 
-export interface ImportResult {
-  success: boolean;
-  message: string;
-  imported: number;
-  errors: string[];
-}
-
-export interface ExportOptions {
-  format: 'json' | 'csv' | 'xlsx';
-  includeMetadata?: boolean;
-  filters?: {
-    category?: string;
-    year?: number;
-    state?: string;
-  };
-}
-
-export async function importStatesFromCSV(csvData: string): Promise<ImportResult> {
-  const lines = csvData.split('\n').filter(line => line.trim());
-  const data = lines.slice(1);
-  
-  const errors: string[] = [];
-  let imported = 0;
-
-  for (let i = 0; i < data.length; i++) {
-    const line = data[i];
-    const values = line.split(',').map(v => v.trim());
-    
-    if (values.length < 2) {
-      errors.push(`Line ${i + 2}: Invalid format`);
-      continue;
-    }
+export class ImportExportService implements IImportExportService {
+  static async exportData(format: 'json' | 'csv', filters?: ExportFilters): Promise<ExportResult> {
+    const exportData: any = {
+      metadata: {
+        exportedAt: new Date().toISOString(),
+        format,
+        filters: filters || {}
+      },
+      data: {}
+    };
 
     try {
-      const [name, abbreviation] = values;
-      await createState({ name, abbreviation });
-      imported++;
-    } catch (error) {
-      errors.push(`Line ${i + 2}: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
-  }
-
-  return {
-    success: errors.length === 0,
-    message: `Imported ${imported} states${errors.length > 0 ? ` with ${errors.length} errors` : ''}`,
-    imported,
-    errors
-  };
-}
-
-export async function importCategoriesFromCSV(csvData: string): Promise<ImportResult> {
-  const lines = csvData.split('\n').filter(line => line.trim());
-  const data = lines.slice(1);
-  
-  const errors: string[] = [];
-  let imported = 0;
-
-  for (let i = 0; i < data.length; i++) {
-    const line = data[i];
-    const values = line.split(',').map(v => v.trim());
-    
-    if (values.length < 2) {
-      errors.push(`Line ${i + 2}: Invalid format`);
-      continue;
-    }
-
-    try {
-      const [name, description, icon, sortOrder] = values;
-      await createCategory({ 
-        name, 
-        description, 
-        icon, 
-        sortOrder: sortOrder ? parseInt(sortOrder) : undefined 
-      });
-      imported++;
-    } catch (error) {
-      errors.push(`Line ${i + 2}: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
-  }
-
-  return {
-    success: errors.length === 0,
-    message: `Imported ${imported} categories${errors.length > 0 ? ` with ${errors.length} errors` : ''}`,
-    imported,
-    errors
-  };
-}
-
-import type { StateData, CategoryData, StatisticData, DataPointData } from '@/types/api';
-
-export async function exportData(options: ExportOptions): Promise<string> {
-  const { format, includeMetadata = true, filters } = options;
-  
-  const data: {
-    metadata?: {
-      exportedAt: string;
-      format: string;
-      filters?: ExportOptions['filters'];
-    };
-    states: StateData[];
-    categories: CategoryData[];
-    statistics: StatisticData[];
-    dataPoints?: DataPointData[];
-  } = {
-    states: [],
-    categories: [],
-    statistics: []
-  };
-
-  if (includeMetadata) {
-    data.metadata = {
-      exportedAt: new Date().toISOString(),
-      format,
-      filters
-    };
-  }
-
-  // Export states
-  const rawStates = await getAllStates(db, false); // Don't use cache for export
-  data.states = rawStates.map(state => ({
-    id: state.id,
-    name: state.name,
-    abbreviation: state.abbreviation,
-    population: undefined,
-    region: undefined
-  }));
-
-  // Export categories
-  const rawCategories = await getAllCategories(db); // This doesn't use cache
-  data.categories = rawCategories.map(category => ({
-    id: category.id,
-    name: category.name,
-    description: category.description || '',
-    icon: category.icon || '',
-    sortOrder: category.sortOrder || 0,
-    statisticCount: undefined,
-    hasData: undefined
-  }));
-
-  // Export statistics
-  const rawStatistics = await getAllStatisticsWithSources(db);
-  data.statistics = rawStatistics.map(stat => ({
-    id: stat.id,
-    name: stat.name,
-    raNumber: stat.raNumber || '',
-    description: stat.description || '',
-    unit: stat.unit,
-    availableSince: stat.availableSince || '',
-    category: stat.category || '',
-    source: stat.source || '',
-    sourceUrl: stat.sourceUrl || '',
-    hasData: undefined
-  }));
-
-  // Export data points if filters are provided
-  if (filters) {
-    if (filters.category) {
-      const categoryStats = data.statistics.filter((s: StatisticData) => s.category === filters.category);
-      data.dataPoints = [];
-      
-      for (const stat of categoryStats) {
-        const rawPoints = await getDataPointsForStatistic(stat.id, filters.year);
-        const transformedPoints = rawPoints.map(point => ({
-          id: point.id,
-          stateId: 0, // Not available in the query result
-          stateName: point.stateName || '',
-          statisticId: stat.id, // Use the current statistic ID
-          statisticName: stat.name, // Use the current statistic name
-          value: point.value,
-          year: point.year,
-          source: stat.source // Use the current statistic source
-        }));
-        data.dataPoints.push(...transformedPoints);
+      // Export states
+      if (!filters?.states || filters.states.length === 0) {
+        const rawStates = await StatesService.getAllStates(false); // Don't use cache for export
+        exportData.data.states = rawStates;
+      } else {
+        const filteredStates = await Promise.all(
+          filters.states.map(id => StatesService.getStateById(id))
+        );
+        exportData.data.states = filteredStates.filter(Boolean);
       }
+
+      // Export categories
+      if (!filters?.categories || filters.categories.length === 0) {
+        const rawCategories = await CategoriesService.getAllCategories(); // This doesn't use cache
+        exportData.data.categories = rawCategories;
+      } else {
+        const filteredCategories = await Promise.all(
+          filters.categories.map(id => CategoriesService.getCategoryById(id))
+        );
+        exportData.data.categories = filteredCategories.filter(Boolean);
+      }
+
+      // Export statistics
+      if (!filters?.statistics || filters.statistics.length === 0) {
+        const rawStatistics = await StatisticsService.getAllStatisticsWithSources();
+        exportData.data.statistics = rawStatistics;
+      } else {
+        const filteredStatistics = await Promise.all(
+          filters.statistics.map(id => StatisticsService.getStatisticById(id))
+        );
+        exportData.data.statistics = filteredStatistics.filter(Boolean);
+      }
+
+      // Export data points
+      if (filters?.year) {
+        const allStatistics = await StatisticsService.getAllStatisticsWithSources();
+        const allDataPoints = [];
+        
+        for (const stat of allStatistics) {
+          const rawPoints = await DataPointsService.getDataPointsForStatistic(stat.id, filters.year);
+          allDataPoints.push(...rawPoints);
+        }
+        
+        exportData.data.dataPoints = allDataPoints;
+      }
+
+      // Create filename
+      const timestamp = new Date().toISOString().split('T')[0];
+      const filename = `results-america-export-${timestamp}.${format}`;
+
+      return {
+        data: format === 'json' ? JSON.stringify(exportData, null, 2) : this.convertToCSV(exportData),
+        format,
+        filename,
+        recordCount: this.countRecords(exportData.data)
+      };
+
+    } catch (error) {
+      throw new Error(`Export failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
-  if (format === 'json') {
-    return JSON.stringify(data, null, 2);
-  } else if (format === 'csv') {
-    return convertToCSV(data);
-  } else {
-    throw new Error('XLSX format not yet implemented');
-  }
-}
+  static async importData(data: ImportDataInput): Promise<ImportResult> {
+    const errors: string[] = [];
+    let imported = 0;
 
-function convertToCSV(data: {
-  states: StateData[];
-  categories: CategoryData[];
-  statistics: StatisticData[];
-  dataPoints?: DataPointData[];
-}): string {
-  const lines: string[] = [];
-  
-  // States CSV
-  lines.push('=== STATES ===');
-  lines.push('id,name,abbreviation');
-  data.states.forEach((state: StateData) => {
-    lines.push(`${state.id},${state.name},${state.abbreviation}`);
-  });
-  
-  lines.push('');
-  lines.push('=== CATEGORIES ===');
-  lines.push('id,name,description,icon,sortOrder');
-  data.categories.forEach((category: CategoryData) => {
-    lines.push(`${category.id},${category.name},${category.description},${category.icon},${category.sortOrder}`);
-  });
-  
-  lines.push('');
-  lines.push('=== STATISTICS ===');
-  lines.push('id,name,raNumber,description,unit,category,source');
-  data.statistics.forEach((stat: StatisticData) => {
-    lines.push(`${stat.id},${stat.name},${stat.raNumber},${stat.description},${stat.unit},${stat.category},${stat.source}`);
-  });
-  
-  if (data.dataPoints) {
-    lines.push('');
-    lines.push('=== DATA POINTS ===');
-    lines.push('id,value,year,stateName,statisticName');
-    data.dataPoints.forEach((point: DataPointData) => {
-      lines.push(`${point.id},${point.value},${point.year},${point.stateName},${point.statisticName}`);
-    });
+    try {
+      // Validate import format
+      const validation = this.validateImportFormat(data.data);
+      if (!validation.isValid) {
+        return {
+          success: false,
+          imported: 0,
+          errors: validation.errors,
+          message: 'Import validation failed'
+        };
+      }
+
+      // Create import session
+      const [importSession] = await db.insert(importSessions).values({
+        source: 'manual-import',
+        recordCount: 0,
+        status: 'success'
+      }).returning();
+
+      // Import data in dependency order
+      if (data.data.states) {
+        for (const state of data.data.states) {
+          try {
+            await StatesService.createState(state);
+            imported++;
+          } catch (error) {
+            errors.push(`Failed to import state ${state.name}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          }
+        }
+      }
+
+      if (data.data.categories) {
+        for (const category of data.data.categories) {
+          try {
+            await CategoriesService.createCategory(category);
+            imported++;
+          } catch (error) {
+            errors.push(`Failed to import category ${category.name}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          }
+        }
+      }
+
+      if (data.data.statistics) {
+        for (const statistic of data.data.statistics) {
+          try {
+            await StatisticsService.createStatistic(statistic);
+            imported++;
+          } catch (error) {
+            errors.push(`Failed to import statistic ${statistic.name}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          }
+        }
+      }
+
+      if (data.data.dataPoints) {
+        for (const dataPoint of data.data.dataPoints) {
+          try {
+            await DataPointsService.createDataPoint({
+              ...dataPoint,
+              importSessionId: importSession.id
+            });
+            imported++;
+          } catch (error) {
+            errors.push(`Failed to import data point: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          }
+        }
+      }
+
+      // Update import session
+      await db.update(importSessions)
+        .set({ 
+          recordCount: imported,
+          status: errors.length > 0 ? 'partial' : 'success'
+        })
+        .where(eq(importSessions.id, importSession.id));
+
+      return {
+        success: errors.length === 0,
+        imported,
+        errors,
+        message: `Imported ${imported} records${errors.length > 0 ? ` with ${errors.length} errors` : ''}`
+      };
+
+    } catch (error) {
+      return {
+        success: false,
+        imported: 0,
+        errors: [`Import failed: ${error instanceof Error ? error.message : 'Unknown error'}`],
+        message: 'Import failed'
+      };
+    }
   }
-  
-  return lines.join('\n');
+
+  static validateImportFormat(data: any): ValidationResult {
+    const errors: string[] = [];
+    const warnings: string[] = [];
+
+    if (!data || typeof data !== 'object') {
+      errors.push('Invalid import data format');
+      return { isValid: false, errors, warnings };
+    }
+
+    // Validate states
+    if (data.states && !Array.isArray(data.states)) {
+      errors.push('States must be an array');
+    }
+
+    // Validate categories
+    if (data.categories && !Array.isArray(data.categories)) {
+      errors.push('Categories must be an array');
+    }
+
+    // Validate statistics
+    if (data.statistics && !Array.isArray(data.statistics)) {
+      errors.push('Statistics must be an array');
+    }
+
+    // Validate data points
+    if (data.dataPoints && !Array.isArray(data.dataPoints)) {
+      errors.push('Data points must be an array');
+    }
+
+    return {
+      isValid: errors.length === 0,
+      errors,
+      warnings
+    };
+  }
+
+  private static convertToCSV(data: any): string {
+    // Simple CSV conversion - in a real implementation, you'd want a proper CSV library
+    const csvLines: string[] = [];
+    
+    // Add headers
+    csvLines.push('Type,ID,Name,Description');
+    
+    // Add data
+    if (data.states) {
+      data.states.forEach((state: any) => {
+        csvLines.push(`State,${state.id},"${state.name}","${state.abbreviation}"`);
+      });
+    }
+    
+    if (data.categories) {
+      data.categories.forEach((category: any) => {
+        csvLines.push(`Category,${category.id},"${category.name}","${category.description || ''}"`);
+      });
+    }
+    
+    return csvLines.join('\n');
+  }
+
+  private static countRecords(data: any): number {
+    let count = 0;
+    if (data.states) count += data.states.length;
+    if (data.categories) count += data.categories.length;
+    if (data.statistics) count += data.statistics.length;
+    if (data.dataPoints) count += data.dataPoints.length;
+    return count;
+  }
 } 

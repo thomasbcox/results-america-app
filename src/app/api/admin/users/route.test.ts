@@ -144,11 +144,12 @@ describe('/api/admin/users', () => {
 
       expect(response.status).toBe(401);
       expect(data.success).toBe(false);
-      expect(data.error).toBe('Authentication required');
+      expect(data.error).toBe('Invalid session');
     });
 
     it('should handle service errors gracefully', async () => {
-      (AuthService.listUsers as jest.Mock).mockRejectedValue(new Error('Database error'));
+      const { ServiceError } = await import('@/lib/errors');
+      (AuthService.listUsers as jest.Mock).mockRejectedValue(new ServiceError('Database error', 'DATABASE_ERROR', 500));
 
       const request = new NextRequest('http://localhost:3000/api/admin/users', {
         headers: {
@@ -278,7 +279,8 @@ describe('/api/admin/users', () => {
     });
 
     it('should handle service errors gracefully', async () => {
-      (AuthService.createUser as jest.Mock).mockRejectedValue(new Error('User already exists'));
+      const { ServiceError } = await import('@/lib/errors');
+      (AuthService.createUser as jest.Mock).mockRejectedValue(new ServiceError('User already exists', 'USER_ALREADY_EXISTS', 409));
 
       const request = new NextRequest('http://localhost:3000/api/admin/users', {
         method: 'POST',
@@ -296,7 +298,7 @@ describe('/api/admin/users', () => {
       const response = await POST(request);
       const data = await response.json();
 
-      expect(response.status).toBe(500);
+      expect(response.status).toBe(409);
       expect(data.success).toBe(false);
       expect(data.error).toBe('User already exists');
     });

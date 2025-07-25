@@ -1,42 +1,19 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
+import { LoginSchema } from '@/lib/validators';
 import { UnifiedAuthService } from '@/lib/services/unifiedAuthService';
 import { withErrorHandling, createSuccessResponse } from '@/lib/response';
+import { withValidation } from '@/lib/middleware/validation';
+import type { LoginSchema as LoginType } from '@/lib/validators';
 
-async function handleAdminLogin(request: NextRequest) {
-  const { email, password } = await request.json();
-
-  if (!email || !password) {
-    throw new Error('Email and password are required');
-  }
-
-  const authResult = await UnifiedAuthService.authenticateAdmin({ email, password });
-
-  const response = createSuccessResponse(
-    {
-      user: {
-        id: authResult.user.id,
-        email: authResult.user.email,
-        name: authResult.user.name,
-        role: authResult.user.role,
-        isActive: authResult.user.isActive,
-        emailVerified: authResult.user.emailVerified,
-        lastLoginAt: authResult.user.lastLoginAt,
-      },
-      authMethod: authResult.authMethod,
-    },
-    'Login successful'
-  );
-
-  // Set session cookie
-  response.cookies.set('session_token', authResult.session.token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    maxAge: 24 * 60 * 60, // 24 hours
-    path: '/',
-  });
-
-  return response;
+async function handleLoginRequest(request: NextRequest, data: LoginType) {
+  const { email, password } = data;
+  
+  // Normalize email
+  const normalizedEmail = email.toLowerCase().trim();
+  
+  const result = await UnifiedAuthService.authenticateAdmin({ email: normalizedEmail, password });
+  
+  return createSuccessResponse(result, 'Login successful');
 }
 
-export const POST = withErrorHandling(handleAdminLogin); 
+export const POST = withErrorHandling(withValidation(LoginSchema)(handleLoginRequest)); 

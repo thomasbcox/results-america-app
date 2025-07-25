@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { getAllStates, getStatesWithPagination, searchStates } from '@/lib/services/statesService';
+import { StatesService } from '@/lib/services/statesService';
 import { withErrorHandling, createSuccessResponse } from '@/lib/response';
 
 async function handleGetStates(request: NextRequest) {
@@ -12,13 +12,13 @@ async function handleGetStates(request: NextRequest) {
 
   // Handle search
   if (search) {
-    const results = await searchStates(search);
+    const results = await StatesService.searchStates(search);
     return createSuccessResponse(results);
   }
 
   // Handle pagination
   if (page > 1 || limit !== 50) {
-    const paginated = await getStatesWithPagination(
+    const paginated = await StatesService.getStatesWithPagination(
       { page, limit },
       { sortBy, sortOrder }
     );
@@ -27,7 +27,7 @@ async function handleGetStates(request: NextRequest) {
 
   // Handle sorting without pagination
   if (sortBy) {
-    const paginated = await getStatesWithPagination(
+    const paginated = await StatesService.getStatesWithPagination(
       { page: 1, limit: 50 },
       { sortBy, sortOrder }
     );
@@ -35,7 +35,7 @@ async function handleGetStates(request: NextRequest) {
   }
 
   // Default: return all states
-  const states = await getAllStates();
+  const states = await StatesService.getAllStates();
   return createSuccessResponse(states);
 }
 

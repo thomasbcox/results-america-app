@@ -1,84 +1,136 @@
 import { db } from '../db/index';
 import { dataPoints, states, statistics, categories, dataSources, importSessions } from '../db/schema';
-import { eq, and } from 'drizzle-orm';
-import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
+import { eq, and, inArray } from 'drizzle-orm';
+import type { 
+  IDataPointsService, 
+  DataPointData, 
+  CreateDataPointInput, 
+  UpdateDataPointInput 
+} from '../types/service-interfaces';
 
-export async function getDataPointsForState(stateId: number, year?: number, database = db) {
-  const conditions = [eq(dataPoints.stateId, stateId)];
-  if (year) {
-    conditions.push(eq(dataPoints.year, year));
+export class DataPointsService implements IDataPointsService {
+  static async getDataPointsForState(stateId: number, year?: number): Promise<DataPointData[]> {
+    const conditions = [eq(dataPoints.stateId, stateId)];
+    if (year) {
+      conditions.push(eq(dataPoints.year, year));
+    }
+    
+    const results = await db.select({
+      id: dataPoints.id,
+      statisticId: dataPoints.statisticId,
+      stateId: dataPoints.stateId,
+      year: dataPoints.year,
+      value: dataPoints.value,
+      source: dataPoints.source,
+      importSessionId: dataPoints.importSessionId,
+      statisticName: statistics.name,
+      stateName: states.name,
+    })
+      .from(dataPoints)
+      .leftJoin(statistics, eq(dataPoints.statisticId, statistics.id))
+      .leftJoin(states, eq(dataPoints.stateId, states.id))
+      .where(and(...conditions));
+
+    return results.map(result => ({
+      id: result.id,
+      statisticId: result.statisticId,
+      stateId: result.stateId,
+      year: result.year,
+      value: result.value,
+      source: result.source,
+      importSessionId: result.importSessionId,
+      statisticName: result.statisticName,
+      stateName: result.stateName,
+    }));
   }
-  
-  return database.select({
-    id: dataPoints.id,
-    value: dataPoints.value,
-    year: dataPoints.year,
-    statisticName: statistics.name,
-    statisticUnit: statistics.unit,
-    categoryName: categories.name,
-    sourceName: dataSources.name,
-    sourceUrl: dataSources.url,
-    importDate: importSessions.importDate,
-  })
-    .from(dataPoints)
-    .leftJoin(statistics, eq(dataPoints.statisticId, statistics.id))
-    .leftJoin(categories, eq(statistics.categoryId, categories.id))
-    .leftJoin(dataSources, eq(statistics.dataSourceId, dataSources.id))
-    .leftJoin(importSessions, eq(dataPoints.importSessionId, importSessions.id))
-    .where(and(...conditions));
-}
 
-export async function getDataPointsForStatistic(statisticId: number, year?: number, database = db) {
-  const conditions = [eq(dataPoints.statisticId, statisticId)];
-  if (year) {
-    conditions.push(eq(dataPoints.year, year));
+  static async getDataPointsForStatistic(statisticId: number, year?: number): Promise<DataPointData[]> {
+    const conditions = [eq(dataPoints.statisticId, statisticId)];
+    if (year) {
+      conditions.push(eq(dataPoints.year, year));
+    }
+    
+    const results = await db.select({
+      id: dataPoints.id,
+      statisticId: dataPoints.statisticId,
+      stateId: dataPoints.stateId,
+      year: dataPoints.year,
+      value: dataPoints.value,
+      source: dataPoints.source,
+      importSessionId: dataPoints.importSessionId,
+      stateName: states.name,
+      statisticName: statistics.name,
+    })
+      .from(dataPoints)
+      .leftJoin(states, eq(dataPoints.stateId, states.id))
+      .leftJoin(statistics, eq(dataPoints.statisticId, statistics.id))
+      .where(and(...conditions))
+      .orderBy(states.name);
+
+    return results.map(result => ({
+      id: result.id,
+      statisticId: result.statisticId,
+      stateId: result.stateId,
+      year: result.year,
+      value: result.value,
+      source: result.source,
+      importSessionId: result.importSessionId,
+      stateName: result.stateName,
+      statisticName: result.statisticName,
+    }));
   }
-  
-  return database.select({
-    id: dataPoints.id,
-    value: dataPoints.value,
-    year: dataPoints.year,
-    stateName: states.name,
-    stateAbbreviation: states.abbreviation,
-  })
-    .from(dataPoints)
-    .leftJoin(states, eq(dataPoints.stateId, states.id))
-    .where(and(...conditions))
-    .orderBy(states.name);
-}
 
-export async function getDataPointsForComparison(stateIds: number[], statisticIds: number[], year: number, database = db) {
-  return database.select({
-    id: dataPoints.id,
-    value: dataPoints.value,
-    year: dataPoints.year,
-    stateName: states.name,
-    stateAbbreviation: states.abbreviation,
-    statisticName: statistics.name,
-    statisticUnit: statistics.unit,
-    categoryName: categories.name,
-  })
-    .from(dataPoints)
-    .leftJoin(states, eq(dataPoints.stateId, states.id))
-    .leftJoin(statistics, eq(dataPoints.statisticId, statistics.id))
-    .leftJoin(categories, eq(statistics.categoryId, categories.id))
-    .where(
-      and(
-        eq(dataPoints.year, year),
-        // Note: This would need to be expanded for multiple states/statistics
-        // For now, this is a simplified version
-      )
-    );
-}
+  static async getDataPointsForComparison(stateIds: number[], statisticIds: number[], year: number): Promise<DataPointData[]> {
+    const results = await db.select({
+      id: dataPoints.id,
+      statisticId: dataPoints.statisticId,
+      stateId: dataPoints.stateId,
+      year: dataPoints.year,
+      value: dataPoints.value,
+      source: dataPoints.source,
+      importSessionId: dataPoints.importSessionId,
+      stateName: states.name,
+      statisticName: statistics.name,
+    })
+      .from(dataPoints)
+      .leftJoin(states, eq(dataPoints.stateId, states.id))
+      .leftJoin(statistics, eq(dataPoints.statisticId, statistics.id))
+      .where(
+        and(
+          eq(dataPoints.year, year),
+          inArray(dataPoints.stateId, stateIds),
+          inArray(dataPoints.statisticId, statisticIds)
+        )
+      );
 
-export async function createDataPoint(data: { importSessionId: number; year: number; stateId: number; statisticId: number; value: number }, database = db) {
-  return database.insert(dataPoints).values(data).returning();
-}
+    return results.map(result => ({
+      id: result.id,
+      statisticId: result.statisticId,
+      stateId: result.stateId,
+      year: result.year,
+      value: result.value,
+      source: result.source,
+      importSessionId: result.importSessionId,
+      stateName: result.stateName,
+      statisticName: result.statisticName,
+    }));
+  }
 
-export async function updateDataPoint(id: number, data: Partial<{ value: number }>, database = db) {
-  return database.update(dataPoints).set(data).where(eq(dataPoints.id, id)).returning();
-}
+  static async createDataPoint(data: CreateDataPointInput): Promise<DataPointData> {
+    const [dataPoint] = await db.insert(dataPoints).values(data).returning();
+    return dataPoint;
+  }
 
-export async function deleteDataPoint(id: number, database = db) {
-  return database.delete(dataPoints).where(eq(dataPoints.id, id)).returning();
+  static async updateDataPoint(id: number, data: UpdateDataPointInput): Promise<DataPointData> {
+    const [dataPoint] = await db.update(dataPoints).set(data).where(eq(dataPoints.id, id)).returning();
+    if (!dataPoint) {
+      throw new Error(`Data point with id ${id} not found`);
+    }
+    return dataPoint;
+  }
+
+  static async deleteDataPoint(id: number): Promise<boolean> {
+    const result = await db.delete(dataPoints).where(eq(dataPoints.id, id)).returning();
+    return result.length > 0;
+  }
 } 

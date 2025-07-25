@@ -1,54 +1,68 @@
 import { db } from '../db/index';
 import { categories, statistics } from '../db/schema';
 import { eq } from 'drizzle-orm';
-import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
+import type { 
+  ICategoriesService, 
+  CategoryData, 
+  CreateCategoryInput, 
+  UpdateCategoryInput 
+} from '../types/service-interfaces';
 
-export async function getAllCategories(database = db) {
-  return database.select().from(categories).orderBy(categories.sortOrder);
-}
+export class CategoriesService implements ICategoriesService {
+  static async getAllCategories(): Promise<CategoryData[]> {
+    return db.select().from(categories).orderBy(categories.sortOrder);
+  }
 
-export async function getCategoryById(id: number, database = db) {
-  const result = await database.select().from(categories).where(eq(categories.id, id)).limit(1);
-  return result[0] || null;
-}
+  static async getCategoryById(id: number): Promise<CategoryData | null> {
+    const result = await db.select().from(categories).where(eq(categories.id, id)).limit(1);
+    return result[0] || null;
+  }
 
-export async function getCategoriesWithStatistics(database = db) {
-  // First get all categories
-  const allCategories = await database.select({
-    id: categories.id,
-    name: categories.name,
-    description: categories.description,
-    icon: categories.icon,
-    sortOrder: categories.sortOrder,
-  })
-    .from(categories)
-    .orderBy(categories.sortOrder);
-
-  // Then get statistics count for each category
-  const categoriesWithStats = await Promise.all(
-    allCategories.map(async (category) => {
-      const stats = await database.select({ id: statistics.id })
-        .from(statistics)
-        .where(eq(statistics.categoryId, category.id));
-      
-      return {
-        ...category,
-        statisticCount: stats.length
-      };
+  static async getCategoriesWithStatistics(): Promise<(CategoryData & { statisticCount: number })[]> {
+    // First get all categories
+    const allCategories = await db.select({
+      id: categories.id,
+      name: categories.name,
+      description: categories.description,
+      icon: categories.icon,
+      sortOrder: categories.sortOrder,
+      isActive: categories.isActive,
     })
-  );
+      .from(categories)
+      .orderBy(categories.sortOrder);
 
-  return categoriesWithStats;
-}
+    // Then get statistics count for each category
+    const categoriesWithStats = await Promise.all(
+      allCategories.map(async (category) => {
+        const stats = await db.select({ id: statistics.id })
+          .from(statistics)
+          .where(eq(statistics.categoryId, category.id));
+        
+        return {
+          ...category,
+          statisticCount: stats.length
+        };
+      })
+    );
 
-export async function createCategory(data: { name: string; description?: string; icon?: string; sortOrder?: number }, database = db) {
-  return database.insert(categories).values(data).returning();
-}
+    return categoriesWithStats;
+  }
 
-export async function updateCategory(id: number, data: Partial<{ name: string; description: string; icon: string; sortOrder: number; isActive: number }>, database = db) {
-  return database.update(categories).set(data).where(eq(categories.id, id)).returning();
-}
+  static async createCategory(data: CreateCategoryInput): Promise<CategoryData> {
+    const [category] = await db.insert(categories).values(data).returning();
+    return category;
+  }
 
-export async function deleteCategory(id: number, database = db) {
-  return database.delete(categories).where(eq(categories.id, id)).returning();
+  static async updateCategory(id: number, data: UpdateCategoryInput): Promise<CategoryData> {
+    const [category] = await db.update(categories).set(data).where(eq(categories.id, id)).returning();
+    if (!category) {
+      throw new Error(`Category with id ${id} not found`);
+    }
+    return category;
+  }
+
+  static async deleteCategory(id: number): Promise<boolean> {
+    const result = await db.delete(categories).where(eq(categories.id, id)).returning();
+    return result.length > 0;
+  }
 } 

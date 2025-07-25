@@ -1,5 +1,14 @@
 import { z } from 'zod';
 
+// Helper function to create required fields with consistent error messages
+const createRequiredField = (fieldName: string, validations: z.ZodString[]) => {
+  let field = z.string({ required_error: `${fieldName} is required` });
+  validations.forEach(validation => {
+    field = field.pipe(validation);
+  });
+  return field;
+};
+
 // Common validation schemas
 export const PaginationSchema = z.object({
   page: z.coerce.number().min(1).default(1),
@@ -49,29 +58,29 @@ export const AggregationQuerySchema = z.discriminatedUnion('type', [
   TrendDataSchema,
 ]);
 
-// Auth validators
+// Auth validators with improved error messages
 export const LoginSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(8),
+  email: z.string({ required_error: 'Email is required' }).email('Email must be valid'),
+  password: z.string({ required_error: 'Password is required' }).min(8, 'Password must be at least 8 characters long'),
 });
 
 export const BootstrapAdminSchema = z.object({
-  email: z.string().email(),
-  name: z.string().min(2).max(100),
-  password: z.string().min(8),
+  email: z.string({ required_error: 'Email is required' }).email('Email must be valid'),
+  name: z.string({ required_error: 'Name is required' }).min(2, 'Name must be at least 2 characters').max(100, 'Name must be less than 100 characters'),
+  password: z.string({ required_error: 'Password is required' }).min(8, 'Password must be at least 8 characters long'),
 });
 
 export const ForgotPasswordSchema = z.object({
-  email: z.string().email(),
+  email: z.string({ required_error: 'Email is required' }).email('Email must be valid'),
 });
 
 export const ResetPasswordSchema = z.object({
-  token: z.string().min(1),
-  password: z.string().min(8),
+  token: z.string({ required_error: 'Token is required' }).min(1, 'Token is required'),
+  password: z.string({ required_error: 'Password is required' }).min(8, 'Password must be at least 8 characters long'),
 });
 
 export const ValidateTokenSchema = z.object({
-  token: z.string().min(1),
+  token: z.string({ required_error: 'Token is required' }).min(1, 'Token is required'),
 });
 
 // External data validators
@@ -86,71 +95,44 @@ export const ExternalDataQuerySchema = z.object({
 
 // Admin validators
 export const UserCreateSchema = z.object({
-  email: z.string().email(),
-  name: z.string().min(2).max(100),
-  password: z.string().min(8),
+  email: z.string({ required_error: 'Email is required' }).email('Email must be valid'),
+  name: z.string({ required_error: 'Name is required' }).min(2, 'Name must be at least 2 characters').max(100, 'Name must be less than 100 characters'),
+  password: z.string({ required_error: 'Password is required' }).min(8, 'Password must be at least 8 characters long'),
   role: z.enum(['user', 'admin']).default('user'),
 });
 
 export const UserUpdateSchema = z.object({
-  name: z.string().min(2).max(100).optional(),
+  name: z.string().min(2, 'Name must be at least 2 characters').max(100, 'Name must be less than 100 characters').optional(),
   role: z.enum(['user', 'admin']).optional(),
   isActive: z.boolean().optional(),
 });
 
 export const StatisticUpdateSchema = z.object({
-  name: z.string().min(1).max(200).optional(),
-  description: z.string().max(1000).optional(),
-  unit: z.string().max(50).optional(),
+  name: z.string().min(1, 'Name is required').max(200, 'Name must be less than 200 characters').optional(),
+  description: z.string().max(1000, 'Description must be less than 1000 characters').optional(),
+  unit: z.string().max(50, 'Unit must be less than 50 characters').optional(),
   dataQuality: z.enum(['mock', 'real']).optional(),
-  provenance: z.string().max(2000).optional(),
+  provenance: z.string().max(2000, 'Provenance must be less than 2000 characters').optional(),
 });
 
 // Generic validators
 export const IdParamSchema = z.object({
-  id: z.coerce.number().positive(),
+  id: z.coerce.number().positive('ID must be a positive number'),
 });
 
 export const SearchQuerySchema = z.object({
-  q: z.string().min(1).optional(),
+  q: z.string().min(1, 'Search query is required').optional(),
   category: z.string().optional(),
   source: z.string().optional(),
   hasData: z.coerce.boolean().optional(),
 });
 
-// Validation helper functions
-export function validateQueryParams<T>(schema: z.ZodSchema<T>, searchParams: URLSearchParams): T {
-  const params = Object.fromEntries(searchParams.entries());
-  return schema.parse(params);
-}
-
-export function validateRequestBody<T>(schema: z.ZodSchema<T>, body: unknown): T {
-  return schema.parse(body);
-}
-
-// Error handling for validation
-export class ValidationError extends Error {
-  constructor(message: string, public errors: z.ZodError) {
-    super(message);
-    this.name = 'ValidationError';
-  }
-}
-
+// Legacy function for backward compatibility (deprecated)
 export function handleValidationError(error: unknown): { error: string; details?: unknown } {
   if (error instanceof z.ZodError) {
     return {
       error: 'Validation failed',
       details: error.errors.map(err => ({
-        field: err.path.join('.'),
-        message: err.message,
-      }))
-    };
-  }
-  
-  if (error instanceof ValidationError) {
-    return {
-      error: error.message,
-      details: error.errors.errors.map(err => ({
         field: err.path.join('.'),
         message: err.message,
       }))

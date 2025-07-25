@@ -279,30 +279,30 @@ setInterval(cleanupRateLimitStore, 15 * 60 * 1000);
 /**
  * Compose security middleware
  */
-export const withSecurity = composeMiddleware([
+export const withSecurity = composeMiddleware(
   withSecurityHeaders,
   withRateLimit,
   withCORS,
   withRequestValidation,
-  withInputSanitization,
-]);
+  withInputSanitization
+);
 
 /**
  * Development-only security middleware (less restrictive)
  */
-export const withDevSecurity = composeMiddleware([
+export const withDevSecurity = composeMiddleware(
   withSecurityHeaders,
   withCORS,
-  withRequestValidation,
-]);
+  withRequestValidation
+);
 
 /**
  * Production security middleware (full security)
  */
-export const withProdSecurity = composeMiddleware([
+export const withProdSecurity = composeMiddleware(
   withSecurityHeaders,
   withRateLimit,
   withCORS,
   withRequestValidation,
-  withInputSanitization,
-]); 
+  withInputSanitization
+); 

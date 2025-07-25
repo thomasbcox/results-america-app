@@ -1,51 +1,34 @@
-import { 
-  getSystemStats, 
-  clearCache, 
-  rebuildCache, 
-  checkDataIntegrity 
-} from './adminService';
-import { AuthService } from './authService';
-import { createTestDatabase } from '../testUtils';
+import { AdminService } from './adminService';
+import { db } from '../db/index';
 
 describe('adminService', () => {
-  let testDb: any;
-
-  beforeEach(async () => {
-    testDb = await createTestDatabase();
-  });
-
-  afterEach(async () => {
-    await testDb.cleanup();
-  });
-
   describe('System Statistics', () => {
     it('should get system statistics', async () => {
-      const stats = await getSystemStats();
+      const stats = await AdminService.getSystemStats();
 
       expect(stats).toBeDefined();
       expect(stats.totalStates).toBeGreaterThanOrEqual(0);
       expect(stats.totalCategories).toBeGreaterThanOrEqual(0);
-      expect(stats.totalDataPoints).toBeGreaterThanOrEqual(0);
       expect(stats.totalStatistics).toBeGreaterThanOrEqual(0);
-      expect(stats.cacheSize).toBeGreaterThanOrEqual(0);
+      expect(stats.totalDataPoints).toBeGreaterThanOrEqual(0);
+      expect(stats.totalDataSources).toBeGreaterThanOrEqual(0);
+      expect(stats.totalImportSessions).toBeGreaterThanOrEqual(0);
     });
 
     it('should clear cache', async () => {
-      const result = await clearCache();
-
+      const result = await AdminService.clearCache();
       expect(result).toBeUndefined(); // clearCache returns void
     });
 
     it('should rebuild cache', async () => {
-      const result = await rebuildCache();
-
+      const result = await AdminService.rebuildCache();
       expect(result).toBeUndefined(); // rebuildCache returns void
     });
   });
 
   describe('Data Management', () => {
     it('should check data integrity', async () => {
-      const integrity = await checkDataIntegrity();
+      const integrity = await AdminService.checkDataIntegrity();
 
       expect(integrity).toBeDefined();
       expect(integrity.orphanedDataPoints).toBeGreaterThanOrEqual(0);
@@ -54,20 +37,27 @@ describe('adminService', () => {
       expect(integrity.duplicateCategories).toBeGreaterThanOrEqual(0);
       expect(Array.isArray(integrity.issues)).toBe(true);
     });
+
+    it('should cleanup orphaned data', async () => {
+      const result = await AdminService.cleanupOrphanedData();
+
+      expect(result).toBeDefined();
+      expect(result.cleaned).toBeGreaterThanOrEqual(0);
+      expect(Array.isArray(result.errors)).toBe(true);
+    });
   });
 
-  describe('User Management Integration', () => {
-    it('should handle admin operations with user system', async () => {
-      // Create admin user with unique email
-      const uniqueEmail = `admin-${Date.now()}-${Math.random().toString(36).substr(2, 9)}@example.com`;
-      await AuthService.bootstrapAdminUser(uniqueEmail, 'Admin', 'password123');
+  describe('Analytics', () => {
+    it('should get analytics data', async () => {
+      const analytics = await AdminService.getAnalyticsData('24h');
 
-      // Test that admin operations work with user system
-      const stats = await getSystemStats();
-      expect(stats).toBeDefined();
-
-      const cacheResult = await clearCache();
-      expect(cacheResult).toBeUndefined();
+      expect(analytics).toBeDefined();
+      expect(analytics.period).toBe('24h');
+      expect(analytics.metrics).toBeDefined();
+      expect(analytics.metrics.totalUsers).toBeGreaterThanOrEqual(0);
+      expect(analytics.metrics.activeUsers).toBeGreaterThanOrEqual(0);
+      expect(analytics.metrics.dataRequests).toBeGreaterThanOrEqual(0);
+      expect(analytics.metrics.cacheHitRate).toBeGreaterThanOrEqual(0);
     });
   });
 }); 

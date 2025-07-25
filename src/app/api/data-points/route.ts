@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { getDataPointsForState, getDataPointsForStatistic, getDataPointsForComparison } from '@/lib/services/dataPointsService';
+import { DataPointsService } from '@/lib/services/dataPointsService';
 import { withErrorHandling, createSuccessResponse } from '@/lib/response';
 
 async function handleGetDataPoints(request: NextRequest) {
@@ -13,19 +13,19 @@ async function handleGetDataPoints(request: NextRequest) {
   let dataPoints;
 
   if (stateId) {
-    dataPoints = await getDataPointsForState(
+    dataPoints = await DataPointsService.getDataPointsForState(
       parseInt(stateId), 
       year ? parseInt(year) : undefined
     );
   } else if (statisticId) {
-    dataPoints = await getDataPointsForStatistic(
+    dataPoints = await DataPointsService.getDataPointsForStatistic(
       parseInt(statisticId), 
       year ? parseInt(year) : undefined
     );
   } else if (stateIds && statisticIds && year) {
     const stateIdArray = stateIds.split(',').map(id => parseInt(id));
     const statisticIdArray = statisticIds.split(',').map(id => parseInt(id));
-    dataPoints = await getDataPointsForComparison(
+    dataPoints = await DataPointsService.getDataPointsForComparison(
       stateIdArray, 
       statisticIdArray, 
       parseInt(year)

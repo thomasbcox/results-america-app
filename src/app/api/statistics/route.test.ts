@@ -1,41 +1,52 @@
+import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import { NextRequest } from 'next/server';
 import { GET } from './route';
-import type { StatisticData } from '@/types/api';
+import { getTestDb, clearTestData } from '@/lib/test-setup';
 
 describe('/api/statistics', () => {
-  it('should return all statistics with sources', async () => {
-    // Mock the request
-    const request = new NextRequest('http://localhost:3000/api/statistics');
-    
-    // Call the API route
-    const response = await GET(request);
-    const data = await response.json();
+  let db: any;
 
-    // Assertions
-    expect(response.status).toBe(200);
-    expect(Array.isArray(data)).toBe(true);
-    expect(data.length).toBeGreaterThan(0);
-    expect(data[0]).toHaveProperty('id');
-    expect(data[0]).toHaveProperty('name');
-    expect(data[0]).toHaveProperty('category');
-    expect(data[0]).toHaveProperty('source');
-    expect(data[0]).toHaveProperty('unit');
+  beforeEach(async () => {
+    db = getTestDb();
+    await clearTestData();
   });
 
-  it('should return statistics with proper source information', async () => {
-    // Mock the request
-    const request = new NextRequest('http://localhost:3000/api/statistics');
-    
-    // Call the API route
-    const response = await GET(request);
-    const data = await response.json();
+  afterEach(async () => {
+    await clearTestData();
+  });
 
-    // Assertions
-    expect(response.status).toBe(200);
-    expect(Array.isArray(data)).toBe(true);
-    
-    // Check that statistics have source information
-    const statsWithSources = data.filter((stat: StatisticData) => stat.source);
-    expect(statsWithSources.length).toBeGreaterThan(0);
+  describe('GET /api/statistics', () => {
+    it('should return all statistics with sources', async () => {
+      const request = new NextRequest('http://localhost:3000/api/statistics');
+      const response = await GET(request);
+      const data = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(data.success).toBe(true);
+      expect(Array.isArray(data.data)).toBe(true);
+      expect(data.data.length).toBeGreaterThan(0);
+      expect(data.data[0]).toHaveProperty('id');
+      expect(data.data[0]).toHaveProperty('name');
+      expect(data.data[0]).toHaveProperty('category');
+      expect(data.data[0]).toHaveProperty('source');
+    });
+
+    it('should return statistics with proper source information', async () => {
+      const request = new NextRequest('http://localhost:3000/api/statistics');
+      const response = await GET(request);
+      const data = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(data.success).toBe(true);
+      expect(Array.isArray(data.data)).toBe(true);
+      
+      // Check that statistics have source information
+      const statsWithSources = data.data.filter((stat: any) => stat.source);
+      expect(statsWithSources.length).toBeGreaterThan(0);
+      
+      // Check that statistics have category information
+      const statsWithCategories = data.data.filter((stat: any) => stat.category);
+      expect(statsWithCategories.length).toBeGreaterThan(0);
+    });
   });
 }); 

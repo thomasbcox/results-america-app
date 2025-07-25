@@ -1,6 +1,6 @@
 import { AuthService } from './authService';
 import { BootstrapAdminSchema } from '../validators';
-import { ValidationError, ConflictError } from '../errors';
+import { ServiceError } from '../errors';
 import type { BootstrapAdminSchema as BootstrapAdminType } from '../validators';
 
 export interface BootstrapResult {
@@ -30,7 +30,7 @@ export class BootstrapService {
       // Check if admin user already exists
       const existingAdmin = await AuthService.getUserByEmail(validatedData.email);
       if (existingAdmin) {
-        throw new ConflictError('Admin user already exists');
+        throw new ServiceError('Admin user already exists', 'CONFLICT_ERROR', 409);
       }
       
       // Create admin user
@@ -59,12 +59,12 @@ export class BootstrapService {
       if (error instanceof Error) {
         if (error.message.includes('SQLITE_CONSTRAINT_UNIQUE') || 
             error.message.includes('UNIQUE constraint failed')) {
-          throw new ConflictError('User with this email already exists');
+          throw new ServiceError('User with this email already exists', 'CONFLICT_ERROR', 409);
         }
       }
       
-      // Re-throw validation and conflict errors
-      if (error instanceof ValidationError || error instanceof ConflictError) {
+      // Re-throw ServiceError instances
+      if (ServiceError.isServiceError(error)) {
         throw error;
       }
       

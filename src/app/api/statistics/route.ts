@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { getAllStatisticsWithSources } from '@/lib/services/statisticsService';
+import { StatisticsService } from '@/lib/services/statisticsService';
 import { getStatisticsWithData } from '@/lib/services/dataAvailabilityService';
 import { withErrorHandling, createSuccessResponse } from '@/lib/response';
 
@@ -7,7 +7,7 @@ async function handleGetStatistics(request: NextRequest) {
   const url = new URL(request.url);
   const withAvailability = url.searchParams.get('withAvailability') === 'true';
   
-  const statistics = await getAllStatisticsWithSources();
+  const statistics = await StatisticsService.getAllStatisticsWithSources();
   
   // Add data availability information if requested
   if (withAvailability) {

@@ -1,58 +1,36 @@
 import { db } from '../db/index';
 import { users, sessions, passwordResetTokens, userActivityLogs } from '../db/schema';
-import { eq, and, lt } from 'drizzle-orm';
+import { eq, and, lt, gt } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
+import type { 
+  IAuthService, 
+  User, 
+  Session, 
+  ActivityLog,
+  UserStats,
+  CreateUserInput, 
+  UpdateUserInput, 
+  LoginInput 
+} from '../types/service-interfaces';
 
-export interface User {
-  id: number;
-  email: string;
-  name: string;
-  role: 'admin' | 'user' | 'viewer';
-  isActive: boolean;
-  emailVerified: boolean;
-  lastLoginAt?: Date;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export interface CreateUserData {
-  email: string;
-  name: string;
-  password: string;
-  role?: 'admin' | 'user' | 'viewer';
-}
-
-export interface LoginData {
-  email: string;
-  password: string;
-}
-
-export interface Session {
-  id: number;
-  userId: number;
-  token: string;
-  expiresAt: Date;
-  createdAt: Date;
-}
-
-export class AuthService {
+export class AuthService implements IAuthService {
   private static readonly SALT_ROUNDS = 12;
   private static readonly SESSION_DURATION = 24 * 60 * 60 * 1000; // 24 hours
   private static readonly RESET_TOKEN_DURATION = 60 * 60 * 1000; // 1 hour
 
   // User Management
-  static async createUser(data: CreateUserData): Promise<User> {
-    const passwordHash = await bcrypt.hash(data.password, this.SALT_ROUNDS);
+  static async createUser(input: CreateUserInput): Promise<User> {
+    const passwordHash = await bcrypt.hash(input.password, this.SALT_ROUNDS);
     
     const [user] = await db.insert(users).values({
-      email: data.email.toLowerCase(),
-      name: data.name,
+      email: input.email.toLowerCase(),
+      name: input.name,
       passwordHash,
-      role: data.role || 'user',
+      role: input.role || 'user',
     }).returning();
 
-    await this.logActivity(user.id, 'user_created', `User ${data.email} created`);
+    await this.logActivity(user.id, 'user_created', `User ${input.email} created`);
 
     // Convert null to undefined for lastLoginAt
     return {
@@ -83,9 +61,9 @@ export class AuthService {
     };
   }
 
-  static async updateUser(id: number, updates: Partial<Omit<User, 'id' | 'passwordHash'>>): Promise<User | null> {
+  static async updateUser(id: number, input: UpdateUserInput): Promise<User | null> {
     const [user] = await db.update(users)
-      .set({ ...updates, updatedAt: new Date() })
+      .set({ ...input, updatedAt: new Date() })
       .where(eq(users.id, id))
       .returning();
     
@@ -102,19 +80,16 @@ export class AuthService {
   }
 
   static async deleteUser(id: number): Promise<boolean> {
-    const [user] = await db.select({ email: users.email }).from(users).where(eq(users.id, id)).limit(1);
-    
-    if (!user) return false;
-
-    await db.delete(users).where(eq(users.id, id));
-    await this.logActivity(id, 'user_deleted', `User ${user.email} deleted`);
-    
-    return true;
+    const result = await db.delete(users).where(eq(users.id, id)).returning();
+    if (result.length > 0) {
+      await this.logActivity(null, 'user_deleted', `User ${id} deleted`);
+      return true;
+    }
+    return false;
   }
 
   static async listUsers(): Promise<User[]> {
     const usersList = await db.select().from(users).orderBy(users.createdAt);
-    // Convert null to undefined for lastLoginAt
     return usersList.map(user => ({
       ...user,
       lastLoginAt: user.lastLoginAt || undefined
@@ -124,82 +99,72 @@ export class AuthService {
   static async changePassword(userId: number, newPassword: string): Promise<boolean> {
     const passwordHash = await bcrypt.hash(newPassword, this.SALT_ROUNDS);
     
-    const [user] = await db.update(users)
-      .set({ passwordHash, updatedAt: new Date() })
+    const result = await db.update(users)
+      .set({ 
+        passwordHash,
+        updatedAt: new Date()
+      })
       .where(eq(users.id, userId))
       .returning();
-    
-    if (user) {
+
+    if (result.length > 0) {
       await this.logActivity(userId, 'password_changed', 'Password changed');
-    }
-    
-    return !!user;
-  }
-
-  // Authentication
-  static async login(data: LoginData): Promise<{ user: User; session: Session } | null> {
-    // Get user with password hash for authentication
-    const [userWithHash] = await db.select().from(users).where(eq(users.email, data.email.toLowerCase())).limit(1);
-    
-    if (!userWithHash || !userWithHash.isActive) {
-      return null;
-    }
-
-    const isValidPassword = await bcrypt.compare(data.password, userWithHash.passwordHash);
-    if (!isValidPassword) {
-      await this.logActivity(userWithHash.id, 'login_failed', 'Invalid password');
-      return null;
-    }
-
-    // Update last login
-    await db.update(users)
-      .set({ lastLoginAt: new Date() })
-      .where(eq(users.id, userWithHash.id));
-
-    // Create session
-    const session = await this.createSession(userWithHash.id);
-    
-    // Convert to User interface (without password hash)
-    const user: User = {
-      id: userWithHash.id,
-      email: userWithHash.email,
-      name: userWithHash.name,
-      role: userWithHash.role,
-      isActive: userWithHash.isActive,
-      emailVerified: userWithHash.emailVerified,
-      lastLoginAt: userWithHash.lastLoginAt || undefined,
-      createdAt: userWithHash.createdAt,
-      updatedAt: userWithHash.updatedAt,
-    };
-    
-    await this.logActivity(user.id, 'login_success', 'User logged in successfully');
-    
-    return { user, session };
-  }
-
-  static async logout(sessionToken: string): Promise<boolean> {
-    const [session] = await db.select({ userId: sessions.userId }).from(sessions).where(eq(sessions.token, sessionToken)).limit(1);
-    
-    if (session) {
-      await db.delete(sessions).where(eq(sessions.token, sessionToken));
-      await this.logActivity(session.userId, 'logout', 'User logged out');
       return true;
     }
     
     return false;
   }
 
-  static async validateSession(token: string): Promise<User | null> {
-    const [session] = await db.select({
-      userId: sessions.userId,
-      expiresAt: sessions.expiresAt,
-    }).from(sessions).where(eq(sessions.token, token)).limit(1);
-
-    if (!session || session.expiresAt < new Date()) {
+  // Authentication
+  static async login(input: LoginInput): Promise<{ user: User; session: Session } | null> {
+    const user = await this.getUserByEmail(input.email);
+    if (!user || !user.isActive) {
       return null;
     }
 
-    return await this.getUserById(session.userId);
+    const [userWithPassword] = await db.select().from(users).where(eq(users.email, input.email.toLowerCase())).limit(1);
+    if (!userWithPassword) {
+      return null;
+    }
+
+    const isValidPassword = await bcrypt.compare(input.password, userWithPassword.passwordHash);
+    if (!isValidPassword) {
+      await this.logActivity(user.id, 'login_failed', 'Invalid password');
+      return null;
+    }
+
+    // Update last login
+    await db.update(users)
+      .set({ lastLoginAt: new Date() })
+      .where(eq(users.id, user.id));
+
+    // Create session
+    const session = await this.createSession(user.id);
+    
+    await this.logActivity(user.id, 'login_successful', 'User logged in successfully');
+
+    return { user, session };
+  }
+
+  static async logout(sessionToken: string): Promise<boolean> {
+    const result = await db.delete(sessions).where(eq(sessions.token, sessionToken)).returning();
+    return result.length > 0;
+  }
+
+  static async validateSession(token: string): Promise<User | null> {
+    const [session] = await db.select()
+      .from(sessions)
+      .where(and(
+        eq(sessions.token, token),
+        gt(sessions.expiresAt, new Date())
+      ))
+      .limit(1);
+
+    if (!session) {
+      return null;
+    }
+
+    return this.getUserById(session.userId);
   }
 
   private static async createSession(userId: number): Promise<Session> {
@@ -215,10 +180,12 @@ export class AuthService {
     return session;
   }
 
-  // Password Reset
+  // Password Management
   static async createPasswordResetToken(email: string): Promise<string | null> {
     const user = await this.getUserByEmail(email);
-    if (!user) return null;
+    if (!user) {
+      return null;
+    }
 
     const token = crypto.randomBytes(32).toString('hex');
     const expiresAt = new Date(Date.now() + this.RESET_TOKEN_DURATION);
@@ -229,97 +196,109 @@ export class AuthService {
       expiresAt,
     });
 
-    await this.logActivity(user.id, 'password_reset_requested', 'Password reset requested');
-    
     return token;
   }
 
   static async resetPassword(token: string, newPassword: string): Promise<boolean> {
-    const [resetToken] = await db.select({
-      userId: passwordResetTokens.userId,
-      expiresAt: passwordResetTokens.expiresAt,
-      used: passwordResetTokens.used,
-    }).from(passwordResetTokens).where(eq(passwordResetTokens.token, token)).limit(1);
+    const [resetToken] = await db.select()
+      .from(passwordResetTokens)
+      .where(and(
+        eq(passwordResetTokens.token, token),
+        eq(passwordResetTokens.used, false),
+        gt(passwordResetTokens.expiresAt, new Date())
+      ))
+      .limit(1);
 
-    if (!resetToken || resetToken.used || resetToken.expiresAt < new Date()) {
+    if (!resetToken) {
       return false;
     }
 
     const passwordHash = await bcrypt.hash(newPassword, this.SALT_ROUNDS);
-    
+
     await db.update(users)
-      .set({ passwordHash, updatedAt: new Date() })
+      .set({ 
+        passwordHash,
+        updatedAt: new Date()
+      })
       .where(eq(users.id, resetToken.userId));
 
     await db.update(passwordResetTokens)
       .set({ used: true })
-      .where(eq(passwordResetTokens.token, token));
+      .where(eq(passwordResetTokens.id, resetToken.id));
 
-    await this.logActivity(resetToken.userId, 'password_reset_completed', 'Password reset completed');
-    
+    await this.logActivity(resetToken.userId, 'password_reset', 'Password reset via token');
+
     return true;
   }
 
   // Admin Functions
   static async bootstrapAdminUser(email: string, name: string, password: string): Promise<User> {
-    // Check if admin user already exists
-    const existingAdmin = await db.select().from(users).where(eq(users.role, 'admin')).limit(1);
-    
-    if (existingAdmin.length > 0) {
+    // Check if any admin users exist
+    const adminUsers = await this.getAdminUsers();
+    if (adminUsers.length > 0) {
       throw new Error('Admin user already exists');
     }
 
-    return await this.createUser({
+    return this.createUser({
       email,
       name,
       password,
-      role: 'admin',
+      role: 'admin'
     });
   }
 
   static async getAdminUsers(): Promise<User[]> {
-    const adminUsers = await db.select().from(users).where(eq(users.role, 'admin')).orderBy(users.createdAt);
-    // Convert null to undefined for lastLoginAt
+    const adminUsers = await db.select()
+      .from(users)
+      .where(eq(users.role, 'admin'))
+      .orderBy(users.createdAt);
+
     return adminUsers.map(user => ({
       ...user,
       lastLoginAt: user.lastLoginAt || undefined
     }));
   }
 
-  static async deactivateUser(userId: number): Promise<boolean> {
-    const [user] = await db.update(users)
-      .set({ isActive: false, updatedAt: new Date() })
-      .where(eq(users.id, userId))
-      .returning();
-    
-    if (user) {
-      await this.logActivity(userId, 'user_deactivated', `User ${user.email} deactivated`);
-    }
-    
-    return !!user;
-  }
-
   static async activateUser(userId: number): Promise<boolean> {
-    const [user] = await db.update(users)
+    const result = await db.update(users)
       .set({ isActive: true, updatedAt: new Date() })
       .where(eq(users.id, userId))
       .returning();
-    
-    if (user) {
-      await this.logActivity(userId, 'user_activated', `User ${user.email} activated`);
+
+    if (result.length > 0) {
+      await this.logActivity(userId, 'user_activated', 'User account activated');
+      return true;
     }
     
-    return !!user;
+    return false;
   }
 
-  // Session Management
+  static async deactivateUser(userId: number): Promise<boolean> {
+    const result = await db.update(users)
+      .set({ isActive: false, updatedAt: new Date() })
+      .where(eq(users.id, userId))
+      .returning();
+
+    if (result.length > 0) {
+      await this.logActivity(userId, 'user_deactivated', 'User account deactivated');
+      return true;
+    }
+    
+    return false;
+  }
+
+  // Maintenance
   static async cleanupExpiredSessions(): Promise<number> {
-    const result = await db.delete(sessions).where(lt(sessions.expiresAt, new Date()));
+    const result = await db.delete(sessions)
+      .where(lt(sessions.expiresAt, new Date()));
+    
     return result.changes || 0;
   }
 
   static async cleanupExpiredResetTokens(): Promise<number> {
-    const result = await db.delete(passwordResetTokens).where(lt(passwordResetTokens.expiresAt, new Date()));
+    const result = await db.delete(passwordResetTokens)
+      .where(lt(passwordResetTokens.expiresAt, new Date()));
+    
     return result.changes || 0;
   }
 
@@ -334,18 +313,8 @@ export class AuthService {
     });
   }
 
-  static async getActivityLogs(limit: number = 100): Promise<{
-    id: number;
-    userId: number | null;
-    action: string;
-    details: string | null;
-    ipAddress: string | null;
-    userAgent: string | null;
-    createdAt: Date;
-    userEmail: string | null;
-    userName: string | null;
-  }[]> {
-    return await db.select({
+  static async getActivityLogs(limit: number = 100): Promise<ActivityLog[]> {
+    const logs = await db.select({
       id: userActivityLogs.id,
       userId: userActivityLogs.userId,
       action: userActivityLogs.action,
@@ -356,31 +325,37 @@ export class AuthService {
       userEmail: users.email,
       userName: users.name,
     })
-    .from(userActivityLogs)
-    .leftJoin(users, eq(userActivityLogs.userId, users.id))
-    .orderBy(userActivityLogs.createdAt)
-    .limit(limit);
+      .from(userActivityLogs)
+      .leftJoin(users, eq(userActivityLogs.userId, users.id))
+      .orderBy(userActivityLogs.createdAt)
+      .limit(limit);
+
+    return logs.map(log => ({
+      id: log.id,
+      userId: log.userId,
+      action: log.action,
+      details: log.details,
+      ipAddress: log.ipAddress,
+      userAgent: log.userAgent,
+      createdAt: log.createdAt,
+      userEmail: log.userEmail,
+      userName: log.userName,
+    }));
   }
 
-  // Utility Functions
-  static async getUserStats(): Promise<{
-    totalUsers: number;
-    activeUsers: number;
-    adminUsers: number;
-    recentLogins: number;
-  }> {
-    const totalUsersResult = await db.select().from(users);
-    const activeUsersResult = await db.select().from(users).where(eq(users.isActive, true));
-    const adminUsersResult = await db.select().from(users).where(eq(users.role, 'admin'));
-    
-    // For now, just return 0 for recent logins since the date comparison is complex
-    // TODO: Implement proper date comparison for recent logins
+  static async getUserStats(): Promise<UserStats> {
+    const [totalUsers, activeUsers, adminUsers, recentLogins] = await Promise.all([
+      db.select().from(users).then(r => r.length),
+      db.select().from(users).where(eq(users.isActive, true)).then(r => r.length),
+      db.select().from(users).where(eq(users.role, 'admin')).then(r => r.length),
+      db.select().from(users).where(gt(users.lastLoginAt, new Date(Date.now() - 7 * 24 * 60 * 60 * 1000))).then(r => r.length),
+    ]);
 
     return {
-      totalUsers: totalUsersResult.length,
-      activeUsers: activeUsersResult.length,
-      adminUsers: adminUsersResult.length,
-      recentLogins: 0, // Simplified for now
+      totalUsers,
+      activeUsers,
+      adminUsers,
+      recentLogins,
     };
   }
 } 

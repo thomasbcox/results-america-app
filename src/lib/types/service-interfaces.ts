@@ -1,80 +1,10 @@
-// Service Interfaces - Defines contracts for all service classes
-// This ensures consistent patterns and type safety across the application
+// Comprehensive Service Interfaces
+// Following the ideal pattern from the programming guide
 
-export interface User {
-  id: number;
-  email: string;
-  name: string;
-  role: 'admin' | 'user' | 'viewer';
-  isActive: boolean;
-  emailVerified: boolean;
-  lastLoginAt?: Date;
-  createdAt: Date;
-  updatedAt: Date;
-}
+// ============================================================================
+// AUTHENTICATION & USER MANAGEMENT
+// ============================================================================
 
-export interface Session {
-  id: number;
-  userId: number;
-  token: string;
-  expiresAt: Date;
-  createdAt: Date;
-}
-
-export interface CreateUserInput {
-  email: string;
-  name: string;
-  password: string;
-  role?: 'admin' | 'user' | 'viewer';
-}
-
-export interface UpdateUserInput {
-  name?: string;
-  role?: 'admin' | 'user' | 'viewer';
-  isActive?: boolean;
-  emailVerified?: boolean;
-}
-
-export interface LoginInput {
-  email: string;
-  password: string;
-}
-
-export interface MagicLinkInput {
-  email: string;
-  name?: string;
-}
-
-export interface PasswordResetInput {
-  email: string;
-  origin: string;
-}
-
-export interface ResetPasswordInput {
-  token: string;
-  password: string;
-}
-
-export interface UserStats {
-  totalUsers: number;
-  activeUsers: number;
-  adminUsers: number;
-  recentLogins: number;
-}
-
-export interface ActivityLog {
-  id: number;
-  userId: number | null;
-  action: string;
-  details: string | null;
-  ipAddress: string | null;
-  userAgent: string | null;
-  createdAt: Date;
-  userEmail: string | null;
-  userName: string | null;
-}
-
-// Core Service Interfaces
 export interface IAuthService {
   // User Management
   createUser(input: CreateUserInput): Promise<User>;
@@ -109,80 +39,483 @@ export interface IAuthService {
 }
 
 export interface IMagicLinkService {
-  createMagicLink(input: MagicLinkInput): Promise<string>;
+  createMagicLink(email: string): Promise<string>;
   verifyMagicLink(token: string): Promise<User>;
   cleanupExpiredMagicLinks(): Promise<number>;
 }
 
 export interface IPasswordResetService {
-  initiatePasswordReset(input: PasswordResetInput): Promise<{ message: string; resetUrl?: string }>;
+  createResetToken(email: string): Promise<string | null>;
   validateResetToken(token: string): Promise<boolean>;
-  resetPassword(input: ResetPasswordInput): Promise<string>;
-  cleanupExpiredResetTokens(): Promise<number>;
+  resetPassword(token: string, newPassword: string): Promise<boolean>;
+  cleanupExpiredTokens(): Promise<number>;
 }
 
-export interface IAdminAuthService {
-  loginAdmin(email: string, password: string): Promise<{ user: User; session: Session }>;
-  resetAdminPassword(email: string): Promise<string>;
-  validateAdminSession(token: string): Promise<User | null>;
-}
-
-// Statistics Service Interfaces
-export interface IStatisticsService {
-  getStatistics(): Promise<any[]>;
-  getStatisticsByCategory(categoryId: number): Promise<any[]>;
-  getStatisticsByState(stateId: number): Promise<any[]>;
-  getStatisticsByMeasure(measureId: number): Promise<any[]>;
-}
+// ============================================================================
+// DATA MANAGEMENT SERVICES
+// ============================================================================
 
 export interface IStatesService {
-  getStates(): Promise<any[]>;
-  getStateById(id: number): Promise<any | null>;
-  getStateByCode(code: string): Promise<any | null>;
+  getAllStates(useCache?: boolean): Promise<StateData[]>;
+  getStatesWithPagination(options: PaginationOptions, filters?: FilterOptions): Promise<PaginatedResult<StateData>>;
+  searchStates(query: string): Promise<StateData[]>;
+  getStateById(id: number): Promise<StateData | null>;
+  createState(data: CreateStateInput): Promise<StateData>;
+  updateState(id: number, data: UpdateStateInput): Promise<StateData>;
+  deleteState(id: number): Promise<boolean>;
 }
 
 export interface ICategoriesService {
-  getCategories(): Promise<any[]>;
-  getCategoryById(id: number): Promise<any | null>;
-  getCategoryAvailability(): Promise<any[]>;
+  getAllCategories(): Promise<CategoryData[]>;
+  getCategoryById(id: number): Promise<CategoryData | null>;
+  createCategory(data: CreateCategoryInput): Promise<CategoryData>;
+  updateCategory(id: number, data: UpdateCategoryInput): Promise<CategoryData>;
+  deleteCategory(id: number): Promise<boolean>;
+}
+
+export interface IStatisticsService {
+  getAllStatisticsWithSources(): Promise<StatisticData[]>;
+  getStatisticById(id: number): Promise<StatisticData | null>;
+  createStatistic(data: CreateStatisticInput): Promise<StatisticData>;
+  updateStatistic(id: number, data: UpdateStatisticInput): Promise<StatisticData>;
+  deleteStatistic(id: number): Promise<boolean>;
+  getStatisticsByCategory(categoryId: number): Promise<StatisticData[]>;
 }
 
 export interface IDataPointsService {
-  getDataPoints(filters?: any): Promise<any[]>;
-  getDataPointsByState(stateId: number): Promise<any[]>;
-  getDataPointsByMeasure(measureId: number): Promise<any[]>;
+  getDataPointsForState(stateId: number, year?: number): Promise<DataPointData[]>;
+  getDataPointsForStatistic(statisticId: number, year?: number): Promise<DataPointData[]>;
+  getDataPointsForComparison(stateIds: number[], statisticIds: number[], year: number): Promise<DataPointData[]>;
+  createDataPoint(data: CreateDataPointInput): Promise<DataPointData>;
+  updateDataPoint(id: number, data: UpdateDataPointInput): Promise<DataPointData>;
+  deleteDataPoint(id: number): Promise<boolean>;
 }
+
+// ============================================================================
+// AGGREGATION & ANALYTICS SERVICES
+// ============================================================================
 
 export interface IAggregationService {
-  getAggregatedData(filters?: any): Promise<any>;
-  getStateRankings(categoryId?: number): Promise<any[]>;
-  getTrendData(measureId: number, stateId: number): Promise<any[]>;
+  aggregate(params: AggregationParams): Promise<AggregationResult>;
+  getStatisticComparison(statisticId: number, year?: number): Promise<ComparisonData>;
+  getStateComparison(stateId: number, year?: number): Promise<StateComparisonData>;
+  getTopBottomPerformers(statisticId: number, limit?: number, year?: number, order?: 'asc' | 'desc'): Promise<TopBottomPerformersData>;
+  getTrendData(statisticId: number, stateId: number): Promise<TrendData>;
+  getNationalAverage(statisticId: number, year?: number): Promise<number>;
 }
 
-// Admin Service Interfaces
+export interface IDataAvailabilityService {
+  getStatisticsWithData(): Promise<number[]>;
+  getDataAvailabilityByState(stateId: number): Promise<DataAvailabilityData>;
+  getDataAvailabilityByStatistic(statisticId: number): Promise<DataAvailabilityData>;
+  getDataQualityMetrics(): Promise<DataQualityMetrics>;
+}
+
+// ============================================================================
+// ADMIN & SYSTEM SERVICES
+// ============================================================================
+
 export interface IAdminService {
-  getSystemStats(): Promise<any>;
-  getDataQualityMetrics(): Promise<any>;
-  getExternalDataStatus(): Promise<any>;
+  getSystemStats(): Promise<SystemStats>;
+  checkDataIntegrity(): Promise<DataIntegrityCheck>;
+  clearCache(): Promise<void>;
+  rebuildCache(): Promise<void>;
+  cleanupOrphanedData(): Promise<{ cleaned: number; errors: string[] }>;
+  getAnalyticsData(range?: string): Promise<AnalyticsData>;
+}
+
+export interface IBootstrapService {
+  bootstrapAdminUser(data: BootstrapAdminInput): Promise<BootstrapResult>;
+  checkBootstrapStatus(): Promise<BootstrapStatus>;
 }
 
 export interface IExternalDataService {
-  importExternalData(data: any): Promise<any>;
-  queryExternalData(filters: any): Promise<any>;
-  validateExternalData(data: any): Promise<any>;
+  importData(data: ExternalDataImportInput): Promise<ImportResult>;
+  validateImportData(data: ExternalDataImportInput): Promise<ValidationResult>;
+  getImportHistory(): Promise<ImportSession[]>;
 }
 
 export interface IImportExportService {
-  exportData(format: string, filters?: any): Promise<any>;
-  importData(data: any, format: string): Promise<any>;
-  validateImportData(data: any): Promise<any>;
+  exportData(format: 'json' | 'csv', filters?: ExportFilters): Promise<ExportResult>;
+  importData(data: ImportDataInput): Promise<ImportResult>;
+  validateImportFormat(data: any): Promise<ValidationResult>;
 }
 
-// Cache Service Interface
+// ============================================================================
+// CACHE & UTILITY SERVICES
+// ============================================================================
+
 export interface ICacheService {
-  get<T>(key: string): Promise<T | null>;
-  set<T>(key: string, value: T, ttl?: number): Promise<void>;
-  delete(key: string): Promise<void>;
-  clear(): Promise<void>;
-  getStats(): Promise<any>;
+  get<T>(key: string): T;
+  set<T>(key: string, value: T, ttl?: number): void;
+  delete(key: string): void;
+  clear(): void;
+  has(key: string): boolean;
+  getStats(): CacheStats;
+}
+
+export interface IPaginationService {
+  calculatePagination(options: PaginationOptions, totalItems: number): PaginationInfo;
+  applyPagination<T>(items: T[], options: PaginationOptions): T[];
+}
+
+export interface IFilterService {
+  filterStates(states: StateData[], filters: FilterOptions): StateData[];
+  filterStatistics(statistics: StatisticData[], filters: FilterOptions): StatisticData[];
+  filterDataPoints(dataPoints: DataPointData[], filters: FilterOptions): DataPointData[];
+}
+
+// ============================================================================
+// TYPE DEFINITIONS
+// ============================================================================
+
+export interface User {
+  id: number;
+  email: string;
+  name: string;
+  role: 'admin' | 'user' | 'viewer';
+  isActive: boolean;
+  emailVerified: boolean;
+  lastLoginAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Session {
+  id: number;
+  userId: number;
+  token: string;
+  expiresAt: Date;
+  createdAt: Date;
+}
+
+export interface ActivityLog {
+  id: number;
+  userId: number | null;
+  action: string;
+  details: string | null;
+  ipAddress: string | null;
+  userAgent: string | null;
+  createdAt: Date;
+  userEmail: string | null;
+  userName: string | null;
+}
+
+export interface UserStats {
+  totalUsers: number;
+  activeUsers: number;
+  adminUsers: number;
+  recentLogins: number;
+}
+
+export interface StateData {
+  id: number;
+  name: string;
+  abbreviation: string;
+  isActive: number;
+}
+
+export interface CategoryData {
+  id: number;
+  name: string;
+  description: string | null;
+  icon: string | null;
+  sortOrder: number;
+  isActive: number;
+}
+
+export interface StatisticData {
+  id: number;
+  raNumber: string | null;
+  categoryId: number;
+  dataSourceId: number | null;
+  name: string;
+  description: string | null;
+  subMeasure: string | null;
+  calculation: string | null;
+  unit: string;
+  availableSince: string | null;
+  dataQuality: 'mock' | 'real';
+  provenance: string | null;
+  isActive: number;
+  categoryName?: string;
+  dataSourceName?: string;
+}
+
+export interface DataPointData {
+  id: number;
+  statisticId: number;
+  stateId: number;
+  year: number;
+  value: number;
+  source: string | null;
+  importSessionId: number | null;
+  stateName?: string;
+  statisticName?: string;
+}
+
+// Input/Output Types
+export type CreateUserInput = {
+  email: string;
+  name: string;
+  password: string;
+  role?: 'admin' | 'user' | 'viewer';
+};
+
+export type UpdateUserInput = Partial<Omit<User, 'id' | 'passwordHash'>>;
+
+export type LoginInput = {
+  email: string;
+  password: string;
+};
+
+export type CreateStateInput = {
+  name: string;
+  abbreviation: string;
+};
+
+export type UpdateStateInput = Partial<CreateStateInput & { isActive: number }>;
+
+export type CreateCategoryInput = {
+  name: string;
+  description?: string;
+  icon?: string;
+  sortOrder?: number;
+};
+
+export type UpdateCategoryInput = Partial<CreateCategoryInput>;
+
+export type CreateStatisticInput = {
+  raNumber?: string;
+  categoryId: number;
+  dataSourceId?: number;
+  name: string;
+  description?: string;
+  subMeasure?: string;
+  calculation?: string;
+  unit: string;
+  availableSince?: string;
+  dataQuality?: 'mock' | 'real';
+  provenance?: string;
+};
+
+export type UpdateStatisticInput = Partial<CreateStatisticInput>;
+
+export type CreateDataPointInput = {
+  statisticId: number;
+  stateId: number;
+  year: number;
+  value: number;
+  source?: string;
+  importSessionId?: number;
+};
+
+export type UpdateDataPointInput = Partial<CreateDataPointInput>;
+
+// Pagination & Filtering
+export interface PaginationOptions {
+  page: number;
+  limit: number;
+}
+
+export interface PaginationInfo {
+  currentPage: number;
+  totalPages: number;
+  totalItems: number;
+  itemsPerPage: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+}
+
+export interface PaginatedResult<T> {
+  data: T[];
+  pagination: PaginationInfo;
+}
+
+export interface FilterOptions {
+  search?: string;
+  categoryId?: number;
+  stateId?: number;
+  year?: number;
+  dataQuality?: 'mock' | 'real';
+  isActive?: boolean;
+}
+
+// Aggregation Types
+export type AggregationParams = 
+  | { type: 'statistic-comparison'; statisticId: number; year?: number; }
+  | { type: 'state-comparison'; stateId: number; year?: number; }
+  | { type: 'top-performers' | 'bottom-performers'; statisticId: number; limit?: number; year?: number; }
+  | { type: 'trend-data'; statisticId: number; stateId: number; };
+
+export type AggregationResult = ComparisonData | StateComparisonData | TopBottomPerformersData | TrendData;
+
+export interface ComparisonData {
+  statistic: StatisticData;
+  year: number;
+  states: Array<{
+    state: StateData;
+    value: number;
+    rank: number;
+    percentile: number;
+  }>;
+  nationalAverage: number;
+}
+
+export interface StateComparisonData {
+  state: StateData;
+  year: number;
+  statistics: Array<{
+    statistic: StatisticData;
+    value: number;
+    rank: number;
+    percentile: number;
+  }>;
+}
+
+export interface TopBottomPerformersData {
+  statistic: StatisticData;
+  year: number;
+  performers: Array<{
+    state: StateData;
+    value: number;
+    rank: number;
+  }>;
+}
+
+export interface TrendData {
+  statistic: StatisticData;
+  state: StateData;
+  trends: Array<{
+    year: number;
+    value: number;
+    change: number;
+    changePercent: number;
+  }>;
+}
+
+// Admin Types
+export interface SystemStats {
+  totalStates: number;
+  totalCategories: number;
+  totalStatistics: number;
+  totalDataPoints: number;
+  totalDataSources: number;
+  totalImportSessions: number;
+  lastImportDate?: string;
+  cacheSize: number;
+}
+
+export interface DataIntegrityCheck {
+  orphanedDataPoints: number;
+  missingSources: number;
+  duplicateStates: number;
+  duplicateCategories: number;
+  issues: string[];
+}
+
+export interface AnalyticsData {
+  period: string;
+  metrics: {
+    totalUsers: number;
+    activeUsers: number;
+    dataRequests: number;
+    cacheHitRate: number;
+  };
+}
+
+export interface BootstrapAdminInput {
+  email: string;
+  name: string;
+  password: string;
+}
+
+export interface BootstrapResult {
+  user: User;
+  message: string;
+}
+
+export interface BootstrapStatus {
+  isBootstrapped: boolean;
+  adminCount: number;
+}
+
+// External Data Types
+export interface ExternalDataImportInput {
+  source: string;
+  data: any[];
+  options?: {
+    overwrite?: boolean;
+    validateOnly?: boolean;
+  };
+}
+
+export interface ImportResult {
+  success: boolean;
+  imported: number;
+  errors: string[];
+  message: string;
+}
+
+export interface ValidationResult {
+  isValid: boolean;
+  errors: string[];
+  warnings: string[];
+}
+
+export interface ImportSession {
+  id: number;
+  source: string;
+  importedAt: Date;
+  recordCount: number;
+  status: 'success' | 'partial' | 'failed';
+}
+
+// Cache Types
+export interface CacheStats {
+  size: number;
+  hitRate: number;
+  missRate: number;
+  keys: string[];
+}
+
+// Data Availability Types
+export interface DataAvailabilityData {
+  totalRecords: number;
+  availableRecords: number;
+  coverage: number;
+  years: number[];
+  states: StateData[];
+}
+
+export interface DataQualityMetrics {
+  totalRecords: number;
+  mockData: number;
+  realData: number;
+  qualityRatio: number;
+}
+
+// Export/Import Types
+export interface ExportFilters {
+  states?: number[];
+  categories?: number[];
+  statistics?: number[];
+  years?: number[];
+  dataQuality?: 'mock' | 'real';
+}
+
+export interface ExportResult {
+  data: any;
+  format: string;
+  filename: string;
+  recordCount: number;
+}
+
+export interface ImportDataInput {
+  data: any[];
+  format: 'json' | 'csv';
+  options?: {
+    validateOnly?: boolean;
+    overwrite?: boolean;
+  };
 } 

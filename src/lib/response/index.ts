@@ -96,7 +96,13 @@ export const createInternalServerErrorResponse = (
   message: string = 'Internal server error'
 ): NextResponse => {
   return NextResponse.json(
-    { error: message, code: 'INTERNAL_SERVER_ERROR', statusCode: 500, timestamp: new Date().toISOString() },
+    { 
+      success: false,
+      error: message, 
+      code: 'INTERNAL_SERVER_ERROR', 
+      statusCode: 500, 
+      timestamp: new Date().toISOString() 
+    },
     { status: 500 }
   );
 };
@@ -140,15 +146,20 @@ export const withAuth = <T extends unknown[]>(
       throw new ServiceError('Authentication required', 'AUTHENTICATION_REQUIRED', 401);
     }
 
-    // TODO: Implement session validation
-    // const user = await AuthService.validateSession(sessionToken);
-    // if (!user) {
-    //   throw new ServiceError('Invalid session', 'INVALID_SESSION', 401);
-    // }
+    // Import AuthService dynamically to avoid circular dependencies
+    const { AuthService } = await import('../services/authService');
+    const user = await AuthService.validateSession(sessionToken);
+    
+    if (!user) {
+      throw new ServiceError('Invalid session', 'INVALID_SESSION', 401);
+    }
 
-    // For now, create a mock auth context
+    if (!user.isActive) {
+      throw new ServiceError('User account is deactivated', 'USER_DEACTIVATED', 403);
+    }
+
     const authContext = {
-      user: { id: 1, email: 'admin@example.com', role: 'admin' },
+      user,
       session: { token: sessionToken }
     };
 

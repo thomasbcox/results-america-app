@@ -154,6 +154,19 @@ export class EmailServiceError extends ServiceError {
   }
 }
 
+// Cache Errors
+export class CacheMissError extends ServiceError {
+  constructor(message: string = 'Cache miss', key?: string, details?: any) {
+    super(message, 'CACHE_MISS', 404, { key, ...details });
+  }
+}
+
+export class CacheExpiredError extends ServiceError {
+  constructor(message: string = 'Cache expired', key?: string, details?: any) {
+    super(message, 'CACHE_EXPIRED', 404, { key, ...details });
+  }
+}
+
 // Rate Limiting Errors
 export class RateLimitError extends ServiceError {
   constructor(message: string = 'Rate limit exceeded', details?: any) {
@@ -196,6 +209,8 @@ export const createError = {
   constraintViolation: (message?: string, details?: any) => new ConstraintViolationError(message, details),
   externalService: (message?: string, details?: any) => new ExternalServiceError(message, details),
   emailService: (message?: string, details?: any) => new EmailServiceError(message, details),
+  cacheMiss: (message?: string, key?: string, details?: any) => new CacheMissError(message, key, details),
+  cacheExpired: (message?: string, key?: string, details?: any) => new CacheExpiredError(message, key, details),
   rateLimit: (message?: string, details?: any) => new RateLimitError(message, details),
   system: (message?: string, details?: any) => new SystemError(message, details),
   configuration: (message?: string, details?: any) => new ConfigurationError(message, details),
