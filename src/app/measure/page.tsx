@@ -51,7 +51,7 @@ function MeasureSelectionContent() {
         setSelectedMeasure(measureId)
       }
     }
-  }, [measureParam, setSelectedMeasure, category])
+  }, [measureParam, category, setSelectedMeasure])
 
   useEffect(() => {
     async function fetchStatistics() {

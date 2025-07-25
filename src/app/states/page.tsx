@@ -3,6 +3,7 @@ import { useState, useEffect } from "react"
 import { ArrowLeft, X, User, ArrowRight } from "lucide-react"
 import { useSelection } from "@/lib/context"
 import Link from "next/link"
+import Image from "next/image"
 
 interface State {
   id: number;
@@ -90,9 +91,11 @@ export default function StateSelection() {
       <div className="flex-1 flex flex-col items-center px-4 py-6">
         {/* US Map */}
         <div className="w-full max-w-md mb-6 relative">
-          <img 
+          <Image 
             src="/us-map.svg" 
             alt="United States Map"
+            width={400}
+            height={250}
             className="w-full h-64 object-cover rounded-lg shadow-md"
             onError={(e) => {
               // Fallback to a placeholder if image doesn't exist

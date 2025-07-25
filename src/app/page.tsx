@@ -2,6 +2,7 @@
 import { useState } from "react"
 import { useSelection } from "@/lib/context"
 import { GraduationCap, Building2, Heart, DollarSign, TrendingUp, ShieldCheck } from "lucide-react"
+import Image from "next/image"
 
 export default function MainMenu() {
   const { user, signIn, signOut } = useSelection()
@@ -169,9 +170,11 @@ export default function MainMenu() {
         <div className="flex-1 flex flex-col items-center px-4 py-6">
           {/* Hero image - much smaller and centered */}
           <div className="w-full max-w-2xl mb-8">
-            <img 
+            <Image 
               src="/state-capitol-building.png" 
               alt="State Capitol Building"
+              width={600}
+              height={200}
               className="w-full h-48 object-cover rounded-lg shadow-lg"
             />
           </div>
@@ -334,9 +337,11 @@ export default function MainMenu() {
       <div className="flex-1 flex flex-col items-center px-4 py-6">
         {/* Hero image */}
         <div className="w-full max-w-md mb-6">
-          <img 
+          <Image 
             src="/state-capitol-building.png" 
             alt="State Capitol Building"
+            width={600}
+            height={200}
             className="w-full h-48 object-cover rounded-lg shadow-md"
           />
         </div>
