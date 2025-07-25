@@ -2,14 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { UnifiedAuthService } from '@/lib/services/unifiedAuthService';
 import { withErrorHandling, createSuccessResponse } from '@/lib/response';
 
-async function handleAdminLogin(request: NextRequest) {
-  const { email, password } = await request.json();
+async function handleMagicLinkVerification(request: NextRequest) {
+  const { searchParams } = new URL(request.url);
+  const token = searchParams.get('token');
 
-  if (!email || !password) {
-    throw new Error('Email and password are required');
+  if (!token) {
+    throw new Error('Magic link token is required');
   }
 
-  const authResult = await UnifiedAuthService.authenticateAdmin({ email, password });
+  const authResult = await UnifiedAuthService.authenticateWithMagicLink(token);
 
   const response = createSuccessResponse(
     {
@@ -24,7 +25,7 @@ async function handleAdminLogin(request: NextRequest) {
       },
       authMethod: authResult.authMethod,
     },
-    'Login successful'
+    'Magic link verification successful'
   );
 
   // Set session cookie
@@ -39,4 +40,4 @@ async function handleAdminLogin(request: NextRequest) {
   return response;
 }
 
-export const POST = withErrorHandling(handleAdminLogin); 
+export const GET = withErrorHandling(handleMagicLinkVerification); 

@@ -42,6 +42,15 @@ export const userActivityLogs = sqliteTable('user_activity_logs', {
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`),
 });
 
+export const magicLinks = sqliteTable('magic_links', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  email: text('email').notNull(),
+  token: text('token').notNull().unique(),
+  expiresAt: integer('expires_at', { mode: 'timestamp' }).notNull(),
+  used: integer('used', { mode: 'boolean' }).notNull().default(false),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`),
+});
+
 // Phase 1: Core Data Display Schema (Normalized)
 // Eliminates denormalization for data consistency
 
