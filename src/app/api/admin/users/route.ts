@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { AuthService } from '@/lib/services/authService';
 import { withAdminAuth, withErrorHandling, createSuccessResponse, createCreatedResponse } from '@/lib/response';
+import { withDevSecurity } from '@/lib/middleware/security';
 
 // Get all users (admin only)
 async function handleGetUsers(authContext: any, request: NextRequest) {
@@ -53,5 +54,5 @@ async function handleCreateUser(authContext: any, request: NextRequest) {
   }, 'User created successfully');
 }
 
-export const GET = withErrorHandling(withAdminAuth(handleGetUsers));
-export const POST = withErrorHandling(withAdminAuth(handleCreateUser)); 
+export const GET = withDevSecurity(withErrorHandling(withAdminAuth(handleGetUsers)));
+export const POST = withDevSecurity(withErrorHandling(withAdminAuth(handleCreateUser))); 

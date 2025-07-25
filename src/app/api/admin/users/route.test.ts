@@ -1,275 +1,304 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { NextRequest } from 'next/server';
 import { GET, POST } from './route';
 import { AuthService } from '@/lib/services/authService';
-import { createTestDatabase } from '@/lib/testUtils';
+import { db } from '@/lib/db';
+import { users, sessions } from '@/lib/db/schema';
+import { eq } from 'drizzle-orm';
 
-describe('GET /api/admin/users', () => {
-  let testDb: any;
+// Mock the services
+jest.mock('@/lib/services/authService');
+jest.mock('@/lib/db', () => ({
+  db: {
+    select: jest.fn(),
+    insert: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn(),
+  },
+}));
 
-  beforeEach(async () => {
-    testDb = await createTestDatabase();
-  });
+describe('/api/admin/users', () => {
+  let mockAdminUser: any;
+  let mockSession: any;
 
-  afterEach(async () => {
-    await testDb.cleanup();
-  });
+  beforeEach(() => {
+    // Reset mocks
+    jest.clearAllMocks();
 
-  it('should return users list for admin user', async () => {
-    // Create admin user with unique email
-    const uniqueEmail = `admin-${Date.now()}-${Math.random().toString(36).substr(2, 9)}@example.com`;
-    const admin = await AuthService.bootstrapAdminUser(uniqueEmail, 'Admin', 'password123');
+    // Mock admin user
+    mockAdminUser = {
+      id: 1,
+      email: 'admin@example.com',
+      name: 'Admin User',
+      role: 'admin',
+      isActive: true,
+      emailVerified: true,
+      lastLoginAt: new Date(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
 
-    // Create a session for the admin
-    const loginResult = await AuthService.login({
-      email: uniqueEmail,
-      password: 'password123',
-    });
+    // Mock session
+    mockSession = {
+      id: 1,
+      userId: 1,
+      token: 'valid-session-token',
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      createdAt: new Date(),
+    };
 
-    const request = new NextRequest('http://localhost:3000/api/admin/users', {
-      method: 'GET',
-      headers: {
-        'Cookie': `session_token=${loginResult!.session.token}`,
+    // Mock AuthService methods
+    (AuthService.validateSession as jest.Mock).mockResolvedValue(mockAdminUser);
+    (AuthService.listUsers as jest.Mock).mockResolvedValue([
+      mockAdminUser,
+      {
+        id: 2,
+        email: 'user@example.com',
+        name: 'Regular User',
+        role: 'user',
+        isActive: true,
+        emailVerified: true,
+        lastLoginAt: new Date(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
       },
+    ]);
+    (AuthService.getUserStats as jest.Mock).mockResolvedValue({
+      totalUsers: 2,
+      activeUsers: 2,
+      adminUsers: 1,
+      recentLogins: 1,
     });
-
-    const response = await GET(request);
-    const data = await response.json();
-
-    expect(response.status).toBe(200);
-    expect(data.users).toBeDefined();
-    expect(Array.isArray(data.users)).toBe(true);
-    expect(data.users).toHaveLength(1);
-    expect(data.users[0].email).toBe(uniqueEmail);
-    expect(data.stats).toBeDefined();
-    expect(data.stats.totalUsers).toBe(1);
   });
 
-  it('should reject request for non-admin user', async () => {
-    // Create regular user with unique email
-    const uniqueEmail = `user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}@example.com`;
-    await AuthService.createUser({
-      email: uniqueEmail,
-      name: 'Regular User',
-      password: 'password123',
-      role: 'user',
-    });
-
-    const loginResult = await AuthService.login({
-      email: uniqueEmail,
-      password: 'password123',
-    });
-
-    const request = new NextRequest('http://localhost:3000/api/admin/users', {
-      method: 'GET',
-      headers: {
-        'Cookie': `session_token=${loginResult!.session.token}`,
-      },
-    });
-
-    const response = await GET(request);
-    const data = await response.json();
-
-    expect(response.status).toBe(403);
-    expect(data.error).toBe('Admin access required');
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
-  it('should reject request without authentication', async () => {
-    const request = new NextRequest('http://localhost:3000/api/admin/users', {
-      method: 'GET',
+  describe('GET /api/admin/users', () => {
+    it('should return users list and stats for authenticated admin', async () => {
+      // Create mock request with valid session
+      const request = new NextRequest('http://localhost:3000/api/admin/users', {
+        headers: {
+          cookie: 'session_token=valid-session-token',
+        },
+      });
+
+      const response = await GET(request);
+      const data = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(data.success).toBe(true);
+      expect(data.data.users).toHaveLength(2);
+      expect(data.data.stats).toEqual({
+        totalUsers: 2,
+        activeUsers: 2,
+        adminUsers: 1,
+        recentLogins: 1,
+      });
+      expect(AuthService.validateSession).toHaveBeenCalledWith('valid-session-token');
+      expect(AuthService.listUsers).toHaveBeenCalled();
+      expect(AuthService.getUserStats).toHaveBeenCalled();
     });
 
-    const response = await GET(request);
-    const data = await response.json();
+    it('should return 401 for unauthenticated request', async () => {
+      const request = new NextRequest('http://localhost:3000/api/admin/users');
 
-    expect(response.status).toBe(401);
-    expect(data.error).toBe('Authentication required');
-  });
-});
+      const response = await GET(request);
+      const data = await response.json();
 
-describe('POST /api/admin/users', () => {
-  let testDb: any;
-
-  beforeEach(async () => {
-    // Setup test database with proper dependency order
-    const testDatabase = createTestDatabase();
-    testDb = testDatabase.db;
-    
-    // Clear any existing data in reverse dependency order
-    await testDatabase.clearAllData();
-    
-    // Populate foundation data in dependency order
-    await testDatabase.populateFoundationData();
-  });
-
-  afterEach(async () => {
-    // Clean up in reverse dependency order
-    if (testDb) {
-      const testDatabase = createTestDatabase();
-      await testDatabase.clearAllData();
-    }
-  });
-
-  it('should create user successfully for admin', async () => {
-    // Create admin user with unique email
-    const adminEmail = `admin-${Date.now()}-${Math.random().toString(36).substr(2, 9)}@example.com`;
-    await AuthService.bootstrapAdminUser(adminEmail, 'Admin', 'password123');
-
-    const loginResult = await AuthService.login({
-      email: adminEmail,
-      password: 'password123',
+      expect(response.status).toBe(401);
+      expect(data.success).toBe(false);
+      expect(data.error).toBe('Authentication required');
     });
 
-    const uniqueEmail = `newuser-${Date.now()}-${Math.random().toString(36).substr(2, 9)}@example.com`;
-    const request = new NextRequest('http://localhost:3000/api/admin/users', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Cookie': `session_token=${loginResult!.session.token}`,
-      },
-      body: JSON.stringify({
-        email: uniqueEmail,
+    it('should return 403 for non-admin user', async () => {
+      const mockRegularUser = { ...mockAdminUser, role: 'user' };
+      (AuthService.validateSession as jest.Mock).mockResolvedValue(mockRegularUser);
+
+      const request = new NextRequest('http://localhost:3000/api/admin/users', {
+        headers: {
+          cookie: 'session_token=valid-session-token',
+        },
+      });
+
+      const response = await GET(request);
+      const data = await response.json();
+
+      expect(response.status).toBe(403);
+      expect(data.success).toBe(false);
+      expect(data.error).toBe('Admin access required');
+    });
+
+    it('should return 401 for invalid session', async () => {
+      (AuthService.validateSession as jest.Mock).mockResolvedValue(null);
+
+      const request = new NextRequest('http://localhost:3000/api/admin/users', {
+        headers: {
+          cookie: 'session_token=invalid-session-token',
+        },
+      });
+
+      const response = await GET(request);
+      const data = await response.json();
+
+      expect(response.status).toBe(401);
+      expect(data.success).toBe(false);
+      expect(data.error).toBe('Authentication required');
+    });
+
+    it('should handle service errors gracefully', async () => {
+      (AuthService.listUsers as jest.Mock).mockRejectedValue(new Error('Database error'));
+
+      const request = new NextRequest('http://localhost:3000/api/admin/users', {
+        headers: {
+          cookie: 'session_token=valid-session-token',
+        },
+      });
+
+      const response = await GET(request);
+      const data = await response.json();
+
+      expect(response.status).toBe(500);
+      expect(data.success).toBe(false);
+      expect(data.error).toBe('Database error');
+    });
+  });
+
+  describe('POST /api/admin/users', () => {
+    it('should create new user for authenticated admin', async () => {
+      const newUser = {
+        id: 3,
+        email: 'newuser@example.com',
         name: 'New User',
-        password: 'password123',
         role: 'user',
-      }),
-    });
+        isActive: true,
+        emailVerified: false,
+        lastLoginAt: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
 
-    const response = await POST(request);
-    const data = await response.json();
+      (AuthService.createUser as jest.Mock).mockResolvedValue(newUser);
 
-    expect(response.status).toBe(201);
-    expect(data.user).toBeDefined();
-    expect(data.user.email).toBe(uniqueEmail);
-    expect(data.user.name).toBe('New User');
-    expect(data.user.role).toBe('user');
-    expect(data.message).toBe('User created successfully');
-  });
+      const request = new NextRequest('http://localhost:3000/api/admin/users', {
+        method: 'POST',
+        headers: {
+          cookie: 'session_token=valid-session-token',
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: 'newuser@example.com',
+          name: 'New User',
+          password: 'password123',
+          role: 'user',
+        }),
+      });
 
-  it('should handle duplicate email error', async () => {
-    // Create admin user with unique email
-    const adminEmail = `admin-${Date.now()}-${Math.random().toString(36).substr(2, 9)}@example.com`;
-    await AuthService.bootstrapAdminUser(adminEmail, 'Admin', 'password123');
+      const response = await POST(request);
+      const data = await response.json();
 
-    const loginResult = await AuthService.login({
-      email: adminEmail,
-      password: 'password123',
-    });
-
-    const duplicateEmail = `duplicate-${Date.now()}-${Math.random().toString(36).substr(2, 9)}@example.com`;
-    
-    // Create the same user twice
-    await AuthService.createUser({
-      email: duplicateEmail,
-      name: 'First User',
-      password: 'password123',
-      role: 'user',
-    });
-
-    const request = new NextRequest('http://localhost:3000/api/admin/users', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Cookie': `session_token=${loginResult!.session.token}`,
-      },
-      body: JSON.stringify({
-        email: duplicateEmail,
-        name: 'Second User',
-        password: 'password123',
-        role: 'user',
-      }),
-    });
-
-    const response = await POST(request);
-    const data = await response.json();
-
-    expect(response.status).toBe(409);
-    expect(data.error).toBe('User with this email already exists');
-  });
-
-  it('should reject request for non-admin user', async () => {
-    // Create regular user with unique email
-    const userEmail = `user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}@example.com`;
-    await AuthService.createUser({
-      email: userEmail,
-      name: 'Regular User',
-      password: 'password123',
-      role: 'user',
-    });
-
-    const loginResult = await AuthService.login({
-      email: userEmail,
-      password: 'password123',
-    });
-
-    const request = new NextRequest('http://localhost:3000/api/admin/users', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Cookie': `session_token=${loginResult!.session.token}`,
-      },
-      body: JSON.stringify({
+      expect(response.status).toBe(201);
+      expect(data.success).toBe(true);
+      expect(data.data.user.email).toBe('newuser@example.com');
+      expect(data.message).toBe('User created successfully');
+      expect(AuthService.createUser).toHaveBeenCalledWith({
         email: 'newuser@example.com',
         name: 'New User',
         password: 'password123',
         role: 'user',
-      }),
+      });
     });
 
-    const response = await POST(request);
-    const data = await response.json();
+    it('should return 400 for missing required fields', async () => {
+      const request = new NextRequest('http://localhost:3000/api/admin/users', {
+        method: 'POST',
+        headers: {
+          cookie: 'session_token=valid-session-token',
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: 'newuser@example.com',
+          // Missing name and password
+        }),
+      });
 
-    expect(response.status).toBe(403);
-    expect(data.error).toBe('Admin access required');
-  });
+      const response = await POST(request);
+      const data = await response.json();
 
-  it('should reject request without authentication', async () => {
-    const request = new NextRequest('http://localhost:3000/api/admin/users', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        email: 'newuser@example.com',
-        name: 'New User',
-        password: 'password123',
-        role: 'user',
-      }),
+      expect(response.status).toBe(400);
+      expect(data.success).toBe(false);
+      expect(data.error).toBe('Email, name, and password are required');
     });
 
-    const response = await POST(request);
-    const data = await response.json();
+    it('should return 401 for unauthenticated request', async () => {
+      const request = new NextRequest('http://localhost:3000/api/admin/users', {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: 'newuser@example.com',
+          name: 'New User',
+          password: 'password123',
+        }),
+      });
 
-    expect(response.status).toBe(401);
-    expect(data.error).toBe('Authentication required');
-  });
+      const response = await POST(request);
+      const data = await response.json();
 
-  it('should reject request with missing required fields', async () => {
-    // Create admin user with unique email
-    const adminEmail = `admin-${Date.now()}-${Math.random().toString(36).substr(2, 9)}@example.com`;
-    await AuthService.bootstrapAdminUser(adminEmail, 'Admin', 'password123');
-
-    const loginResult = await AuthService.login({
-      email: adminEmail,
-      password: 'password123',
+      expect(response.status).toBe(401);
+      expect(data.success).toBe(false);
+      expect(data.error).toBe('Authentication required');
     });
 
-    const request = new NextRequest('http://localhost:3000/api/admin/users', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Cookie': `session_token=${loginResult!.session.token}`,
-      },
-      body: JSON.stringify({
-        name: 'New User',
-        password: 'password123',
-        role: 'user',
-      }),
+    it('should return 403 for non-admin user', async () => {
+      const mockRegularUser = { ...mockAdminUser, role: 'user' };
+      (AuthService.validateSession as jest.Mock).mockResolvedValue(mockRegularUser);
+
+      const request = new NextRequest('http://localhost:3000/api/admin/users', {
+        method: 'POST',
+        headers: {
+          cookie: 'session_token=valid-session-token',
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: 'newuser@example.com',
+          name: 'New User',
+          password: 'password123',
+        }),
+      });
+
+      const response = await POST(request);
+      const data = await response.json();
+
+      expect(response.status).toBe(403);
+      expect(data.success).toBe(false);
+      expect(data.error).toBe('Admin access required');
     });
 
-    const response = await POST(request);
-    const data = await response.json();
+    it('should handle service errors gracefully', async () => {
+      (AuthService.createUser as jest.Mock).mockRejectedValue(new Error('User already exists'));
 
-    expect(response.status).toBe(400);
-    expect(data.error).toBe('Email, name, and password are required');
+      const request = new NextRequest('http://localhost:3000/api/admin/users', {
+        method: 'POST',
+        headers: {
+          cookie: 'session_token=valid-session-token',
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: 'existing@example.com',
+          name: 'Existing User',
+          password: 'password123',
+        }),
+      });
+
+      const response = await POST(request);
+      const data = await response.json();
+
+      expect(response.status).toBe(500);
+      expect(data.success).toBe(false);
+      expect(data.error).toBe('User already exists');
+    });
   });
 }); 

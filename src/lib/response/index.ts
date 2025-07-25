@@ -46,7 +46,12 @@ export const createNoContentResponse = (): NextResponse => {
 export const createErrorResponse = (
   error: ServiceError
 ): NextResponse => {
-  const errorResponse = createErrorResponse(error);
+  const errorResponse = {
+    success: false,
+    error: error.message,
+    code: error.code,
+    details: error.details,
+  };
   return NextResponse.json(errorResponse, { status: error.statusCode });
 };
 
