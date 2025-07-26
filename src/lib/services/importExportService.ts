@@ -14,7 +14,7 @@ import type {
   ValidationResult 
 } from '../types/service-interfaces';
 
-export class ImportExportService implements IImportExportService {
+export class ImportExportService {
   static async exportData(format: 'json' | 'csv', filters?: ExportFilters): Promise<ExportResult> {
     const exportData: any = {
       metadata: {
@@ -60,13 +60,15 @@ export class ImportExportService implements IImportExportService {
       }
 
       // Export data points
-      if (filters?.year) {
+      if (filters?.years && filters.years.length > 0) {
         const allStatistics = await StatisticsService.getAllStatisticsWithSources();
         const allDataPoints = [];
         
         for (const stat of allStatistics) {
-          const rawPoints = await DataPointsService.getDataPointsForStatistic(stat.id, filters.year);
-          allDataPoints.push(...rawPoints);
+          for (const year of filters.years!) {
+            const rawPoints = await DataPointsService.getDataPointsForStatistic(stat.id, year);
+            allDataPoints.push(...rawPoints);
+          }
         }
         
         exportData.data.dataPoints = allDataPoints;
@@ -106,55 +108,33 @@ export class ImportExportService implements IImportExportService {
 
       // Create import session
       const [importSession] = await db.insert(importSessions).values({
-        source: 'manual-import',
+        name: 'Manual Data Import',
+        description: 'Manual data import via import/export service',
         recordCount: 0,
-        status: 'success'
       }).returning();
 
       // Import data in dependency order
-      if (data.data.states) {
-        for (const state of data.data.states) {
+      if (data.data && Array.isArray(data.data)) {
+        for (const item of data.data) {
           try {
-            await StatesService.createState(state);
-            imported++;
+            if (item.type === 'state') {
+              await StatesService.createState(item.data);
+              imported++;
+            } else if (item.type === 'category') {
+              await CategoriesService.createCategory(item.data);
+              imported++;
+            } else if (item.type === 'statistic') {
+              await StatisticsService.createStatistic(item.data);
+              imported++;
+            } else if (item.type === 'dataPoint') {
+              await DataPointsService.createDataPoint({
+                ...item.data,
+                importSessionId: importSession.id
+              });
+              imported++;
+            }
           } catch (error) {
-            errors.push(`Failed to import state ${state.name}: ${error instanceof Error ? error.message : 'Unknown error'}`);
-          }
-        }
-      }
-
-      if (data.data.categories) {
-        for (const category of data.data.categories) {
-          try {
-            await CategoriesService.createCategory(category);
-            imported++;
-          } catch (error) {
-            errors.push(`Failed to import category ${category.name}: ${error instanceof Error ? error.message : 'Unknown error'}`);
-          }
-        }
-      }
-
-      if (data.data.statistics) {
-        for (const statistic of data.data.statistics) {
-          try {
-            await StatisticsService.createStatistic(statistic);
-            imported++;
-          } catch (error) {
-            errors.push(`Failed to import statistic ${statistic.name}: ${error instanceof Error ? error.message : 'Unknown error'}`);
-          }
-        }
-      }
-
-      if (data.data.dataPoints) {
-        for (const dataPoint of data.data.dataPoints) {
-          try {
-            await DataPointsService.createDataPoint({
-              ...dataPoint,
-              importSessionId: importSession.id
-            });
-            imported++;
-          } catch (error) {
-            errors.push(`Failed to import data point: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            errors.push(`Failed to import ${item.type}: ${error instanceof Error ? error.message : 'Unknown error'}`);
           }
         }
       }
@@ -163,7 +143,6 @@ export class ImportExportService implements IImportExportService {
       await db.update(importSessions)
         .set({ 
           recordCount: imported,
-          status: errors.length > 0 ? 'partial' : 'success'
         })
         .where(eq(importSessions.id, importSession.id));
 

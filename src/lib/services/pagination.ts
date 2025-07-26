@@ -1,39 +1,26 @@
-export interface PaginationOptions {
-  page: number;
-  limit: number;
-  offset?: number;
-}
+import type { PaginationOptions, PaginatedResult, PaginationInfo, IPaginationService } from '../types/service-interfaces';
 
-export interface PaginatedResult<T> {
-  data: T[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-    hasNext: boolean;
-    hasPrev: boolean;
-  };
-}
+export class PaginationService {
+  static calculatePagination<T>(options: PaginationOptions, total: number): PaginatedResult<T>['pagination'] {
+    const { page, limit } = options;
+    const totalPages = Math.ceil(total / limit);
+    const currentPage = Math.max(1, Math.min(page, totalPages));
+    
+    return {
+      currentPage,
+      totalPages,
+      totalItems: total,
+      itemsPerPage: limit,
+      hasNextPage: currentPage < totalPages,
+      hasPreviousPage: currentPage > 1,
+    };
+  }
 
-export function calculatePagination<T>(options: PaginationOptions, total: number): PaginatedResult<T>['pagination'] {
-  const { page, limit } = options;
-  const offset = options.offset || (page - 1) * limit;
-  const totalPages = Math.ceil(total / limit);
-
-  return {
-    page,
-    limit,
-    total,
-    totalPages,
-    hasNext: page < totalPages,
-    hasPrev: page > 1,
-  };
-}
-
-export function applyPagination<T>(data: T[], options: PaginationOptions): T[] {
-  const { page, limit } = options;
-  const offset = options.offset || (page - 1) * limit;
-  
-  return data.slice(offset, offset + limit);
+  static applyPagination<T>(data: T[], options: PaginationOptions): T[] {
+    const { page, limit } = options;
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + limit;
+    
+    return data.slice(startIndex, endIndex);
+  }
 } 

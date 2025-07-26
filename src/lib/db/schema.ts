@@ -1,56 +1,6 @@
 import { sqliteTable, text, integer, real, blob, uniqueIndex } from 'drizzle-orm/sqlite-core';
 import { sql } from 'drizzle-orm';
 
-// User authentication tables
-export const users = sqliteTable('users', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
-  email: text('email').notNull().unique(),
-  name: text('name').notNull(),
-  passwordHash: text('password_hash').notNull(),
-  role: text('role', { enum: ['admin', 'user', 'viewer'] }).notNull().default('user'),
-  isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
-  emailVerified: integer('email_verified', { mode: 'boolean' }).notNull().default(false),
-  lastLoginAt: integer('last_login_at', { mode: 'timestamp' }),
-  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`),
-  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`),
-});
-
-export const sessions = sqliteTable('sessions', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
-  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-  token: text('token').notNull().unique(),
-  expiresAt: integer('expires_at', { mode: 'timestamp' }).notNull(),
-  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`),
-});
-
-export const passwordResetTokens = sqliteTable('password_reset_tokens', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
-  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-  token: text('token').notNull().unique(),
-  expiresAt: integer('expires_at', { mode: 'timestamp' }).notNull(),
-  used: integer('used', { mode: 'boolean' }).notNull().default(false),
-  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`),
-});
-
-export const userActivityLogs = sqliteTable('user_activity_logs', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
-  userId: integer('user_id').references(() => users.id, { onDelete: 'set null' }),
-  action: text('action').notNull(),
-  details: text('details'),
-  ipAddress: text('ip_address'),
-  userAgent: text('user_agent'),
-  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`),
-});
-
-export const magicLinks = sqliteTable('magic_links', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
-  email: text('email').notNull(),
-  token: text('token').notNull().unique(),
-  expiresAt: integer('expires_at', { mode: 'timestamp' }).notNull(),
-  used: integer('used', { mode: 'boolean' }).notNull().default(false),
-  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`),
-});
-
 // Phase 1: Core Data Display Schema (Normalized)
 // Eliminates denormalization for data consistency
 

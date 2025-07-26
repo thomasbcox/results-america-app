@@ -4,8 +4,7 @@ import { AggregationService } from '@/lib/services/aggregationService';
 import { withErrorHandling, createSuccessResponse } from '@/lib/response';
 
 async function handleAggregationRequest(request: NextRequest) {
-  const url = new URL(request.url);
-  const params = validateQueryParams(AggregationQuerySchema, url.searchParams);
+  const params = await validateQueryParams(request, AggregationQuerySchema);
   
   const result = await AggregationService.aggregate(params);
   

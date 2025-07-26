@@ -8,7 +8,7 @@ import type {
   UpdateDataPointInput 
 } from '../types/service-interfaces';
 
-export class DataPointsService implements IDataPointsService {
+export class DataPointsService {
   static async getDataPointsForState(stateId: number, year?: number): Promise<DataPointData[]> {
     const conditions = [eq(dataPoints.stateId, stateId)];
     if (year) {
@@ -21,7 +21,6 @@ export class DataPointsService implements IDataPointsService {
       stateId: dataPoints.stateId,
       year: dataPoints.year,
       value: dataPoints.value,
-      source: dataPoints.source,
       importSessionId: dataPoints.importSessionId,
       statisticName: statistics.name,
       stateName: states.name,
@@ -37,10 +36,9 @@ export class DataPointsService implements IDataPointsService {
       stateId: result.stateId,
       year: result.year,
       value: result.value,
-      source: result.source,
       importSessionId: result.importSessionId,
-      statisticName: result.statisticName,
-      stateName: result.stateName,
+      statisticName: result.statisticName || undefined,
+      stateName: result.stateName || undefined,
     }));
   }
 
@@ -56,7 +54,6 @@ export class DataPointsService implements IDataPointsService {
       stateId: dataPoints.stateId,
       year: dataPoints.year,
       value: dataPoints.value,
-      source: dataPoints.source,
       importSessionId: dataPoints.importSessionId,
       stateName: states.name,
       statisticName: statistics.name,
@@ -73,10 +70,9 @@ export class DataPointsService implements IDataPointsService {
       stateId: result.stateId,
       year: result.year,
       value: result.value,
-      source: result.source,
       importSessionId: result.importSessionId,
-      stateName: result.stateName,
-      statisticName: result.statisticName,
+      stateName: result.stateName || undefined,
+      statisticName: result.statisticName || undefined,
     }));
   }
 
@@ -87,7 +83,6 @@ export class DataPointsService implements IDataPointsService {
       stateId: dataPoints.stateId,
       year: dataPoints.year,
       value: dataPoints.value,
-      source: dataPoints.source,
       importSessionId: dataPoints.importSessionId,
       stateName: states.name,
       statisticName: statistics.name,
@@ -109,10 +104,9 @@ export class DataPointsService implements IDataPointsService {
       stateId: result.stateId,
       year: result.year,
       value: result.value,
-      source: result.source,
       importSessionId: result.importSessionId,
-      stateName: result.stateName,
-      statisticName: result.statisticName,
+      stateName: result.stateName || undefined,
+      statisticName: result.statisticName || undefined,
     }));
   }
 

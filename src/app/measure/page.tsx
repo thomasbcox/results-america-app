@@ -1,9 +1,9 @@
-"use client"
-import { useState, useEffect, Suspense } from "react"
-import { User, ArrowRight, Star, Clock } from "lucide-react"
-import { useSelection } from "@/lib/context"
-import { useSearchParams } from "next/navigation"
-import DataQualityIndicator from "@/components/DataQualityIndicator"
+"use client";
+import { useState, useEffect, Suspense } from "react";
+import { ArrowRight, Star } from "lucide-react";
+import { useSelection } from "@/lib/context";
+import { useSearchParams } from "next/navigation";
+import DataQualityIndicator from "@/components/DataQualityIndicator";
 
 interface Statistic {
   id: number;
@@ -21,88 +21,62 @@ interface Statistic {
 }
 
 function MeasureSelectionContent() {
-  const { selectedMeasure, setSelectedMeasure, favorites, toggleFavorite, user, signOut, selectedStates } = useSelection()
-  const searchParams = useSearchParams()
-  const category = searchParams.get('category')
-  const measureParam = searchParams.get('measure')
-  
-  const [statistics, setStatistics] = useState<Statistic[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [showStateWarning, setShowStateWarning] = useState(false)
+  const { selectedMeasure, setSelectedMeasure, favorites, toggleFavorite, selectedStates } = useSelection();
+  const searchParams = useSearchParams();
+  const category = searchParams.get('category');
+  const measureParam = searchParams.get('measure');
 
-  // Check if states are selected
+  const [statistics, setStatistics] = useState<Statistic[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [showStateWarning, setShowStateWarning] = useState(false);
+
   useEffect(() => {
     if (!selectedStates || selectedStates.length === 0) {
-      setShowStateWarning(true)
+      setShowStateWarning(true);
     } else {
-      setShowStateWarning(false)
+      setShowStateWarning(false);
     }
-  }, [selectedStates])
+  }, [selectedStates]);
 
-  // Set selected measure from URL parameter if provided
   useEffect(() => {
-    console.log('Measure page - measureParam:', measureParam)
-    console.log('Measure page - category:', category)
     if (measureParam) {
-      const measureId = parseInt(measureParam)
+      const measureId = parseInt(measureParam);
       if (!isNaN(measureId)) {
-        console.log('Setting selected measure from URL:', measureId)
-        setSelectedMeasure(measureId)
+        setSelectedMeasure(measureId);
       }
     }
-  }, [measureParam, category, setSelectedMeasure])
+  }, [measureParam, category, setSelectedMeasure]);
 
   useEffect(() => {
     async function fetchStatistics() {
       try {
-        console.log('Fetching statistics for category:', category)
-        const response = await fetch('/api/statistics?withAvailability=true')
+        const response = await fetch('/api/statistics?withAvailability=true');
         if (!response.ok) {
-          throw new Error('Failed to fetch statistics')
+          throw new Error('Failed to fetch statistics');
         }
-        const data = await response.json()
-        console.log('All statistics:', data.length)
-        
-        // Filter by category if specified
-        const filteredData = category 
-          ? data.filter((stat: Statistic) => {
-              console.log(`Comparing "${stat.category}" with "${category}"`)
-              return stat.category === category
-            })
-          : data
-        
-        console.log('Filtered statistics:', filteredData.length)
-        console.log('Filtered data:', filteredData)
-        setStatistics(filteredData)
+        const data = await response.json();
+        const filteredData = category
+          ? data.filter((stat: Statistic) => stat.category === category)
+          : data;
+        setStatistics(filteredData);
       } catch (err) {
-        console.error('Error fetching statistics:', err)
-        setError(err instanceof Error ? err.message : 'Failed to fetch statistics')
+        setError(err instanceof Error ? err.message : 'Failed to fetch statistics');
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
     }
-    
-    fetchStatistics()
-  }, [category])
+    fetchStatistics();
+  }, [category]);
 
   const handleMeasureSelect = (measureId: number, hasData: boolean) => {
-    if (!hasData) {
-      console.log('Measure has no data, cannot select:', measureId)
-      return
-    }
-    setSelectedMeasure(measureId)
-  }
-
-  const handleSignOut = () => {
-    signOut()
-  }
+    if (!hasData) return;
+    setSelectedMeasure(measureId);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Header */}
       <div className="bg-white px-4 py-6 flex flex-col items-center">
-        {/* Logo */}
         <div className="text-center mb-4">
           <div className="flex justify-center mb-2">
             {[...Array(5)].map((_, i) => (
@@ -112,34 +86,14 @@ function MeasureSelectionContent() {
           <h1 className="text-3xl font-bold text-blue-900">RESULTS</h1>
           <h2 className="text-2xl font-semibold text-blue-700">AMERICA</h2>
         </div>
-        
-        {/* User info */}
-        <div className="flex items-center gap-2 text-sm text-black">
-          <User className="w-4 h-4" />
-          <span>{user?.email}</span>
-          <button 
-            onClick={handleSignOut}
-            className="flex items-center gap-1 text-blue-600 hover:text-blue-700"
-          >
-            Sign out
-            <ArrowRight className="w-3 h-3" />
-          </button>
-        </div>
       </div>
-
-      {/* Navigation bar */}
       <div className="bg-white border-b border-gray-200 px-4 py-3">
         <div className="max-w-6xl mx-auto flex justify-between items-center">
           <div className="flex items-center gap-4">
-            <a
-              href="/category"
-              className="flex items-center gap-2 text-blue-600 hover:text-blue-700 text-sm"
-            >
+            <a href="/category" className="flex items-center gap-2 text-blue-600 hover:text-blue-700 text-sm">
               <ArrowRight className="w-4 h-4 rotate-180" />
               Back to Categories
             </a>
-            
-            {/* Breadcrumb */}
             <div className="flex items-center gap-2 text-sm text-gray-500">
               <span>States</span>
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -152,17 +106,13 @@ function MeasureSelectionContent() {
               <span className="text-blue-600 font-medium">Measures</span>
             </div>
           </div>
-          
           <div className="flex items-center gap-4">
             <span className="text-green-600 text-sm">Using real database data</span>
           </div>
         </div>
       </div>
-
-      {/* Main content */}
       <div className="flex-1 p-4">
         <div className="max-w-6xl mx-auto">
-          {/* State warning */}
           {showStateWarning && (
             <div className="mb-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
               <div className="flex items-center gap-3">
@@ -173,17 +123,10 @@ function MeasureSelectionContent() {
                   <h3 className="font-semibold text-yellow-900">No States Selected</h3>
                   <p className="text-yellow-700 text-sm">Please select at least one state before choosing a measure.</p>
                 </div>
-                <a
-                  href="/states"
-                  className="ml-auto px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 transition-colors text-sm"
-                >
-                  Select States
-                </a>
+                <a href="/states" className="ml-auto px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 transition-colors text-sm">Select States</a>
               </div>
             </div>
           )}
-
-          {/* Loading state */}
           {loading && (
             <div className="text-center py-8">
               <div className="inline-flex items-center px-4 py-2 bg-blue-100 text-blue-800 rounded-lg">
@@ -195,8 +138,6 @@ function MeasureSelectionContent() {
               </div>
             </div>
           )}
-
-          {/* Error state */}
           {error && (
             <div className="text-center py-8">
               <div className="max-w-md mx-auto bg-red-50 border border-red-200 rounded-lg p-6">
@@ -207,46 +148,30 @@ function MeasureSelectionContent() {
                 </div>
                 <h3 className="text-lg font-semibold text-red-900 mb-2">Error Loading Measures</h3>
                 <p className="text-red-700 mb-4">{error}</p>
-                <button
-                  onClick={() => window.location.reload()}
-                  className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
-                >
-                  Try Again
-                </button>
+                <button onClick={() => window.location.reload()} className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors">Try Again</button>
               </div>
             </div>
           )}
-
-          {/* Measures grid */}
           {!loading && !error && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {statistics.map((statistic) => (
                 <div
                   key={statistic.id}
-                  className={`bg-white rounded-lg shadow-md overflow-hidden border-2 transition-all cursor-pointer ${
-                    selectedMeasure === statistic.id
-                      ? 'border-blue-500 shadow-lg'
-                      : 'border-transparent hover:border-gray-300'
-                  } ${!statistic.hasData ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  className={`bg-white rounded-lg shadow-md overflow-hidden border-2 transition-all cursor-pointer ${selectedMeasure === statistic.id ? 'border-blue-500 shadow-lg' : 'border-transparent hover:border-gray-300'} ${!statistic.hasData ? 'opacity-50 cursor-not-allowed' : ''}`}
                   onClick={() => handleMeasureSelect(statistic.id, statistic.hasData || false)}
                 >
-                  {/* Card header */}
                   <div className="bg-blue-600 px-4 py-3 flex items-center justify-between">
                     <h3 className="font-bold text-white text-sm">{statistic.raNumber}</h3>
                     <button
                       onClick={(e) => {
-                        e.stopPropagation()
-                        toggleFavorite(statistic.id)
+                        e.stopPropagation();
+                        toggleFavorite(statistic.id);
                       }}
-                      className={`text-white hover:text-yellow-300 transition-colors ${
-                        favorites.includes(statistic.id) ? 'text-yellow-300' : ''
-                      }`}
+                      className={`text-white hover:text-yellow-300 transition-colors ${favorites.includes(statistic.id) ? 'text-yellow-300' : ''}`}
                     >
                       <Star className="w-4 h-4" fill={favorites.includes(statistic.id) ? 'currentColor' : 'none'} />
                     </button>
                   </div>
-                  
-                  {/* Card content */}
                   <div className="p-4">
                     <div className="flex items-start justify-between mb-2">
                       <h4 className="font-semibold text-black">{statistic.name}</h4>
@@ -260,7 +185,6 @@ function MeasureSelectionContent() {
                       />
                     </div>
                     <p className="text-gray-600 text-sm mb-3 line-clamp-3">{statistic.description}</p>
-                    
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
                         <span className="text-gray-500">Unit:</span>
@@ -275,7 +199,6 @@ function MeasureSelectionContent() {
                         <span className="text-black">{statistic.availableSince}</span>
                       </div>
                     </div>
-                    
                     {!statistic.hasData && (
                       <div className="mt-3 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-800">
                         No data available for selected states
@@ -286,14 +209,9 @@ function MeasureSelectionContent() {
               ))}
             </div>
           )}
-
-          {/* Continue button */}
           {selectedMeasure && !showStateWarning && (
             <div className="mt-8 text-center">
-              <a
-                href="/results"
-                className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-              >
+              <a href="/results" className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium">
                 View Results
                 <ArrowRight className="w-4 h-4 ml-2" />
               </a>
@@ -301,15 +219,11 @@ function MeasureSelectionContent() {
           )}
         </div>
       </div>
-
-      {/* Footer */}
       <div className="bg-white px-4 py-4 text-center">
-        <p className="text-xs text-black">
-          © 2025 The Great American Report Card. All rights reserved.
-        </p>
+        <p className="text-xs text-black">© 2025 The Great American Report Card. All rights reserved.</p>
       </div>
     </div>
-  )
+  );
 }
 
 export default function MeasureSelection() {
@@ -329,5 +243,5 @@ export default function MeasureSelection() {
     }>
       <MeasureSelectionContent />
     </Suspense>
-  )
+  );
 } 

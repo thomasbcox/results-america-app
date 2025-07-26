@@ -3,17 +3,20 @@ import { states } from '../db/schema';
 import { eq } from 'drizzle-orm';
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 import { cache } from './cache';
-import { PaginationOptions, PaginatedResult, calculatePagination, applyPagination } from './pagination';
-import { FilterOptions, filterStates } from './filters';
+import { PaginationService } from './pagination';
+import { FilterService } from './filters';
 import { CacheMissError } from '../errors';
 import type { 
   IStatesService, 
   StateData, 
   CreateStateInput, 
-  UpdateStateInput 
+  UpdateStateInput,
+  PaginationOptions,
+  PaginatedResult,
+  FilterOptions
 } from '../types/service-interfaces';
 
-export class StatesService implements IStatesService {
+export class StatesService {
   static async getAllStates(useCache = true): Promise<StateData[]> {
     if (useCache) {
       try {
@@ -29,17 +32,17 @@ export class StatesService implements IStatesService {
     }
 
     try {
-      console.log('🔍 Fetching states from database...');
       const result = await db.select().from(states).orderBy(states.name);
-      console.log(`✅ Found ${result.length} states in database`);
       
       if (useCache) {
         cache.set('states', result);
       }
       
-      return result;
+      return result.map(state => ({
+        ...state,
+        isActive: state.isActive ?? 1,
+      }));
     } catch (error) {
-      console.error('❌ Error fetching states from database:', error);
       throw new Error(`Failed to fetch states: ${error}`);
     }
   }
@@ -49,29 +52,38 @@ export class StatesService implements IStatesService {
     filters: FilterOptions = {}
   ): Promise<PaginatedResult<StateData>> {
     const allStates = await this.getAllStates();
-    const filtered = filterStates(allStates, filters);
-    const paginated = applyPagination(filtered, options);
+    const filtered = FilterService.filterStates(allStates, filters);
+    const paginated = PaginationService.applyPagination(filtered, options);
     
     return {
       data: paginated,
-      pagination: calculatePagination(options, filtered.length)
+      pagination: PaginationService.calculatePagination(options, filtered.length)
     };
   }
 
   static async searchStates(query: string): Promise<StateData[]> {
     const allStates = await this.getAllStates(false); // Don't use cache for search
-    return filterStates(allStates, { search: query });
+    return FilterService.filterStates(allStates, { search: query });
   }
 
   static async getStateById(id: number): Promise<StateData | null> {
     const result = await db.select().from(states).where(eq(states.id, id)).limit(1);
-    return result[0] || null;
+    if (result.length === 0) return null;
+    
+    const state = result[0];
+    return {
+      ...state,
+      isActive: state.isActive ?? 1,
+    };
   }
 
   static async createState(data: CreateStateInput): Promise<StateData> {
     const [state] = await db.insert(states).values(data).returning();
     cache.delete('states'); // Invalidate cache
-    return state;
+    return {
+      ...state,
+      isActive: state.isActive ?? 1,
+    };
   }
 
   static async updateState(id: number, data: UpdateStateInput): Promise<StateData> {
@@ -80,7 +92,10 @@ export class StatesService implements IStatesService {
       throw new Error(`State with id ${id} not found`);
     }
     cache.delete('states'); // Invalidate cache
-    return state;
+    return {
+      ...state,
+      isActive: state.isActive ?? 1,
+    };
   }
 
   static async deleteState(id: number): Promise<boolean> {

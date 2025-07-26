@@ -2,15 +2,7 @@ import { db } from '../db';
 import { statistics } from '../db/schema';
 import { eq } from 'drizzle-orm';
 import { ValidationError, NotFoundError } from '../errors';
-
-export interface UpdateStatisticData {
-  dataQuality?: 'mock' | 'real';
-  provenance?: string;
-  name?: string;
-  description?: string;
-  unit?: string;
-  isActive?: boolean;
-}
+import type { IStatisticsManagementService, UpdateStatisticData, StatisticData } from '../types/service-interfaces';
 
 export class StatisticsManagementService {
   static async updateStatistic(id: number, data: UpdateStatisticData) {
@@ -27,7 +19,7 @@ export class StatisticsManagementService {
         ...(data.name && { name: data.name }),
         ...(data.description !== undefined && { description: data.description }),
         ...(data.unit && { unit: data.unit }),
-        ...(data.isActive !== undefined && { isActive: data.isActive })
+        ...(data.isActive !== undefined && { isActive: data.isActive ? 1 : 0 })
       })
       .where(eq(statistics.id, id))
       .returning();

@@ -1,19 +1,19 @@
 import { createTestDb } from '../db/testDb';
-import * as importExportService from './importExportService';
+import { ImportExportService } from './importExportService';
 import { clearAllTestData } from './testUtils';
-import * as statesService from './statesService';
-import * as categoriesService from './categoriesService';
+import { StatesService } from './statesService';
+import { CategoriesService } from './categoriesService';
 
 let db;
 
 beforeEach(async () => {
   db = createTestDb();
-  // Mock the service functions to use the test database
-  jest.spyOn(statesService, 'createState').mockImplementation(async (data) => {
-    return [{ id: 1, ...data }];
+  // Mock the service class static methods to use the test database
+  jest.spyOn(StatesService, 'createState').mockImplementation(async (data) => {
+    return { id: 1, ...data, isActive: 1 };
   });
-  jest.spyOn(categoriesService, 'createCategory').mockImplementation(async (data) => {
-    return [{ id: 1, ...data }];
+  jest.spyOn(CategoriesService, 'createCategory').mockImplementation(async (data) => {
+    return { id: 1, ...data, sortOrder: data.sortOrder || 0, isActive: 1 };
   });
 });
 
@@ -23,65 +23,74 @@ afterEach(async () => {
 });
 
 describe('importExportService', () => {
-  describe('importStatesFromCSV', () => {
-    it('should import states from valid CSV', async () => {
-      const csvData = `name,abbreviation
-California,CA
-Texas,TX
-New York,NY`;
+  describe('importData', () => {
+    it('should import states from valid data', async () => {
+      const importData = {
+        data: [
+          { type: 'state', data: { name: 'California', abbreviation: 'CA' } },
+          { type: 'state', data: { name: 'Texas', abbreviation: 'TX' } },
+          { type: 'state', data: { name: 'New York', abbreviation: 'NY' } }
+        ]
+      };
 
-      const result = await importExportService.importStatesFromCSV(csvData);
+      const result = await ImportExportService.importData(importData);
 
       expect(result.success).toBe(true);
       expect(result.imported).toBe(3);
       expect(result.errors).toHaveLength(0);
-      expect(result.message).toContain('Imported 3 states');
     });
 
-    it('should handle CSV with errors', async () => {
-      const csvData = `name,abbreviation
-California,CA
-Invalid Line
-Texas,TX`;
+    it('should handle import with errors', async () => {
+      const importData = {
+        data: [
+          { type: 'state', data: { name: 'California', abbreviation: 'CA' } },
+          { type: 'state', data: { name: '', abbreviation: 'TX' } }, // Invalid: missing name
+          { type: 'state', data: { name: 'New York', abbreviation: 'NY' } }
+        ]
+      };
 
-      const result = await importExportService.importStatesFromCSV(csvData);
+      const result = await ImportExportService.importData(importData);
 
       expect(result.success).toBe(false);
       expect(result.imported).toBe(2);
-      expect(result.errors).toHaveLength(1);
-      expect(result.errors[0]).toContain('Line 3: Invalid format');
+      expect(result.errors.length).toBeGreaterThan(0);
     });
 
-    it('should handle empty CSV', async () => {
-      const csvData = 'name,abbreviation\n';
+    it('should handle empty data', async () => {
+      const importData = {
+        data: []
+      };
 
-      const result = await importExportService.importStatesFromCSV(csvData);
+      const result = await ImportExportService.importData(importData);
 
       expect(result.success).toBe(true);
       expect(result.imported).toBe(0);
       expect(result.errors).toHaveLength(0);
     });
-  });
 
-  describe('importCategoriesFromCSV', () => {
-    it('should import categories from valid CSV', async () => {
-      const csvData = `name,description,icon,sortOrder
-Education,K-12 and higher education metrics,GraduationCap,1
-Economy,Economic indicators and employment,DollarSign,2`;
+    it('should import categories from valid data', async () => {
+      const importData = {
+        data: [
+          { type: 'category', data: { name: 'Education', description: 'K-12 and higher education metrics', icon: 'GraduationCap', sortOrder: 1 } },
+          { type: 'category', data: { name: 'Economy', description: 'Economic indicators and employment', icon: 'DollarSign', sortOrder: 2 } }
+        ]
+      };
 
-      const result = await importExportService.importCategoriesFromCSV(csvData);
+      const result = await ImportExportService.importData(importData);
 
       expect(result.success).toBe(true);
       expect(result.imported).toBe(2);
       expect(result.errors).toHaveLength(0);
-      expect(result.message).toContain('Imported 2 categories');
     });
 
     it('should handle missing optional fields', async () => {
-      const csvData = `name,description
-Education,K-12 and higher education metrics`;
+      const importData = {
+        data: [
+          { type: 'category', data: { name: 'Education', description: 'K-12 and higher education metrics' } }
+        ]
+      };
 
-      const result = await importExportService.importCategoriesFromCSV(csvData);
+      const result = await ImportExportService.importData(importData);
 
       expect(result.success).toBe(true);
       expect(result.imported).toBe(1);
@@ -91,59 +100,41 @@ Education,K-12 and higher education metrics`;
 
   describe('exportData', () => {
     it('should export data in JSON format', async () => {
-      const options = {
-        format: 'json' as const,
-        includeMetadata: true
-      };
+      const result = await ImportExportService.exportData('json');
 
-      const result = await importExportService.exportData(options);
-
-      const parsed = JSON.parse(result);
+      expect(result.format).toBe('json');
+      expect(result.filename).toContain('.json');
+      expect(typeof result.data).toBe('string');
+      
+      const parsed = JSON.parse(result.data);
       expect(parsed).toHaveProperty('metadata');
-      expect(parsed).toHaveProperty('states');
-      expect(parsed).toHaveProperty('categories');
-      expect(parsed).toHaveProperty('statistics');
-      expect(parsed.metadata.format).toBe('json');
+      expect(parsed).toHaveProperty('data');
     });
 
     it('should export data in CSV format', async () => {
-      const options = {
-        format: 'csv' as const,
-        includeMetadata: false
-      };
+      const result = await ImportExportService.exportData('csv');
 
-      const result = await importExportService.exportData(options);
-
-      expect(typeof result).toBe('string');
-      expect(result).toContain('=== STATES ===');
-      expect(result).toContain('=== CATEGORIES ===');
-      expect(result).toContain('=== STATISTICS ===');
-    });
-
-    it('should handle XLSX format error', async () => {
-      const options = {
-        format: 'xlsx' as const,
-        includeMetadata: true
-      };
-
-      await expect(importExportService.exportData(options)).rejects.toThrow('XLSX format not yet implemented');
+      expect(result.format).toBe('csv');
+      expect(result.filename).toContain('.csv');
+      expect(typeof result.data).toBe('string');
+      expect(result.data).toContain('=== STATES ===');
     });
 
     it('should export filtered data', async () => {
-      const options = {
-        format: 'json' as const,
-        includeMetadata: true,
-        filters: {
-          category: 'Education',
-          year: 2023
-        }
+      const filters = {
+        states: [1, 2],
+        categories: [1],
+        years: [2023]
       };
 
-      const result = await importExportService.exportData(options);
+      const result = await ImportExportService.exportData('json', filters);
 
-      const parsed = JSON.parse(result);
+      expect(result.format).toBe('json');
+      expect(typeof result.data).toBe('string');
+      
+      const parsed = JSON.parse(result.data);
       expect(parsed).toHaveProperty('metadata');
-      expect(parsed.metadata.filters).toEqual(options.filters);
+      expect(parsed.metadata.filters).toEqual(filters);
     });
   });
 }); 

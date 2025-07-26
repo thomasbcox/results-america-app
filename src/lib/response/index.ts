@@ -2,16 +2,10 @@
 // Provides consistent response patterns and error handling
 
 import { NextRequest, NextResponse } from 'next/server';
-import { ServiceError, createErrorResponse, logError } from '../errors';
+import { ServiceError, createErrorResponse as createServiceErrorResponse, logError } from '../errors';
 
 // Response wrapper types
 export type ApiHandler<T extends unknown[] = []> = (
-  request: NextRequest,
-  ...args: T
-) => Promise<NextResponse>;
-
-export type AuthenticatedHandler<T extends unknown[] = []> = (
-  authContext: { user: any; session: any },
   request: NextRequest,
   ...args: T
 ) => Promise<NextResponse>;
@@ -107,80 +101,36 @@ export const createInternalServerErrorResponse = (
   );
 };
 
-// Error handling wrapper
+// ============================================================================
+// MIDDLEWARE HELPERS
+// ============================================================================
+
 export const withErrorHandling = <T extends unknown[]>(
   handler: (request: NextRequest, ...args: T) => Promise<NextResponse>
 ): ApiHandler<T> => {
-  return async (request: NextRequest, ...args: T): Promise<NextResponse> => {
+  return async (request: NextRequest, ...args: T) => {
     try {
       return await handler(request, ...args);
     } catch (error) {
-      // Log the error
       logError(error as Error, { 
         url: request.url, 
         method: request.method,
-        userAgent: request.headers.get('user-agent'),
-        ip: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip')
+        args 
       });
 
-      // Handle ServiceError instances
       if (ServiceError.isServiceError(error)) {
         return createErrorResponse(error);
       }
 
-      // Handle other errors
-      console.error('Unhandled error:', error);
       return createInternalServerErrorResponse();
     }
   };
 };
 
-// Authentication wrapper
-export const withAuth = <T extends unknown[]>(
-  handler: AuthenticatedHandler<T>
-): ApiHandler<T> => {
-  return withErrorHandling(async (request: NextRequest, ...args: T) => {
-    const sessionToken = request.cookies.get('session_token')?.value;
-    
-    if (!sessionToken) {
-      throw new ServiceError('Authentication required', 'AUTHENTICATION_REQUIRED', 401);
-    }
+// ============================================================================
+// VALIDATION HELPERS
+// ============================================================================
 
-    // Import AuthService dynamically to avoid circular dependencies
-    const { AuthService } = await import('../services/authService');
-    const user = await AuthService.validateSession(sessionToken);
-    
-    if (!user) {
-      throw new ServiceError('Invalid session', 'INVALID_SESSION', 401);
-    }
-
-    if (!user.isActive) {
-      throw new ServiceError('User account is deactivated', 'USER_DEACTIVATED', 403);
-    }
-
-    const authContext = {
-      user,
-      session: { token: sessionToken }
-    };
-
-    return handler(authContext, request, ...args);
-  });
-};
-
-// Admin authentication wrapper
-export const withAdminAuth = <T extends unknown[]>(
-  handler: AuthenticatedHandler<T>
-): ApiHandler<T> => {
-  return withAuth(async (authContext, request: NextRequest, ...args: T) => {
-    if (authContext.user.role !== 'admin') {
-      throw new ServiceError('Admin access required', 'ADMIN_ACCESS_REQUIRED', 403);
-    }
-
-    return handler(authContext, request, ...args);
-  });
-};
-
-// Validation helpers
 export const validateRequestBody = <T>(
   schema: any,
   body: any
@@ -202,8 +152,8 @@ export const validateQueryParams = <T>(
   params: URLSearchParams
 ): T => {
   try {
-    const queryObject = Object.fromEntries(params.entries());
-    return schema.parse(queryObject);
+    const paramObject = Object.fromEntries(params.entries());
+    return schema.parse(paramObject);
   } catch (error) {
     throw new ServiceError(
       'Invalid query parameters',
@@ -214,7 +164,10 @@ export const validateQueryParams = <T>(
   }
 };
 
-// Pagination helpers
+// ============================================================================
+// PAGINATION HELPERS
+// ============================================================================
+
 export interface PaginationParams {
   page?: number;
   limit?: number;
@@ -254,52 +207,33 @@ export const createPaginatedResponse = <T>(
   };
 };
 
-// Rate limiting helper (basic implementation)
-const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+// ============================================================================
+// UTILITY HELPERS
+// ============================================================================
 
 export const checkRateLimit = (
   identifier: string,
   limit: number = 100,
   windowMs: number = 15 * 60 * 1000 // 15 minutes
 ): boolean => {
-  const now = Date.now();
-  const key = `${identifier}:${Math.floor(now / windowMs)}`;
-  
-  const current = rateLimitMap.get(key);
-  
-  if (!current || now > current.resetTime) {
-    rateLimitMap.set(key, { count: 1, resetTime: now + windowMs });
-    return true;
-  }
-  
-  if (current.count >= limit) {
-    return false;
-  }
-  
-  current.count++;
+  // TODO: Implement rate limiting logic
+  // This is a placeholder for future rate limiting implementation
   return true;
 };
 
-// CORS helpers
 export const addCorsHeaders = (response: NextResponse): NextResponse => {
   response.headers.set('Access-Control-Allow-Origin', '*');
   response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  
   return response;
 };
 
-// Cache control helpers
 export const addCacheHeaders = (
   response: NextResponse,
   maxAge: number = 300, // 5 minutes
   staleWhileRevalidate: number = 60 // 1 minute
 ): NextResponse => {
-  response.headers.set(
-    'Cache-Control',
-    `public, max-age=${maxAge}, stale-while-revalidate=${staleWhileRevalidate}`
-  );
-  
+  response.headers.set('Cache-Control', `public, max-age=${maxAge}, stale-while-revalidate=${staleWhileRevalidate}`);
   return response;
 };
 
@@ -307,6 +241,5 @@ export const addNoCacheHeaders = (response: NextResponse): NextResponse => {
   response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
   response.headers.set('Pragma', 'no-cache');
   response.headers.set('Expires', '0');
-  
   return response;
 }; 

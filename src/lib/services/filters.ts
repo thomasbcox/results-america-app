@@ -1,117 +1,72 @@
-export interface FilterOptions {
-  search?: string;
-  category?: string;
-  year?: number;
-  state?: string;
-  source?: string;
-  sortBy?: string;
-  sortOrder?: 'asc' | 'desc';
-}
+import type { FilterOptions, StateData, StatisticData, DataPointData, IFilterService } from '../types/service-interfaces';
 
-import type { StatisticData, StateData, DataPointData } from '@/types/api';
+export class FilterService {
+  static filterStatistics(data: StatisticData[], filters: FilterOptions): StatisticData[] {
+    return data.filter(item => {
+      // Search filter
+      if (filters.search) {
+        const searchLower = filters.search.toLowerCase();
+        const matchesSearch = 
+          item.name.toLowerCase().includes(searchLower) ||
+          (item.description && item.description.toLowerCase().includes(searchLower)) ||
+          (item.raNumber && item.raNumber.toLowerCase().includes(searchLower));
+        
+        if (!matchesSearch) return false;
+      }
 
-export function filterStatistics(data: StatisticData[], filters: FilterOptions): StatisticData[] {
-  let filtered = [...data];
+      // Category filter
+      if (filters.categoryId && item.categoryId !== filters.categoryId) {
+        return false;
+      }
 
-  // Search filter
-  if (filters.search) {
-    const searchLower = filters.search.toLowerCase();
-    filtered = filtered.filter(item => 
-      item.name?.toLowerCase().includes(searchLower) ||
-      item.description?.toLowerCase().includes(searchLower) ||
-      item.category?.toLowerCase().includes(searchLower)
-    );
-  }
+      // Data quality filter
+      if (filters.dataQuality && item.dataQuality !== filters.dataQuality) {
+        return false;
+      }
 
-  // Category filter
-  if (filters.category) {
-    filtered = filtered.filter(item => 
-      item.category?.toLowerCase() === filters.category?.toLowerCase()
-    );
-  }
+      // Active filter
+      if (filters.isActive !== undefined && item.isActive !== (filters.isActive ? 1 : 0)) {
+        return false;
+      }
 
-  // Source filter
-  if (filters.source) {
-    const sourceFilter = filters.source.toLowerCase();
-    filtered = filtered.filter(item => 
-      item.source?.toLowerCase().includes(sourceFilter)
-    );
-  }
-
-  // Sort
-  if (filters.sortBy) {
-    filtered.sort((a, b) => {
-      const aVal = a[filters.sortBy! as keyof StatisticData];
-      const bVal = b[filters.sortBy! as keyof StatisticData];
-      
-      if (aVal == null && bVal == null) return 0;
-      if (aVal == null) return filters.sortOrder === 'desc' ? -1 : 1;
-      if (bVal == null) return filters.sortOrder === 'desc' ? 1 : -1;
-      
-      if (aVal < bVal) return filters.sortOrder === 'desc' ? 1 : -1;
-      if (aVal > bVal) return filters.sortOrder === 'desc' ? -1 : 1;
-      return 0;
+      return true;
     });
   }
 
-  return filtered;
-}
+  static filterStates(data: StateData[], filters: FilterOptions): StateData[] {
+    return data.filter(item => {
+      // Search filter
+      if (filters.search) {
+        const searchLower = filters.search.toLowerCase();
+        const matchesSearch = 
+          item.name.toLowerCase().includes(searchLower) ||
+          item.abbreviation.toLowerCase().includes(searchLower);
+        
+        if (!matchesSearch) return false;
+      }
 
-export function filterStates(data: StateData[], filters: FilterOptions): StateData[] {
-  let filtered = [...data];
+      // Active filter
+      if (filters.isActive !== undefined && item.isActive !== (filters.isActive ? 1 : 0)) {
+        return false;
+      }
 
-  // Search filter
-  if (filters.search) {
-    const searchLower = filters.search.toLowerCase();
-    filtered = filtered.filter(item => 
-      item.name?.toLowerCase().includes(searchLower) ||
-      item.abbreviation?.toLowerCase().includes(searchLower)
-    );
-  }
-
-  // Sort
-  if (filters.sortBy) {
-    filtered.sort((a, b) => {
-      const aVal = a[filters.sortBy! as keyof StateData];
-      const bVal = b[filters.sortBy! as keyof StateData];
-      
-      if (aVal == null && bVal == null) return 0;
-      if (aVal == null) return filters.sortOrder === 'desc' ? -1 : 1;
-      if (bVal == null) return filters.sortOrder === 'desc' ? 1 : -1;
-      
-      if (aVal < bVal) return filters.sortOrder === 'desc' ? 1 : -1;
-      if (aVal > bVal) return filters.sortOrder === 'desc' ? -1 : 1;
-      return 0;
+      return true;
     });
   }
 
-  return filtered;
-}
+  static filterDataPoints(data: DataPointData[], filters: FilterOptions): DataPointData[] {
+    return data.filter(item => {
+      // State filter
+      if (filters.stateId && item.stateId !== filters.stateId) {
+        return false;
+      }
 
-export function filterDataPoints(data: DataPointData[], filters: FilterOptions): DataPointData[] {
-  let filtered = [...data];
+      // Year filter
+      if (filters.year && item.year !== filters.year) {
+        return false;
+      }
 
-  // Year filter
-  if (filters.year) {
-    filtered = filtered.filter(item => item.year === filters.year);
-  }
-
-  // State filter
-  if (filters.state) {
-    const stateFilter = filters.state.toLowerCase();
-    filtered = filtered.filter(item => 
-      item.stateName?.toLowerCase().includes(stateFilter)
-    );
-  }
-
-  // Sort by value
-  if (filters.sortBy === 'value') {
-    filtered.sort((a, b) => {
-      if (a.value < b.value) return filters.sortOrder === 'desc' ? 1 : -1;
-      if (a.value > b.value) return filters.sortOrder === 'desc' ? -1 : 1;
-      return 0;
+      return true;
     });
   }
-
-  return filtered;
 } 

@@ -1,36 +1,21 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getStatisticById } from '@/lib/services/statisticsService';
+import { NextRequest } from 'next/server';
+import { StatisticsManagementService } from '@/lib/services/statisticsManagementService';
+import { withErrorHandling, createSuccessResponse, createNotFoundResponse } from '@/lib/response';
+import { IdParamSchema } from '@/lib/validators';
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+async function handleStatisticRequest(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const validatedId = IdParamSchema.parse({ id });
+  
   try {
-    const { id } = await params;
-    const statisticId = parseInt(id);
-    
-    if (isNaN(statisticId)) {
-      return NextResponse.json(
-        { error: 'Invalid statistic ID' },
-        { status: 400 }
-      );
-    }
-    
-    const statistic = await getStatisticById(statisticId);
-    
-    if (!statistic) {
-      return NextResponse.json(
-        { error: 'Statistic not found' },
-        { status: 404 }
-      );
-    }
-    
-    return NextResponse.json(statistic);
+    const statistic = await StatisticsManagementService.getStatistic(validatedId.id);
+    return createSuccessResponse(statistic);
   } catch (error) {
-    console.error('Error fetching statistic:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch statistic' },
-      { status: 500 }
-    );
+    if (error instanceof Error && error.message.includes('not found')) {
+      return createNotFoundResponse('Statistic not found');
+    }
+    throw error;
   }
-} 
+}
+
+export const GET = withErrorHandling(handleStatisticRequest); 

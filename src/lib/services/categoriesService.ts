@@ -8,14 +8,26 @@ import type {
   UpdateCategoryInput 
 } from '../types/service-interfaces';
 
-export class CategoriesService implements ICategoriesService {
+export class CategoriesService {
   static async getAllCategories(): Promise<CategoryData[]> {
-    return db.select().from(categories).orderBy(categories.sortOrder);
+    const results = await db.select().from(categories).orderBy(categories.sortOrder);
+    return results.map(category => ({
+      ...category,
+      sortOrder: category.sortOrder ?? 0,
+      isActive: category.isActive ?? 1,
+    }));
   }
 
   static async getCategoryById(id: number): Promise<CategoryData | null> {
     const result = await db.select().from(categories).where(eq(categories.id, id)).limit(1);
-    return result[0] || null;
+    if (result.length === 0) return null;
+    
+    const category = result[0];
+    return {
+      ...category,
+      sortOrder: category.sortOrder ?? 0,
+      isActive: category.isActive ?? 1,
+    };
   }
 
   static async getCategoriesWithStatistics(): Promise<(CategoryData & { statisticCount: number })[]> {
@@ -45,12 +57,20 @@ export class CategoriesService implements ICategoriesService {
       })
     );
 
-    return categoriesWithStats;
+    return categoriesWithStats.map(category => ({
+      ...category,
+      sortOrder: category.sortOrder ?? 0,
+      isActive: category.isActive ?? 1,
+    }));
   }
 
   static async createCategory(data: CreateCategoryInput): Promise<CategoryData> {
     const [category] = await db.insert(categories).values(data).returning();
-    return category;
+    return {
+      ...category,
+      sortOrder: category.sortOrder ?? 0,
+      isActive: category.isActive ?? 1,
+    };
   }
 
   static async updateCategory(id: number, data: UpdateCategoryInput): Promise<CategoryData> {
@@ -58,7 +78,11 @@ export class CategoriesService implements ICategoriesService {
     if (!category) {
       throw new Error(`Category with id ${id} not found`);
     }
-    return category;
+    return {
+      ...category,
+      sortOrder: category.sortOrder ?? 0,
+      isActive: category.isActive ?? 1,
+    };
   }
 
   static async deleteCategory(id: number): Promise<boolean> {

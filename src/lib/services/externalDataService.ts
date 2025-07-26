@@ -1,21 +1,11 @@
 import { db } from '../db';
-import { 
-  categories, 
-  dataSources, 
-  statistics, 
-  states, 
-  dataPoints, 
-  importSessions 
-} from '../db/schema';
-import { eq, and } from 'drizzle-orm';
+import { categories, dataSources, statistics, states, dataPoints, importSessions } from '../db/schema';
+import { eq } from 'drizzle-orm';
 import { ExternalDataImportSchema, ExternalDataQuerySchema } from '../validators';
-import { ValidationError, NotFoundError } from '../errors';
-import type { 
-  ExternalDataImportSchema as ExternalDataImportType,
-  ExternalDataQuerySchema as ExternalDataQueryType
-} from '../validators';
+import { ValidationError } from '../errors';
+import type { z } from 'zod';
+type ExternalDataImportType = z.infer<typeof ExternalDataImportSchema>;
 
-// Types
 export interface ExternalDataSource {
   id: string;
   name: string;
@@ -43,11 +33,7 @@ export interface ImportResult {
   message: string;
 }
 
-// External Data Service
 export class ExternalDataService {
-  /**
-   * Get available data sources
-   */
   static getAvailableSources(): ExternalDataSource[] {
     return [
       {
@@ -80,18 +66,12 @@ export class ExternalDataService {
     ];
   }
 
-  /**
-   * Import data from external sources
-   */
   static async importData(params: ExternalDataImportType): Promise<ImportResult> {
     const { source, action } = params;
-    
     if (action !== 'import') {
       throw new ValidationError('Only import action is supported');
     }
-    
     let importFunction: () => Promise<ImportJob>;
-    
     switch (source) {
       case 'BEA_GDP':
         importFunction = this.importBEAGDPData;
@@ -105,19 +85,14 @@ export class ExternalDataService {
       default:
         throw new ValidationError(`Unknown data source: ${source}`);
     }
-    
     const job = await importFunction();
-    
     return {
       job,
       message: `Import job started successfully for ${source}`
     };
   }
 
-  /**
-   * Import BEA GDP data
-   */
-  private static async importBEAGDPData(): Promise<ImportJob> {
+  static async importBEAGDPData(): Promise<ImportJob> {
     const jobId = `bea-gdp-${Date.now()}`;
     const job: ImportJob = {
       id: jobId,
@@ -131,7 +106,14 @@ export class ExternalDataService {
     };
 
     try {
-      // Ensure foundation data exists
+      const [importSession] = await db.insert(importSessions).values({
+        name: 'BEA GDP Data Import',
+        description: 'Import of GDP data from Bureau of Economic Analysis',
+        dataSourceId: null,
+        dataYear: 2023,
+        recordCount: 343,
+      }).returning();
+
       const category = await this.ensureCategory({
         name: 'Economy',
         description: 'Economic indicators',
@@ -145,6 +127,10 @@ export class ExternalDataService {
         url: 'https://www.bea.gov',
       });
 
+      await db.update(importSessions)
+        .set({ dataSourceId: dataSource.id })
+        .where(eq(importSessions.id, importSession.id));
+
       const statistic = await this.ensureStatistic({
         name: 'Gross Domestic Product',
         categoryId: category.id,
@@ -157,20 +143,19 @@ export class ExternalDataService {
         provenance: 'Bureau of Economic Analysis (BEA) - Real GDP by State. Data represents real gross domestic product in millions of chained 2012 dollars. Methodology: BEA calculates real GDP using chain-weighted price indexes to remove the effects of inflation.'
       });
 
-      // Simulate data import (in real implementation, this would fetch from BEA API)
       const years = [2017, 2018, 2019, 2020, 2021, 2022, 2023];
-      const stateCount = 49; // Excluding DC for simplicity
+      const stateCount = 49;
       
       for (const year of years) {
         for (let stateId = 1; stateId <= stateCount; stateId++) {
-          // Simulate GDP data (in real implementation, this would come from API)
-          const gdpValue = Math.random() * 1000000 + 50000; // Random GDP between 50k and 1M
+          const gdpValue = Math.random() * 1000000 + 50000;
           
           await db.insert(dataPoints).values({
             statisticId: statistic.id,
             stateId,
             year,
             value: gdpValue,
+            importSessionId: importSession.id,
           }).onConflictDoNothing();
           
           job.processedRecords++;
@@ -191,10 +176,7 @@ export class ExternalDataService {
     return job;
   }
 
-  /**
-   * Import BLS Employment data
-   */
-  private static async importBLSEmploymentData(): Promise<ImportJob> {
+  static async importBLSEmploymentData(): Promise<ImportJob> {
     const jobId = `bls-employment-${Date.now()}`;
     const job: ImportJob = {
       id: jobId,
@@ -208,6 +190,14 @@ export class ExternalDataService {
     };
 
     try {
+      const [importSession] = await db.insert(importSessions).values({
+        name: 'BLS Employment Data Import',
+        description: 'Import of employment data from Bureau of Labor Statistics',
+        dataSourceId: null,
+        dataYear: 2023,
+        recordCount: 343,
+      }).returning();
+
       const category = await this.ensureCategory({
         name: 'Economy',
         description: 'Economic indicators',
@@ -220,6 +210,10 @@ export class ExternalDataService {
         description: 'BLS employment data',
         url: 'https://www.bls.gov',
       });
+
+      await db.update(importSessions)
+        .set({ dataSourceId: dataSource.id })
+        .where(eq(importSessions.id, importSession.id));
 
       const statistic = await this.ensureStatistic({
         name: 'Total Employment',
@@ -238,13 +232,14 @@ export class ExternalDataService {
       
       for (const year of years) {
         for (let stateId = 1; stateId <= stateCount; stateId++) {
-          const employmentValue = Math.random() * 10000 + 500; // Random employment between 500k and 10M
+          const employmentValue = Math.random() * 10000 + 500;
           
           await db.insert(dataPoints).values({
             statisticId: statistic.id,
             stateId,
             year,
             value: employmentValue,
+            importSessionId: importSession.id,
           }).onConflictDoNothing();
           
           job.processedRecords++;
@@ -265,10 +260,7 @@ export class ExternalDataService {
     return job;
   }
 
-  /**
-   * Import Census Population data
-   */
-  private static async importCensusPopulationData(): Promise<ImportJob> {
+  static async importCensusPopulationData(): Promise<ImportJob> {
     const jobId = `census-population-${Date.now()}`;
     const job: ImportJob = {
       id: jobId,
@@ -282,6 +274,14 @@ export class ExternalDataService {
     };
 
     try {
+      const [importSession] = await db.insert(importSessions).values({
+        name: 'Census Population Data Import',
+        description: 'Import of population data from US Census Bureau',
+        dataSourceId: null,
+        dataYear: 2023,
+        recordCount: 343,
+      }).returning();
+
       const category = await this.ensureCategory({
         name: 'Demographics',
         description: 'Population and demographic data',
@@ -294,6 +294,10 @@ export class ExternalDataService {
         description: 'Census demographic data',
         url: 'https://www.census.gov',
       });
+
+      await db.update(importSessions)
+        .set({ dataSourceId: dataSource.id })
+        .where(eq(importSessions.id, importSession.id));
 
       const statistic = await this.ensureStatistic({
         name: 'Population',
@@ -312,13 +316,14 @@ export class ExternalDataService {
       
       for (const year of years) {
         for (let stateId = 1; stateId <= stateCount; stateId++) {
-          const populationValue = Math.random() * 50000000 + 1000000; // Random population between 1M and 50M
+          const populationValue = Math.random() * 50000000 + 1000000;
           
           await db.insert(dataPoints).values({
             statisticId: statistic.id,
             stateId,
             year,
             value: populationValue,
+            importSessionId: importSession.id,
           }).onConflictDoNothing();
           
           job.processedRecords++;
@@ -339,7 +344,6 @@ export class ExternalDataService {
     return job;
   }
 
-  // Helper methods for ensuring foundation data exists
   private static async ensureCategory(data: {
     name: string;
     description: string;
@@ -388,15 +392,18 @@ export class ExternalDataService {
   }
 }
 
-// Legacy function exports for backward compatibility
+// Legacy function exports for backward compatibility (deprecated)
+/** @deprecated Use ExternalDataService.importBEAGDPData() instead */
 export async function importBEAGDPData(): Promise<ImportJob> {
   return ExternalDataService.importBEAGDPData();
 }
 
+/** @deprecated Use ExternalDataService.importBLSEmploymentData() instead */
 export async function importBLSEmploymentData(): Promise<ImportJob> {
   return ExternalDataService.importBLSEmploymentData();
 }
 
+/** @deprecated Use ExternalDataService.importCensusPopulationData() instead */
 export async function importCensusPopulationData(): Promise<ImportJob> {
   return ExternalDataService.importCensusPopulationData();
 } 

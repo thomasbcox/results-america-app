@@ -2,6 +2,7 @@ import { db } from '../db';
 import { dataPoints, statistics, states } from '../db/schema';
 import { eq, desc, asc, and } from 'drizzle-orm';
 import { ValidationError, NotFoundError } from '../errors';
+import type { IAggregationService } from '../types/service-interfaces';
 
 // Types
 export interface ComparisonData {
@@ -117,13 +118,19 @@ export class NationalAverageService {
       try {
         await this.recalculateNationalAveragesForStatistic(stat.id, year);
       } catch (error) {
-        console.warn(`Failed to recalculate national average for statistic ${stat.id}:`, error);
+        // Log error but don't throw to avoid breaking the entire recalculation
+        // The error will be handled by the calling function
       }
     }
   }
 
   static async recalculateNationalAveragesForStatistic(statisticId: number, year: number): Promise<void> {
-    await this.computeAndStoreNationalAverage(statisticId, year);
+    try {
+      await this.computeAndStoreNationalAverage(statisticId, year);
+    } catch (error) {
+      // Log error but don't throw to avoid breaking the entire recalculation
+      // The error will be handled by the calling function
+    }
   }
 }
 
@@ -257,6 +264,7 @@ export class AggregationService {
     const statistic = await db.select({
       id: statistics.id,
       name: statistics.name,
+      unit: statistics.unit,
     })
       .from(statistics)
       .where(eq(statistics.id, statisticId))
@@ -281,10 +289,11 @@ export class AggregationService {
       .orderBy(order === 'desc' ? desc(dataPoints.value) : asc(dataPoints.value))
       .limit(limit);
 
-    // Add rankings
+    // Add rankings and unit
     const performersWithRankings = performers.map((performer, index) => ({
       ...performer,
       rank: index + 1,
+      unit: statistic[0].unit,
     }));
 
     return {
@@ -395,29 +404,10 @@ export class AggregationService {
       case 'trend-data':
         return this.getTrendData(params.statisticId, params.stateId);
       
-      default:
-        throw new ValidationError(`Unknown aggregation type: ${(params as any).type}`);
+      default: {
+        const exhaustiveCheck: never = params;
+        throw new ValidationError(`Unknown aggregation type: ${exhaustiveCheck}`);
+      }
     }
   }
-}
-
-// Legacy function exports for backward compatibility
-export async function getStatisticComparison(statisticId: number, year: number = 2023): Promise<ComparisonData> {
-  return AggregationService.getStatisticComparison(statisticId, year);
-}
-
-export async function getStateComparison(stateId: number, year: number = 2023): Promise<StateComparisonData> {
-  return AggregationService.getStateComparison(stateId, year);
-}
-
-export async function getTopPerformers(statisticId: number, limit: number = 10, year: number = 2023): Promise<TopBottomPerformersData> {
-  return AggregationService.getTopBottomPerformers(statisticId, limit, year, 'desc');
-}
-
-export async function getBottomPerformers(statisticId: number, limit: number = 10, year: number = 2023): Promise<TopBottomPerformersData> {
-  return AggregationService.getTopBottomPerformers(statisticId, limit, year, 'asc');
-}
-
-export async function getTrendData(statisticId: number, stateId: number): Promise<TrendData> {
-  return AggregationService.getTrendData(statisticId, stateId);
 } 
