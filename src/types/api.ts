@@ -68,6 +68,9 @@ export interface MeasureData {
   values: number[];
   average: number;
   year: number;
+  statisticId: number;
+  statisticName: string;
+  unit: string;
 }
 
 export interface StatePerformance {

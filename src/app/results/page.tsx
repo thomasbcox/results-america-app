@@ -12,13 +12,16 @@ import type { MeasureData, ChartData, ChartDataPoint, StatePerformance, Statisti
 
 // Helper function to transform API data for charts
 const transformDataForCharts = (measureData: MeasureData | null, selectedStates: string[]): ChartData => {
-  if (!measureData || !selectedStates.length) return {}
+  if (!measureData || !selectedStates.length || !measureData.states || !measureData.values) {
+    console.log('transformDataForCharts: Invalid data', { measureData, selectedStates })
+    return {}
+  }
   
   const result: ChartData = {}
   
   selectedStates.forEach((stateName) => {
     const stateIndex = measureData.states.indexOf(stateName)
-    if (stateIndex !== -1) {
+    if (stateIndex !== -1 && measureData.values[stateIndex] !== undefined) {
       const stateValue = measureData.values[stateIndex]
       const nationalAverage = measureData.average
       
@@ -38,11 +41,11 @@ const transformDataForCharts = (measureData: MeasureData | null, selectedStates:
 
 // Helper function to get top performers from the data
 const getTopPerformers = (measureData: MeasureData | null, count: number = 3): StatePerformance[] => {
-  if (!measureData) return []
+  if (!measureData || !measureData.states || !measureData.values) return []
   
   const stateValuePairs = measureData.states.map((state: string, index: number) => ({
     name: state,
-    value: measureData.values[index]
+    value: measureData.values[index] || 0
   }))
   
   // Sort by value (assuming higher is better - this might need to be configurable)
@@ -125,15 +128,18 @@ export default function ResultsPage() {
         if (selectedMeasure) {
           const measureResponse = await fetch(`/api/statistics/${selectedMeasure}`)
           if (measureResponse.ok) {
-            const measure = await measureResponse.json()
+            const result = await measureResponse.json()
+            const measure = result.data || result
             setMeasureDetails(measure)
           }
         }
         if (selectedMeasure) {
           const dataResponse = await fetch(`/api/aggregation?type=statistic-comparison&statisticId=${selectedMeasure}`)
           if (dataResponse.ok) {
-            const data = await dataResponse.json()
-            console.log('Measure data:', data)
+            const result = await dataResponse.json()
+            console.log('Measure data response:', result)
+            const data = result.data || null
+            console.log('Extracted measure data:', data)
             console.log('Selected states:', selectedStates)
             setMeasureData(data)
           }
