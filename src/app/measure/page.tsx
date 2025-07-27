@@ -13,9 +13,8 @@ interface Statistic {
   description: string;
   unit: string;
   availableSince: string;
-  category: string;
-  source: string;
-  sourceUrl: string;
+  categoryName: string;
+  dataSourceName: string;
   hasData?: boolean;
   dataQuality?: 'mock' | 'real';
   provenance?: string;
@@ -52,16 +51,22 @@ function MeasureSelectionContent() {
   useEffect(() => {
     async function fetchStatistics() {
       try {
+        console.log('Fetching statistics for category:', category);
         const response = await fetch('/api/statistics?withAvailability=true');
         if (!response.ok) {
           throw new Error('Failed to fetch statistics');
         }
-        const data = await response.json();
+        const result = await response.json();
+        console.log('API response:', result);
+        const data = result.data || [];
+        console.log('Data array length:', data.length);
         const filteredData = category
-          ? data.filter((stat: Statistic) => stat.category === category)
+          ? data.filter((stat: Statistic) => stat.categoryName === category)
           : data;
+        console.log('Filtered data length:', filteredData.length);
         setStatistics(filteredData);
       } catch (err) {
+        console.error('Error fetching statistics:', err);
         setError(err instanceof Error ? err.message : 'Failed to fetch statistics');
       } finally {
         setLoading(false);
@@ -182,7 +187,7 @@ function MeasureSelectionContent() {
                       <DataQualityIndicator
                         dataQuality={statistic.dataQuality || 'mock'}
                         provenance={statistic.provenance}
-                        sourceUrl={statistic.sourceUrl}
+                        sourceUrl={undefined}
                         showBadge={true}
                         showIcon={true}
                         size="sm"
@@ -196,7 +201,7 @@ function MeasureSelectionContent() {
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-500">Category:</span>
-                        <span className="text-black">{statistic.category}</span>
+                        <span className="text-black">{statistic.categoryName}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-500">Available:</span>

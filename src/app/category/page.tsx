@@ -50,9 +50,10 @@ export default function CategorySelection() {
         if (!response.ok) {
           throw new Error(`Failed to fetch categories: ${response.status}`)
         }
-        const data = await response.json()
-        console.log('Categories loaded:', data)
-        setCategories(data)
+        const result = await response.json()
+        console.log('Categories loaded:', result)
+        // Extract the data array from the API response
+        setCategories(result.data || [])
               } catch (err) {
           console.error('Error fetching categories:', err)
           setError(err instanceof Error ? err.message : 'Failed to fetch categories')
@@ -176,12 +177,12 @@ export default function CategorySelection() {
           {!loading && !error && categories.map((category) => (
             <div key={category.id} className="relative">
               <button
-                onClick={() => handleCategorySelect(category.name, category.hasData || false)}
+                onClick={() => handleCategorySelect(category.name, (category.statisticCount || 0) > 0)}
                 onMouseEnter={() => setHoveredCategory(category.name)}
                 onMouseLeave={() => setHoveredCategory(null)}
-                disabled={!category.hasData}
+                disabled={(category.statisticCount || 0) === 0}
                 className={`w-full flex items-center justify-between p-4 rounded-md border transition-colors ${
-                  !category.hasData
+                  (category.statisticCount || 0) === 0
                     ? 'bg-gray-200 text-gray-500 border-gray-300 cursor-not-allowed opacity-60'
                     : selectedCategory === category.name
                     ? 'bg-red-600 text-white border-red-600 shadow-md cursor-pointer'
@@ -208,7 +209,7 @@ export default function CategorySelection() {
                       {category.statisticCount} measures available
                     </p>
                   )}
-                  {category.hasData === false && (
+                  {(category.statisticCount || 0) === 0 && (
                     <p className="text-sm text-red-600 mt-2 font-medium">
                       ⚠️ No data available for this category
                     </p>

@@ -1,6 +1,6 @@
-import { db } from '../db';
-import { dataPoints, statistics, states } from '../db/schema';
-import { eq, desc, asc, and } from 'drizzle-orm';
+import { db } from '../db/index';
+import { dataPoints, statistics, states } from '../db/schema-postgres';
+import { eq, desc, asc, and, inArray } from 'drizzle-orm';
 import { ValidationError, NotFoundError } from '../errors';
 import type { IAggregationService } from '../types/service-interfaces';
 
@@ -139,23 +139,18 @@ export class AggregationService {
   /**
    * Get statistic comparison data (national averages, rankings, etc.)
    */
-  static async getStatisticComparison(statisticId: number, year: number = 2023): Promise<ComparisonData> {
-    // Validate statistic exists
-    const statistic = await db.select({
-      id: statistics.id,
-      name: statistics.name,
-      unit: statistics.unit,
-    })
-      .from(statistics)
-      .where(eq(statistics.id, statisticId))
-      .limit(1);
-
-    if (statistic.length === 0) {
-      throw new NotFoundError('Statistic');
-    }
-
-    // Get all data points for this statistic and year
+  static async getStatisticComparison(statisticId: number, year: number = 2023): Promise<{
+    states: string[];
+    values: number[];
+    average: number;
+    year: number;
+    statisticId: number;
+    statisticName: string;
+    unit: string;
+  }> {
+    // First, let's get the basic data points
     const dataPointsResult = await db.select({
+      stateId: dataPoints.stateId,
       value: dataPoints.value,
     })
       .from(dataPoints)
@@ -165,25 +160,48 @@ export class AggregationService {
       ));
 
     if (dataPointsResult.length === 0) {
-      throw new NotFoundError('Data points for statistic and year');
+      throw new NotFoundError(`No data found for statistic ${statisticId} in year ${year}`);
     }
 
-    const values = dataPointsResult.map((dp: any) => dp.value).sort((a: number, b: number) => a - b);
-    const average = await NationalAverageService.getNationalAverage(statisticId, year);
-    const median = values[Math.floor(values.length / 2)];
-    const min = values[0];
-    const max = values[values.length - 1];
+    // Get all states (we'll filter in JavaScript)
+    const statesResult = await db.select({
+      id: states.id,
+      name: states.name,
+    })
+      .from(states)
+      .orderBy(asc(states.name));
+
+    // Get statistic info
+    const statisticResult = await db.select({
+      name: statistics.name,
+      unit: statistics.unit,
+    })
+      .from(statistics)
+      .where(eq(statistics.id, statisticId))
+      .limit(1);
+
+    if (statisticResult.length === 0) {
+      throw new NotFoundError(`Statistic ${statisticId} not found`);
+    }
+
+    // Create a map of stateId to stateName
+    const stateMap = new Map(statesResult.map(s => [s.id, s.name]));
+    
+    // Extract states and values arrays
+    const stateNames = dataPointsResult.map(dp => stateMap.get(dp.stateId) || 'Unknown').sort();
+    const values = dataPointsResult.map(dp => dp.value);
+    
+    // Calculate average
+    const average = values.reduce((sum: number, val: number) => sum + val, 0) / values.length;
 
     return {
-      statisticId,
-      statisticName: statistic[0].name,
-      year,
+      states: stateNames,
+      values,
       average,
-      median,
-      min,
-      max,
-      stateCount: values.length,
-      unit: statistic[0].unit,
+      year,
+      statisticId,
+      statisticName: statisticResult[0].name,
+      unit: statisticResult[0].unit,
     };
   }
 

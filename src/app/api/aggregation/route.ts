@@ -5,9 +5,7 @@ import { withErrorHandling, createSuccessResponse } from '@/lib/response';
 
 async function handleAggregationRequest(request: NextRequest) {
   const params = await validateQueryParams(request, AggregationQuerySchema);
-  
   const result = await AggregationService.aggregate(params);
-  
   return createSuccessResponse(result);
 }
 

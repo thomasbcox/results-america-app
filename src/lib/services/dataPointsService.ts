@@ -1,5 +1,5 @@
 import { db } from '../db/index';
-import { dataPoints, states, statistics, categories, dataSources, importSessions } from '../db/schema';
+import { dataPoints, states, statistics, categories, dataSources, importSessions } from '../db/schema-postgres';
 import { eq, and, inArray } from 'drizzle-orm';
 import type { 
   IDataPointsService, 

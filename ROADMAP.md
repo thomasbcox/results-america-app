@@ -44,16 +44,16 @@ Our approach prioritizes delivering immediate value while systematically buildin
 
 ### **Essential Tables:**
 ```typescript
-// MVP Core Schema
-export const states = sqliteTable('states', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
+// MVP Core Schema (PostgreSQL)
+export const states = pgTable('states', {
+  id: serial('id').primaryKey(),
   name: text('name').notNull().unique(),
   abbreviation: text('abbreviation').notNull().unique(),
   isActive: integer('is_active').default(1),
 });
 
-export const categories = sqliteTable('categories', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
+export const categories = pgTable('categories', {
+  id: serial('id').primaryKey(),
   name: text('name').notNull().unique(),
   description: text('description'),
   icon: text('icon'),
@@ -61,24 +61,44 @@ export const categories = sqliteTable('categories', {
   isActive: integer('is_active').default(1),
 });
 
-export const statistics = sqliteTable('statistics', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
-  categoryId: integer('category_id').notNull().references(() => categories.id),
-  name: text('name').notNull(),
+export const dataSources = pgTable('data_sources', {
+  id: serial('id').primaryKey(),
+  name: text('name').notNull().unique(),
   description: text('description'),
-  unit: text('unit').notNull(),
-  source: text('source'),
+  url: text('url'),
   isActive: integer('is_active').default(1),
 });
 
-export const dataPoints = sqliteTable('data_points', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
+export const statistics = pgTable('statistics', {
+  id: serial('id').primaryKey(),
+  raNumber: text('ra_number'),
+  categoryId: integer('category_id').notNull().references(() => categories.id),
+  dataSourceId: integer('data_source_id').references(() => dataSources.id),
+  name: text('name').notNull(),
+  description: text('description'),
+  unit: text('unit').notNull(),
+  dataQuality: text('data_quality', { enum: ['mock', 'real'] }).default('mock'),
+  isActive: integer('is_active').default(1),
+});
+
+export const importSessions = pgTable('import_sessions', {
+  id: serial('id').primaryKey(),
+  name: text('name').notNull(),
+  description: text('description'),
+  dataSourceId: integer('data_source_id').references(() => dataSources.id),
+  importDate: timestamp('import_date').default(sql`CURRENT_TIMESTAMP`),
+  dataYear: integer('data_year'),
+  recordCount: integer('record_count'),
+  isActive: integer('is_active').default(1),
+});
+
+export const dataPoints = pgTable('data_points', {
+  id: serial('id').primaryKey(),
+  importSessionId: integer('import_session_id').notNull().references(() => importSessions.id),
   year: integer('year').notNull(),
   stateId: integer('state_id').notNull().references(() => states.id),
   statisticId: integer('statistic_id').notNull().references(() => statistics.id),
   value: real('value').notNull(),
-  source: text('source'),
-  lastUpdated: text('last_updated').default(sql`CURRENT_TIMESTAMP`),
 });
 ```
 
@@ -87,13 +107,14 @@ export const dataPoints = sqliteTable('data_points', {
 - ✅ Category-based navigation
 - ✅ Simple data tables
 - ✅ Basic search/filter
-- ✅ "Last updated" timestamps
+- ✅ Pagination and sorting
 - ✅ **No authentication required for core features**
+- ✅ Magic link authentication (optional enhancement)
 
 ### **MVP Trust Signals:**
-- ✅ Source attribution on each data point
-- ✅ Last updated dates
-- ✅ Simple "About our data" page
+- ✅ Source attribution via normalized data sources
+- ✅ Import session tracking for data lineage
+- ✅ Data quality indicators
 - ✅ **Transparent access to all core data**
 
 ### **Success Criteria:**
@@ -110,33 +131,25 @@ export const dataPoints = sqliteTable('data_points', {
 
 ### **Add Tables:**
 ```typescript
-export const importSessions = sqliteTable('import_sessions', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
-  sessionId: text('session_id').notNull().unique(),
-  sourceName: text('source_name').notNull(),
-  fileName: text('file_name'),
-  startedAt: text('started_at').default(sql`CURRENT_TIMESTAMP`),
-  completedAt: text('completed_at'),
-  status: text('status').notNull(),
-  totalRecords: integer('total_records'),
-  processedRecords: integer('processed_records'),
-  errorCount: integer('error_count').default(0),
-  importedBy: text('imported_by'),
-});
-
-export const dataProvenance = sqliteTable('data_provenance', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
-  dataPointId: integer('data_point_id').notNull().references(() => dataPoints.id),
-  importSessionId: integer('import_session_id').notNull().references(() => importSessions.id),
-  originalSource: text('original_source').notNull(),
-  originalUrl: text('original_url'),
-  extractionDate: text('extraction_date').notNull(),
-  createdAt: text('created_at').default(sql`CURRENT_TIMESTAMP`),
-});
+// Already implemented in Phase 1
+export const nationalAverages = pgTable('national_averages', {
+  id: serial('id').primaryKey(),
+  statisticId: integer('statistic_id').notNull().references(() => statistics.id),
+  year: integer('year').notNull(),
+  value: real('value').notNull(),
+  calculationMethod: text('calculation_method').notNull().default('arithmetic_mean'),
+  stateCount: integer('state_count').notNull(),
+  lastCalculated: timestamp('last_calculated').notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (table) => ({
+  uniqueConstraint: uniqueIndex('idx_national_average_unique').on(table.statisticId, table.year),
+}));
 ```
 
 ### **New Features:**
-- ✅ Import session tracking
+- ✅ Import session tracking (implemented)
+- ✅ Data source normalization (implemented)
+- ✅ National averages pre-computation (implemented)
+- ✅ Data quality indicators (implemented)
 - ✅ Basic provenance linking
 - ✅ Import error logging
 - ✅ Data quality indicators (completeness)

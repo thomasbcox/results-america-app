@@ -1,6 +1,6 @@
 import { db } from '../db/index';
 import { statistics, dataSources, categories } from '../db/schema-normalized';
-import { eq } from 'drizzle-orm';
+import { eq, like, desc, asc } from 'drizzle-orm';
 import type { 
   IStatisticsService, 
   StatisticData, 
@@ -9,6 +9,137 @@ import type {
 } from '../types/service-interfaces';
 
 export class StatisticsService {
+  static async getAllStatistics(): Promise<StatisticData[]> {
+    return this.getAllStatisticsWithSources();
+  }
+
+  static async searchStatistics(searchTerm: string): Promise<StatisticData[]> {
+    const results = await db.select({
+      id: statistics.id,
+      name: statistics.name,
+      raNumber: statistics.raNumber,
+      description: statistics.description,
+      subMeasure: statistics.subMeasure,
+      calculation: statistics.calculation,
+      unit: statistics.unit,
+      availableSince: statistics.availableSince,
+      isActive: statistics.isActive,
+      categoryId: statistics.categoryId,
+      dataSourceId: statistics.dataSourceId,
+      categoryName: categories.name,
+      dataSourceName: dataSources.name,
+    })
+      .from(statistics)
+      .leftJoin(dataSources, eq(statistics.dataSourceId, dataSources.id))
+      .leftJoin(categories, eq(statistics.categoryId, categories.id))
+      .where(
+        like(statistics.name, `%${searchTerm}%`)
+      );
+
+    return results.map((result: any) => ({
+      id: result.id,
+      name: result.name,
+      raNumber: result.raNumber,
+      description: result.description,
+      subMeasure: result.subMeasure,
+      calculation: result.calculation,
+      unit: result.unit,
+      availableSince: result.availableSince,
+      dataQuality: 'mock',
+      provenance: undefined,
+      isActive: result.isActive ?? 1,
+      categoryId: result.categoryId,
+      dataSourceId: result.dataSourceId,
+      categoryName: result.categoryName || undefined,
+      dataSourceName: result.dataSourceName || undefined,
+    }));
+  }
+
+  static async getStatisticsWithPagination(
+    pagination: { page: number; limit: number },
+    sorting?: { sortBy?: string; sortOrder?: 'asc' | 'desc' }
+  ): Promise<{ data: StatisticData[]; pagination: any }> {
+    const { page, limit } = pagination;
+    const offset = (page - 1) * limit;
+
+    // Build order by clause
+    let orderBy = desc(statistics.id); // default
+    if (sorting?.sortBy) {
+      const sortField = sorting.sortBy as keyof typeof statistics;
+      if (sorting.sortOrder === 'asc') {
+        orderBy = asc(statistics[sortField]);
+      } else {
+        orderBy = desc(statistics[sortField]);
+      }
+    }
+
+    const results = await db.select({
+      id: statistics.id,
+      name: statistics.name,
+      raNumber: statistics.raNumber,
+      description: statistics.description,
+      subMeasure: statistics.subMeasure,
+      calculation: statistics.calculation,
+      unit: statistics.unit,
+      availableSince: statistics.availableSince,
+      isActive: statistics.isActive,
+      categoryId: statistics.categoryId,
+      dataSourceId: statistics.dataSourceId,
+      categoryName: categories.name,
+      dataSourceName: dataSources.name,
+    })
+      .from(statistics)
+      .leftJoin(dataSources, eq(statistics.dataSourceId, dataSources.id))
+      .leftJoin(categories, eq(statistics.categoryId, categories.id))
+      .orderBy(orderBy)
+      .limit(limit)
+      .offset(offset);
+
+    // Get total count
+    const totalResult = await db.select({ count: statistics.id }).from(statistics);
+    const total = totalResult.length;
+
+    const data = results.map((result: any) => ({
+      id: result.id,
+      name: result.name,
+      raNumber: result.raNumber,
+      description: result.description,
+      subMeasure: result.subMeasure,
+      calculation: result.calculation,
+      unit: result.unit,
+      availableSince: result.availableSince,
+      dataQuality: 'mock',
+      provenance: undefined,
+      isActive: result.isActive ?? 1,
+      categoryId: result.categoryId,
+      dataSourceId: result.dataSourceId,
+      categoryName: result.categoryName || undefined,
+      dataSourceName: result.dataSourceName || undefined,
+    }));
+
+    return {
+      data,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+        hasNext: page < Math.ceil(total / limit),
+        hasPrev: page > 1,
+      }
+    };
+  }
+
+  static async getStatisticsWithAvailability(): Promise<StatisticData[]> {
+    // For now, return all statistics with a hasData flag
+    const results = await this.getAllStatisticsWithSources();
+    
+    return results.map(statistic => ({
+      ...statistic,
+      hasData: true, // Assume all statistics have data for now
+    }));
+  }
+
   static async getAllStatisticsWithSources(): Promise<StatisticData[]> {
     const results = await db.select({
       id: statistics.id,

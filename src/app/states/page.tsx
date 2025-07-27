@@ -26,8 +26,9 @@ export default function StateSelection() {
         if (!response.ok) {
           throw new Error('Failed to fetch states')
         }
-        const data = await response.json()
-        setStates(data)
+        const result = await response.json()
+        // Extract the data array from the API response
+        setStates(result.data || [])
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to fetch states')
       } finally {
@@ -79,18 +80,18 @@ export default function StateSelection() {
         {/* US Map */}
         <div className="w-full max-w-md mb-6 relative">
           <Image 
-            src="/us-map.svg" 
-            alt="United States Map"
+            src="/select-states-to-compare.png" 
+            alt="Select States to Compare"
             width={400}
             height={250}
             className="w-full h-64 object-cover rounded-lg shadow-md"
             onError={(e) => {
               // Fallback to a placeholder if image doesn't exist
-              e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 250'%3E%3Crect width='400' height='250' fill='%23e5e7eb'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='%236b7280' font-family='sans-serif' font-size='16'%3EUnited States Map%3C/text%3E%3C/svg%3E"
+              e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 250'%3E%3Crect width='400' height='250' fill='%23e5e7eb'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='%236b7280' font-family='sans-serif' font-size='16'%3ESelect States to Compare%3C/text%3E%3C/svg%3E"
             }}
           />
           <div className="absolute top-2 right-2 bg-white px-2 py-1 rounded text-xs font-medium text-black">
-            STATES OF USA
+            SELECT STATES
           </div>
         </div>
 
@@ -104,7 +105,7 @@ export default function StateSelection() {
         {/* Instructions */}
         <div className="w-full max-w-md mb-6">
           <p className="text-black text-center text-sm">
-            Choose one or more states you want to analyze, or leave empty to view all states
+            Choose 1 to 4 states you want to analyze and compare
           </p>
           {!user && (
             <p className="text-blue-600 text-center text-xs mt-2">
@@ -135,8 +136,8 @@ export default function StateSelection() {
               >
                 <span className="text-black">
                   {selectedStates.length === 0 
-                    ? "Select a state (maximum 4, or none for all states)"
-                    : selectedStates[selectedStates.length - 1]
+                    ? "Select a state (1-4 required)"
+                    : `Selected ${selectedStates.length} state${selectedStates.length === 1 ? '' : 's'}`
                   }
                 </span>
                 <div className="w-4 h-4 text-gray-600">▼</div>
@@ -144,15 +145,17 @@ export default function StateSelection() {
 
               {showDropdown && (
                 <div className="absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-md mt-1 max-h-60 overflow-y-auto z-10">
-                  {states.map((state) => (
-                    <button
-                      key={state.id}
-                      onClick={() => handleStateSelect(state.name)}
-                      className="w-full px-4 py-2 text-left hover:bg-gray-100 focus:outline-none focus:bg-gray-100 text-black"
-                    >
-                      {state.name}
-                    </button>
-                  ))}
+                  {states
+                    .filter((state) => !selectedStates.includes(state.name))
+                    .map((state) => (
+                      <button
+                        key={state.id}
+                        onClick={() => handleStateSelect(state.name)}
+                        className="w-full px-4 py-2 text-left hover:bg-gray-100 focus:outline-none focus:bg-gray-100 text-black"
+                      >
+                        {state.name}
+                      </button>
+                    ))}
                 </div>
               )}
             </div>
@@ -201,8 +204,17 @@ export default function StateSelection() {
             Back
           </Link>
           <Link
-            href="/category"
-            className="flex-1 bg-blue-600 text-white font-medium py-3 px-6 rounded-md text-center hover:bg-blue-700 transition-colors"
+            href={selectedStates.length > 0 ? "/category" : "#"}
+            className={`flex-1 font-medium py-3 px-6 rounded-md text-center transition-colors ${
+              selectedStates.length > 0
+                ? "bg-blue-600 text-white hover:bg-blue-700"
+                : "bg-gray-300 text-gray-500 cursor-not-allowed"
+            }`}
+            onClick={(e) => {
+              if (selectedStates.length === 0) {
+                e.preventDefault()
+              }
+            }}
           >
             Continue
           </Link>
