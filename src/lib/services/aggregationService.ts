@@ -82,8 +82,8 @@ export class NationalAverageService {
       return null;
     }
 
-    const values = result.map(r => r.value);
-    const average = values.reduce((sum, val) => sum + val, 0) / values.length;
+    const values = result.map((r: any) => r.value);
+    const average = values.reduce((sum: number, val: number) => sum + val, 0) / values.length;
 
     return {
       value: average,
@@ -105,8 +105,8 @@ export class NationalAverageService {
       throw new NotFoundError('No data points found for statistic and year');
     }
 
-    const values = result.map(r => r.value);
-    const average = values.reduce((sum, val) => sum + val, 0) / values.length;
+    const values = result.map((r: any) => r.value);
+    const average = values.reduce((sum: number, val: number) => sum + val, 0) / values.length;
 
     return average;
   }
@@ -168,7 +168,7 @@ export class AggregationService {
       throw new NotFoundError('Data points for statistic and year');
     }
 
-    const values = dataPointsResult.map(dp => dp.value).sort((a, b) => a - b);
+    const values = dataPointsResult.map((dp: any) => dp.value).sort((a: number, b: number) => a - b);
     const average = await NationalAverageService.getNationalAverage(statisticId, year);
     const median = values[Math.floor(values.length / 2)];
     const min = values[0];
@@ -220,7 +220,7 @@ export class AggregationService {
 
     // Calculate rankings for each statistic
     const statisticsWithRankings = await Promise.all(
-      stateData.map(async (data) => {
+      stateData.map(async (data: any) => {
         const allValues = await db.select({ value: dataPoints.value })
           .from(dataPoints)
           .where(and(
@@ -228,8 +228,8 @@ export class AggregationService {
             eq(dataPoints.year, year)
           ));
 
-        const sortedValues = allValues.map(v => v.value).sort((a, b) => b - a);
-        const rank = sortedValues.findIndex(v => v === data.value) + 1;
+        const sortedValues = allValues.map((v: any) => v.value).sort((a: number, b: number) => b - a);
+        const rank = sortedValues.findIndex((v: number) => v === data.value) + 1;
         const percentile = ((allValues.length - rank + 1) / allValues.length) * 100;
 
         return {
@@ -290,7 +290,7 @@ export class AggregationService {
       .limit(limit);
 
     // Add rankings and unit
-    const performersWithRankings = performers.map((performer, index) => ({
+    const performersWithRankings = performers.map((performer: any, index: number) => ({
       ...performer,
       rank: index + 1,
       unit: statistic[0].unit,
@@ -344,7 +344,7 @@ export class AggregationService {
     }
 
     // Calculate changes
-    const trends = trendData.map((data, index) => {
+    const trends = trendData.map((data: any, index: number) => {
       const change = index > 0 ? data.value - trendData[index - 1].value : 0;
       const changePercent = index > 0 && trendData[index - 1].value !== 0 
         ? (change / trendData[index - 1].value) * 100 

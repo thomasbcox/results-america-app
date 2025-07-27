@@ -1,8 +1,9 @@
 "use client"
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { User, ArrowRight, GraduationCap, DollarSign, ShieldCheck, Building2, Heart, TrendingUp, Eye } from "lucide-react"
+import { GraduationCap, DollarSign, ShieldCheck, Building2, Heart, TrendingUp, Eye } from "lucide-react"
 import { useSelection } from "@/lib/context"
+import AuthStatus from "@/components/AuthStatus"
 
 interface Category {
   id: number;
@@ -25,7 +26,7 @@ const iconMap: { [key: string]: React.ComponentType<{ className?: string }> } = 
 }
 
 export default function CategorySelection() {
-  const { selectedCategory, setSelectedCategory, user, signOut } = useSelection()
+  const { selectedCategory, setSelectedCategory, user } = useSelection()
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null)
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
@@ -91,10 +92,6 @@ export default function CategorySelection() {
     return <IconComponent className="w-5 h-5" />
   }
 
-  const handleSignOut = () => {
-    signOut()
-  }
-
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Header */}
@@ -110,28 +107,8 @@ export default function CategorySelection() {
           <h2 className="text-2xl font-semibold text-blue-700">AMERICA</h2>
         </div>
         
-        {/* User info */}
-        <div className="flex items-center gap-2 text-sm text-black">
-          <User className="w-4 h-4" />
-          <span>{user?.email || 'Not logged in'}</span>
-          {user ? (
-            <button 
-              onClick={handleSignOut}
-              className="flex items-center gap-1 text-blue-600 hover:text-blue-700"
-            >
-              Sign out
-              <ArrowRight className="w-3 h-3" />
-            </button>
-          ) : (
-            <Link 
-              href="/"
-              className="flex items-center gap-1 text-blue-600 hover:text-blue-700"
-            >
-              Sign in
-              <ArrowRight className="w-3 h-3" />
-            </Link>
-          )}
-        </div>
+        {/* User info - only show if user is logged in */}
+        <AuthStatus />
       </div>
 
       {/* Main content */}
@@ -163,6 +140,11 @@ export default function CategorySelection() {
           {selectedCategory && (
             <p className="text-green-600 text-center text-sm mt-2 font-medium">
               ✓ Selected: {selectedCategory}
+            </p>
+          )}
+          {!user && (
+            <p className="text-blue-600 text-center text-xs mt-2">
+              💡 Your selections will be saved for this session
             </p>
           )}
         </div>

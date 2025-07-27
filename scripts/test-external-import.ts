@@ -70,7 +70,7 @@ async function testExternalDataImport() {
       console.log(`     - National Averages: ${statAverages.length}`);
       
       if (statAverages.length > 0) {
-        const years = statAverages.map(avg => avg.year).sort();
+        const years = statAverages.map((avg: any) => avg.year).sort();
         console.log(`     - Years: ${years.join(', ')}`);
       }
     }

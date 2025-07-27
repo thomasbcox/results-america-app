@@ -82,6 +82,67 @@ export const nationalAverages = sqliteTable('national_averages', {
   uniqueConstraint: uniqueIndex('idx_national_average_unique').on(table.statisticId, table.year),
 }));
 
+// Phase 2: User Authentication Schema
+// Magic link-based authentication system
+
+export const users = sqliteTable('users', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  email: text('email').notNull().unique(),
+  name: text('name'),
+  role: text('role', { enum: ['user', 'admin'] }).notNull().default('user'),
+  isActive: integer('is_active').notNull().default(1),
+  emailVerified: integer('email_verified').notNull().default(0),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (table) => ({
+  emailIndex: uniqueIndex('idx_users_email').on(table.email),
+}));
+
+export const sessions = sqliteTable('sessions', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  token: text('token').notNull().unique(),
+  expiresAt: integer('expires_at', { mode: 'timestamp' }).notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (table) => ({
+  tokenIndex: uniqueIndex('idx_sessions_token').on(table.token),
+  userIndex: uniqueIndex('idx_sessions_user').on(table.userId),
+}));
+
+export const magicLinks = sqliteTable('magic_links', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  email: text('email').notNull(),
+  token: text('token').notNull().unique(),
+  expiresAt: integer('expires_at', { mode: 'timestamp' }).notNull(),
+  used: integer('used').notNull().default(0),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (table) => ({
+  tokenIndex: uniqueIndex('idx_magic_links_token').on(table.token),
+  emailIndex: uniqueIndex('idx_magic_links_email').on(table.email),
+}));
+
+// Phase 3: User Preferences and Suggestions
+export const userFavorites = sqliteTable('user_favorites', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  statisticId: integer('statistic_id').notNull().references(() => statistics.id, { onDelete: 'cascade' }),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (table) => ({
+  userStatisticIndex: uniqueIndex('idx_user_favorites_unique').on(table.userId, table.statisticId),
+}));
+
+export const userSuggestions = sqliteTable('user_suggestions', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  userId: integer('user_id').notNull().references(() => users.id),
+  title: text('title').notNull(),
+  description: text('description').notNull(),
+  category: text('category'), // Suggested category
+  status: text('status', { enum: ['pending', 'approved', 'rejected'] }).notNull().default('pending'),
+  adminNotes: text('admin_notes'),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`),
+});
+
 // Indexes for performance
 export const indexes = {
   dataPointsLookup: 'idx_data_points_lookup',
@@ -92,4 +153,9 @@ export const indexes = {
   dataPointsByImport: 'idx_data_points_import',
   nationalAveragesByStatistic: 'idx_national_averages_statistic',
   nationalAveragesByYear: 'idx_national_averages_year',
+  usersByEmail: 'idx_users_email',
+  sessionsByToken: 'idx_sessions_token',
+  magicLinksByToken: 'idx_magic_links_token',
+  userFavoritesByUser: 'idx_user_favorites_user',
+  userSuggestionsByStatus: 'idx_user_suggestions_status',
 }; 

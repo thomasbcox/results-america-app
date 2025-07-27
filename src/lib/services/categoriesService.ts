@@ -1,5 +1,5 @@
 import { db } from '../db/index';
-import { categories, statistics } from '../db/schema';
+import { categories, statistics } from '../db/schema-normalized';
 import { eq } from 'drizzle-orm';
 import type { 
   ICategoriesService, 
@@ -10,12 +10,47 @@ import type {
 
 export class CategoriesService {
   static async getAllCategories(): Promise<CategoryData[]> {
-    const results = await db.select().from(categories).orderBy(categories.sortOrder);
-    return results.map(category => ({
+    const result = await db.select().from(categories).orderBy(categories.sortOrder, categories.name);
+    return result.map((category: any) => ({
       ...category,
-      sortOrder: category.sortOrder ?? 0,
       isActive: category.isActive ?? 1,
     }));
+  }
+
+  static async getCategoriesWithStatistics(): Promise<CategoryData[]> {
+    const result = await db.select({
+      id: categories.id,
+      name: categories.name,
+      description: categories.description,
+      icon: categories.icon,
+      sortOrder: categories.sortOrder,
+      isActive: categories.isActive,
+      statisticCount: statistics.id,
+    })
+      .from(categories)
+      .leftJoin(statistics, eq(categories.id, statistics.categoryId))
+      .orderBy(categories.sortOrder, categories.name);
+
+    // Group by category and count statistics
+    const categoryMap = new Map();
+    result.forEach((row: any) => {
+      if (!categoryMap.has(row.id)) {
+        categoryMap.set(row.id, {
+          id: row.id,
+          name: row.name,
+          description: row.description,
+          icon: row.icon,
+          sortOrder: row.sortOrder,
+          isActive: row.isActive ?? 1,
+          statisticCount: 0,
+        });
+      }
+      if (row.statisticCount) {
+        categoryMap.get(row.id).statisticCount++;
+      }
+    });
+
+    return Array.from(categoryMap.values());
   }
 
   static async getCategoryById(id: number): Promise<CategoryData | null> {
@@ -25,50 +60,14 @@ export class CategoriesService {
     const category = result[0];
     return {
       ...category,
-      sortOrder: category.sortOrder ?? 0,
       isActive: category.isActive ?? 1,
     };
-  }
-
-  static async getCategoriesWithStatistics(): Promise<(CategoryData & { statisticCount: number })[]> {
-    // First get all categories
-    const allCategories = await db.select({
-      id: categories.id,
-      name: categories.name,
-      description: categories.description,
-      icon: categories.icon,
-      sortOrder: categories.sortOrder,
-      isActive: categories.isActive,
-    })
-      .from(categories)
-      .orderBy(categories.sortOrder);
-
-    // Then get statistics count for each category
-    const categoriesWithStats = await Promise.all(
-      allCategories.map(async (category) => {
-        const stats = await db.select({ id: statistics.id })
-          .from(statistics)
-          .where(eq(statistics.categoryId, category.id));
-        
-        return {
-          ...category,
-          statisticCount: stats.length
-        };
-      })
-    );
-
-    return categoriesWithStats.map(category => ({
-      ...category,
-      sortOrder: category.sortOrder ?? 0,
-      isActive: category.isActive ?? 1,
-    }));
   }
 
   static async createCategory(data: CreateCategoryInput): Promise<CategoryData> {
     const [category] = await db.insert(categories).values(data).returning();
     return {
       ...category,
-      sortOrder: category.sortOrder ?? 0,
       isActive: category.isActive ?? 1,
     };
   }
@@ -80,7 +79,6 @@ export class CategoriesService {
     }
     return {
       ...category,
-      sortOrder: category.sortOrder ?? 0,
       isActive: category.isActive ?? 1,
     };
   }

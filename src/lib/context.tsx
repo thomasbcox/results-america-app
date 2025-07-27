@@ -38,6 +38,11 @@ const createSessionExpiry = (): number => {
   return thirtyDaysFromNow.getTime()
 }
 
+// Helper function to get storage based on authentication status
+const getStorage = (isAuthenticated: boolean) => {
+  return isAuthenticated ? localStorage : sessionStorage
+}
+
 export function SelectionProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [selectedStates, setSelectedStates] = useState<string[]>([])
@@ -46,13 +51,15 @@ export function SelectionProvider({ children }: { children: ReactNode }) {
   const [favorites, setFavorites] = useState<number[]>([])
   const [sessionExpiryWarning, setSessionExpiryWarning] = useState(false)
 
-  // Load user and selections from localStorage on mount
+  // Load user and selections from storage on mount
   useEffect(() => {
     const savedUser = localStorage.getItem('user')
-    const savedStates = localStorage.getItem('selectedStates')
-    const savedCategory = localStorage.getItem('selectedCategory')
-    const savedMeasure = localStorage.getItem('selectedMeasure')
-    const savedFavorites = localStorage.getItem('favorites')
+    const storage = getStorage(!!savedUser)
+    
+    const savedStates = storage.getItem('selectedStates')
+    const savedCategory = storage.getItem('selectedCategory')
+    const savedMeasure = storage.getItem('selectedMeasure')
+    const savedFavorites = storage.getItem('favorites')
 
     // Check if user session is still valid
     if (savedUser) {
@@ -63,30 +70,27 @@ export function SelectionProvider({ children }: { children: ReactNode }) {
         } else {
           // Session expired, clear user data
           localStorage.removeItem('user')
-          localStorage.removeItem('selectedStates')
-          localStorage.removeItem('selectedCategory')
-          localStorage.removeItem('selectedMeasure')
-          localStorage.removeItem('favorites')
+          // Switch to sessionStorage for selections
+          const sessionStates = sessionStorage.getItem('selectedStates')
+          const sessionCategory = sessionStorage.getItem('selectedCategory')
+          const sessionMeasure = sessionStorage.getItem('selectedMeasure')
+          const sessionFavorites = sessionStorage.getItem('favorites')
+          
+          if (sessionStates) setSelectedStates(JSON.parse(sessionStates))
+          if (sessionCategory) setSelectedCategory(sessionCategory)
+          if (sessionMeasure) setSelectedMeasure(JSON.parse(sessionMeasure))
+          if (sessionFavorites) setFavorites(JSON.parse(sessionFavorites))
         }
       } catch (error) {
         console.error('Error parsing saved user data:', error)
         localStorage.removeItem('user')
       }
-    }
-
-    // Only load selections if user session is valid
-    if (savedUser) {
-      try {
-        const parsedUser = JSON.parse(savedUser)
-        if (parsedUser.sessionExpiry && !isSessionExpired(parsedUser.sessionExpiry)) {
-          if (savedStates) setSelectedStates(JSON.parse(savedStates))
-          if (savedCategory) setSelectedCategory(savedCategory)
-          if (savedMeasure) setSelectedMeasure(JSON.parse(savedMeasure))
-          if (savedFavorites) setFavorites(JSON.parse(savedFavorites))
-        }
-      } catch (error) {
-        console.error('Error loading saved selections:', error)
-      }
+    } else {
+      // No authenticated user, load from sessionStorage
+      if (savedStates) setSelectedStates(JSON.parse(savedStates))
+      if (savedCategory) setSelectedCategory(savedCategory)
+      if (savedMeasure) setSelectedMeasure(JSON.parse(savedMeasure))
+      if (savedFavorites) setFavorites(JSON.parse(savedFavorites))
     }
   }, [])
 
@@ -99,57 +103,90 @@ export function SelectionProvider({ children }: { children: ReactNode }) {
     }
   }, [user])
 
-  // Save selections to localStorage when they change (only if user is logged in)
+  // Save selections to appropriate storage when they change
   useEffect(() => {
-    if (user) {
-      localStorage.setItem('selectedStates', JSON.stringify(selectedStates))
-    }
+    const storage = getStorage(!!user)
+    storage.setItem('selectedStates', JSON.stringify(selectedStates))
   }, [selectedStates, user])
 
   useEffect(() => {
-    if (user) {
-      if (selectedCategory) {
-        localStorage.setItem('selectedCategory', selectedCategory)
-      } else {
-        localStorage.removeItem('selectedCategory')
-      }
+    const storage = getStorage(!!user)
+    if (selectedCategory) {
+      storage.setItem('selectedCategory', selectedCategory)
+    } else {
+      storage.removeItem('selectedCategory')
     }
   }, [selectedCategory, user])
 
   useEffect(() => {
-    if (user) {
-      if (selectedMeasure) {
-        localStorage.setItem('selectedMeasure', JSON.stringify(selectedMeasure))
-      } else {
-        localStorage.removeItem('selectedMeasure')
-      }
+    const storage = getStorage(!!user)
+    if (selectedMeasure) {
+      storage.setItem('selectedMeasure', JSON.stringify(selectedMeasure))
+    } else {
+      storage.removeItem('selectedMeasure')
     }
   }, [selectedMeasure, user])
 
   useEffect(() => {
-    if (user) {
-      localStorage.setItem('favorites', JSON.stringify(favorites))
-    }
+    const storage = getStorage(!!user)
+    storage.setItem('favorites', JSON.stringify(favorites))
   }, [favorites, user])
 
   const signIn = (email: string, name?: string) => {
     const sessionExpiry = createSessionExpiry()
-    setUser({ email, name, sessionExpiry })
+    const newUser = { email, name, sessionExpiry }
+    setUser(newUser)
+    
+    // Migrate sessionStorage data to localStorage
+    const sessionStates = sessionStorage.getItem('selectedStates')
+    const sessionCategory = sessionStorage.getItem('selectedCategory')
+    const sessionMeasure = sessionStorage.getItem('selectedMeasure')
+    const sessionFavorites = sessionStorage.getItem('favorites')
+    
+    if (sessionStates) {
+      localStorage.setItem('selectedStates', sessionStates)
+      sessionStorage.removeItem('selectedStates')
+    }
+    if (sessionCategory) {
+      localStorage.setItem('selectedCategory', sessionCategory)
+      sessionStorage.removeItem('selectedCategory')
+    }
+    if (sessionMeasure) {
+      localStorage.setItem('selectedMeasure', sessionMeasure)
+      sessionStorage.removeItem('selectedMeasure')
+    }
+    if (sessionFavorites) {
+      localStorage.setItem('favorites', sessionFavorites)
+      sessionStorage.removeItem('favorites')
+    }
   }
 
   const signOut = () => {
+    // Migrate localStorage data to sessionStorage before clearing
+    const localStates = localStorage.getItem('selectedStates')
+    const localCategory = localStorage.getItem('selectedCategory')
+    const localMeasure = localStorage.getItem('selectedMeasure')
+    const localFavorites = localStorage.getItem('favorites')
+    
+    if (localStates) {
+      sessionStorage.setItem('selectedStates', localStates)
+      localStorage.removeItem('selectedStates')
+    }
+    if (localCategory) {
+      sessionStorage.setItem('selectedCategory', localCategory)
+      localStorage.removeItem('selectedCategory')
+    }
+    if (localMeasure) {
+      sessionStorage.setItem('selectedMeasure', localMeasure)
+      localStorage.removeItem('selectedMeasure')
+    }
+    if (localFavorites) {
+      sessionStorage.setItem('favorites', localFavorites)
+      localStorage.removeItem('favorites')
+    }
+    
     setUser(null)
-    // Clear all selections when signing out
-    setSelectedStates([])
-    setSelectedCategory(null)
-    setSelectedMeasure(null)
-    setFavorites([])
-    // Clear localStorage
     localStorage.removeItem('user')
-    localStorage.removeItem('selectedStates')
-    localStorage.removeItem('selectedCategory')
-    localStorage.removeItem('selectedMeasure')
-    localStorage.removeItem('favorites')
   }
 
   const toggleFavorite = (measureId: number) => {
@@ -165,10 +202,12 @@ export function SelectionProvider({ children }: { children: ReactNode }) {
     setSelectedCategory(null)
     setSelectedMeasure(null)
     setFavorites([])
-    localStorage.removeItem('selectedStates')
-    localStorage.removeItem('selectedCategory')
-    localStorage.removeItem('selectedMeasure')
-    localStorage.removeItem('favorites')
+    
+    const storage = getStorage(!!user)
+    storage.removeItem('selectedStates')
+    storage.removeItem('selectedCategory')
+    storage.removeItem('selectedMeasure')
+    storage.removeItem('favorites')
   }
 
   const dismissSessionWarning = () => {

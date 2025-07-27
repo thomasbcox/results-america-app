@@ -2,11 +2,12 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { User, ArrowRight, ArrowLeft, Share2, Download, Star } from "lucide-react"
+import { ArrowRight, ArrowLeft, Share2, Download, Star } from "lucide-react"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Line, ComposedChart, Legend } from 'recharts'
 import { useSelection } from "@/lib/context"
 import ProgressIndicator from "@/components/ProgressIndicator"
 import DataQualityIndicator from "@/components/DataQualityIndicator"
+import AuthStatus from "@/components/AuthStatus"
 import type { MeasureData, ChartData, ChartDataPoint, StatePerformance, StatisticData } from "@/types/api"
 
 // Helper function to transform API data for charts
@@ -73,7 +74,7 @@ const getStateCode = (stateName: string) => {
 }
 
 export default function ResultsPage() {
-  const { user, signOut, selectedStates, selectedMeasure, selectedCategory } = useSelection()
+  const { selectedStates, selectedMeasure, selectedCategory } = useSelection()
   const [measureData, setMeasureData] = useState<MeasureData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -150,10 +151,6 @@ export default function ResultsPage() {
     }
   }, [selectedMeasure, sessionValid])
 
-  const handleSignOut = () => {
-    signOut()
-  }
-
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Header */}
@@ -169,18 +166,8 @@ export default function ResultsPage() {
           <h2 className="text-2xl font-semibold text-blue-700">AMERICA</h2>
         </div>
         
-        {/* User info */}
-        <div className="flex items-center gap-2 text-sm text-black">
-          <User className="w-4 h-4" />
-          <span>{user?.email}</span>
-          <button 
-            onClick={handleSignOut}
-            className="flex items-center gap-1 text-blue-600 hover:text-blue-700"
-          >
-            Sign out
-            <ArrowRight className="w-3 h-3" />
-          </button>
-        </div>
+        {/* User info - only show if user is logged in */}
+        <AuthStatus />
       </div>
 
       {/* Navigation bar */}

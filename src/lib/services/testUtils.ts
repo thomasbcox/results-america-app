@@ -1,4 +1,4 @@
-import { categories, dataSources, states, statistics } from '../db/schema';
+import { categories, dataSources, states, statistics, dataPoints, importSessions } from '../db/schema';
 import { eq } from 'drizzle-orm';
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 
@@ -29,6 +29,17 @@ export async function createState(db: BetterSQLite3Database, overrides = {}) {
   return st;
 }
 
+export async function createImportSession(db: BetterSQLite3Database, overrides = {}) {
+  const [session] = await db.insert(importSessions).values({
+    name: 'Test Import Session',
+    dataYear: 2023,
+    recordCount: 100,
+    isActive: 1,
+    ...overrides,
+  }).returning();
+  return session;
+}
+
 export async function createStatistic(db: BetterSQLite3Database, { categoryId, dataSourceId, ...overrides }: { categoryId: number; dataSourceId: number; [key: string]: unknown }) {
   const [stat] = await db.insert(statistics).values({
     name: 'Test Stat',
@@ -41,10 +52,24 @@ export async function createStatistic(db: BetterSQLite3Database, { categoryId, d
   return stat;
 }
 
+export async function createDataPoint(db: BetterSQLite3Database, { importSessionId, stateId, statisticId, ...overrides }: { importSessionId: number; stateId: number; statisticId: number; [key: string]: unknown }) {
+  const [dp] = await db.insert(dataPoints).values({
+    year: 2023,
+    value: 100.0,
+    importSessionId,
+    stateId,
+    statisticId,
+    ...overrides,
+  }).returning();
+  return dp;
+}
+
 export async function clearAllTestData(db: BetterSQLite3Database) {
   // Delete in FK-safe order
+  await db.delete(dataPoints);
   await db.delete(statistics);
   await db.delete(states);
   await db.delete(categories);
   await db.delete(dataSources);
+  await db.delete(importSessions);
 } 

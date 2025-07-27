@@ -1,5 +1,5 @@
 import { db } from '../db/index';
-import { statistics, dataSources, categories } from '../db/schema';
+import { statistics, dataSources, categories } from '../db/schema-normalized';
 import { eq } from 'drizzle-orm';
 import type { 
   IStatisticsService, 
@@ -19,8 +19,6 @@ export class StatisticsService {
       calculation: statistics.calculation,
       unit: statistics.unit,
       availableSince: statistics.availableSince,
-      dataQuality: statistics.dataQuality,
-      provenance: statistics.provenance,
       isActive: statistics.isActive,
       categoryId: statistics.categoryId,
       dataSourceId: statistics.dataSourceId,
@@ -31,7 +29,7 @@ export class StatisticsService {
       .leftJoin(dataSources, eq(statistics.dataSourceId, dataSources.id))
       .leftJoin(categories, eq(statistics.categoryId, categories.id));
 
-    return results.map(result => ({
+    return results.map((result: any) => ({
       id: result.id,
       name: result.name,
       raNumber: result.raNumber,
@@ -40,8 +38,8 @@ export class StatisticsService {
       calculation: result.calculation,
       unit: result.unit,
       availableSince: result.availableSince,
-      dataQuality: result.dataQuality ?? 'mock',
-      provenance: result.provenance,
+      dataQuality: 'mock', // Default for normalized schema
+      provenance: undefined, // Not available in normalized schema
       isActive: result.isActive ?? 1,
       categoryId: result.categoryId,
       dataSourceId: result.dataSourceId,
@@ -57,7 +55,8 @@ export class StatisticsService {
     const statistic = result[0];
     return {
       ...statistic,
-      dataQuality: statistic.dataQuality ?? 'mock',
+      dataQuality: 'mock', // Default for normalized schema
+      provenance: undefined, // Not available in normalized schema
       isActive: statistic.isActive ?? 1,
     };
   }
@@ -72,8 +71,6 @@ export class StatisticsService {
       calculation: statistics.calculation,
       unit: statistics.unit,
       availableSince: statistics.availableSince,
-      dataQuality: statistics.dataQuality,
-      provenance: statistics.provenance,
       isActive: statistics.isActive,
       categoryId: statistics.categoryId,
       dataSourceId: statistics.dataSourceId,
@@ -81,9 +78,10 @@ export class StatisticsService {
       .from(statistics)
       .where(eq(statistics.categoryId, categoryId));
 
-    return results.map(statistic => ({
+    return results.map((statistic: any) => ({
       ...statistic,
-      dataQuality: statistic.dataQuality ?? 'mock',
+      dataQuality: 'mock', // Default for normalized schema
+      provenance: undefined, // Not available in normalized schema
       isActive: statistic.isActive ?? 1,
     }));
   }
@@ -92,25 +90,24 @@ export class StatisticsService {
     const [statistic] = await db.insert(statistics).values(data).returning();
     return {
       ...statistic,
-      dataQuality: statistic.dataQuality ?? 'mock',
+      dataQuality: 'mock', // Default for normalized schema
+      provenance: undefined, // Not available in normalized schema
       isActive: statistic.isActive ?? 1,
     };
   }
 
   static async updateStatistic(id: number, data: UpdateStatisticInput): Promise<StatisticData> {
     const [statistic] = await db.update(statistics).set(data).where(eq(statistics.id, id)).returning();
-    if (!statistic) {
-      throw new Error(`Statistic with id ${id} not found`);
-    }
     return {
       ...statistic,
-      dataQuality: statistic.dataQuality ?? 'mock',
+      dataQuality: 'mock', // Default for normalized schema
+      provenance: undefined, // Not available in normalized schema
       isActive: statistic.isActive ?? 1,
     };
   }
 
   static async deleteStatistic(id: number): Promise<boolean> {
-    const result = await db.delete(statistics).where(eq(statistics.id, id)).returning();
-    return result.length > 0;
+    const result = await db.delete(statistics).where(eq(statistics.id, id));
+    return result.changes > 0;
   }
 } 

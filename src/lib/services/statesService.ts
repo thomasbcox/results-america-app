@@ -1,5 +1,5 @@
 import { db } from '../db/index';
-import { states } from '../db/schema';
+import { states } from '../db/schema-normalized';
 import { eq } from 'drizzle-orm';
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 import { cache } from './cache';
@@ -38,7 +38,7 @@ export class StatesService {
         cache.set('states', result);
       }
       
-      return result.map(state => ({
+      return result.map((state: any) => ({
         ...state,
         isActive: state.isActive ?? 1,
       }));

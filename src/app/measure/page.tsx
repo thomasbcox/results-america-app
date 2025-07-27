@@ -4,6 +4,7 @@ import { ArrowRight, Star } from "lucide-react";
 import { useSelection } from "@/lib/context";
 import { useSearchParams } from "next/navigation";
 import DataQualityIndicator from "@/components/DataQualityIndicator";
+import AuthStatus from "@/components/AuthStatus";
 
 interface Statistic {
   id: number;
@@ -86,6 +87,9 @@ function MeasureSelectionContent() {
           <h1 className="text-3xl font-bold text-blue-900">RESULTS</h1>
           <h2 className="text-2xl font-semibold text-blue-700">AMERICA</h2>
         </div>
+        
+        {/* User info - only show if user is logged in */}
+        <AuthStatus />
       </div>
       <div className="bg-white border-b border-gray-200 px-4 py-3">
         <div className="max-w-6xl mx-auto flex justify-between items-center">

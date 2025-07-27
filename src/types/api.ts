@@ -100,9 +100,31 @@ export interface ChartData {
 
 // User types
 export interface User {
+  id: number;
   email: string;
   name?: string;
-  sessionExpiry: number;
+  role: 'user' | 'admin';
+  isActive: boolean;
+  emailVerified: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Session {
+  id: number;
+  userId: number;
+  token: string;
+  expiresAt: Date;
+  createdAt: Date;
+}
+
+export interface MagicLink {
+  id: number;
+  email: string;
+  token: string;
+  expiresAt: Date;
+  used: boolean;
+  createdAt: Date;
 }
 
 // Selection types

@@ -20,7 +20,7 @@ export async function getStatisticsWithData(database = db) {
     .from(dataPoints)
     .groupBy(dataPoints.statisticId);
   
-  const statisticsWithData = result.map(r => r.statisticId);
+  const statisticsWithData = result.map((r: any) => r.statisticId);
   
   // For demonstration purposes, let's simulate that some statistics don't have data
   // In a real scenario, this would be based on actual data availability
@@ -46,14 +46,14 @@ export async function getCategoriesWithData(database = db) {
     .leftJoin(categories, eq(statistics.categoryId, categories.id));
   
   // Filter to only include statistics that have data
-  const statisticsWithDataAndCategories = allStatistics.filter(stat => 
+  const statisticsWithDataAndCategories = allStatistics.filter((stat: any) => 
     statisticsWithData.includes(stat.id)
   );
   
   // Get unique category names
   const categoryNames = [...new Set(
     statisticsWithDataAndCategories
-      .map(stat => stat.categoryName)
+      .map((stat: any) => stat.categoryName)
       .filter(Boolean)
   )];
   
@@ -94,5 +94,5 @@ export async function getStatisticsForCategoryWithData(categoryName: string, dat
     .where(eq(categories.name, categoryName));
   
   // Filter to only include statistics that have data
-  return allStatistics.filter(stat => statisticsWithData.includes(stat.id));
+  return allStatistics.filter((stat: any) => statisticsWithData.includes(stat.id));
 } 

@@ -30,7 +30,7 @@ export class DataPointsService {
       .leftJoin(states, eq(dataPoints.stateId, states.id))
       .where(and(...conditions));
 
-    return results.map(result => ({
+    return results.map((result: any) => ({
       id: result.id,
       statisticId: result.statisticId,
       stateId: result.stateId,
@@ -64,7 +64,7 @@ export class DataPointsService {
       .where(and(...conditions))
       .orderBy(states.name);
 
-    return results.map(result => ({
+    return results.map((result: any) => ({
       id: result.id,
       statisticId: result.statisticId,
       stateId: result.stateId,
@@ -98,7 +98,7 @@ export class DataPointsService {
         )
       );
 
-    return results.map(result => ({
+    return results.map((result: any) => ({
       id: result.id,
       statisticId: result.statisticId,
       stateId: result.stateId,

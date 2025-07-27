@@ -1,54 +1,12 @@
 {
   "version": "7",
-  "dialect": "sqlite",
+  "dialect": "postgresql",
   "entries": [
     {
       "idx": 0,
-      "version": "6",
-      "when": 1753129566644,
-      "tag": "0000_sticky_blackheart",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "6",
-      "when": 1753160884592,
-      "tag": "0001_colossal_retro_girl",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "6",
-      "when": 1753309959552,
-      "tag": "0002_cultured_boomer",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "6",
-      "when": 1753384457104,
-      "tag": "0003_motionless_overlord",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "6",
-      "when": 1753384702699,
-      "tag": "0004_secret_lizard",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "6",
-      "when": 1753451230516,
-      "tag": "0005_perfect_jasper_sitwell",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "6",
-      "when": 1753492014650,
-      "tag": "0006_spooky_millenium_guard",
+      "version": "7",
+      "when": 1753580431552,
+      "tag": "0000_wealthy_the_santerians",
       "breakpoints": true
     }
   ]

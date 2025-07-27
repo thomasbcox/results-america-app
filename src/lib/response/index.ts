@@ -53,7 +53,13 @@ export const createNotFoundResponse = (
   message: string = 'Resource not found'
 ): NextResponse => {
   return NextResponse.json(
-    { error: message, code: 'NOT_FOUND', statusCode: 404, timestamp: new Date().toISOString() },
+    { 
+      success: false,
+      error: message, 
+      code: 'NOT_FOUND', 
+      statusCode: 404, 
+      timestamp: new Date().toISOString() 
+    },
     { status: 404 }
   );
 };
@@ -63,7 +69,14 @@ export const createBadRequestResponse = (
   details?: any
 ): NextResponse => {
   return NextResponse.json(
-    { error: message, code: 'BAD_REQUEST', statusCode: 400, details, timestamp: new Date().toISOString() },
+    { 
+      success: false,
+      error: message, 
+      code: 'BAD_REQUEST', 
+      statusCode: 400, 
+      details, 
+      timestamp: new Date().toISOString() 
+    },
     { status: 400 }
   );
 };
@@ -72,7 +85,13 @@ export const createUnauthorizedResponse = (
   message: string = 'Unauthorized'
 ): NextResponse => {
   return NextResponse.json(
-    { error: message, code: 'UNAUTHORIZED', statusCode: 401, timestamp: new Date().toISOString() },
+    { 
+      success: false,
+      error: message, 
+      code: 'UNAUTHORIZED', 
+      statusCode: 401, 
+      timestamp: new Date().toISOString() 
+    },
     { status: 401 }
   );
 };
@@ -81,7 +100,13 @@ export const createForbiddenResponse = (
   message: string = 'Forbidden'
 ): NextResponse => {
   return NextResponse.json(
-    { error: message, code: 'FORBIDDEN', statusCode: 403, timestamp: new Date().toISOString() },
+    { 
+      success: false,
+      error: message, 
+      code: 'FORBIDDEN', 
+      statusCode: 403, 
+      timestamp: new Date().toISOString() 
+    },
     { status: 403 }
   );
 };

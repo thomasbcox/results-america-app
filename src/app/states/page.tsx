@@ -1,9 +1,10 @@
 "use client"
 import { useState, useEffect } from "react"
-import { ArrowLeft, X, User, ArrowRight } from "lucide-react"
+import { ArrowLeft, X, ArrowRight } from "lucide-react"
 import { useSelection } from "@/lib/context"
 import Link from "next/link"
 import Image from "next/image"
+import AuthStatus from "@/components/AuthStatus"
 
 interface State {
   id: number;
@@ -12,7 +13,7 @@ interface State {
 }
 
 export default function StateSelection() {
-  const { selectedStates, setSelectedStates, user, signOut } = useSelection()
+  const { selectedStates, setSelectedStates, user } = useSelection()
   const [showDropdown, setShowDropdown] = useState(false)
   const [states, setStates] = useState<State[]>([])
   const [loading, setLoading] = useState(true)
@@ -54,10 +55,6 @@ export default function StateSelection() {
     setSelectedStates([])
   }
 
-  const handleSignOut = () => {
-    signOut()
-  }
-
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Header */}
@@ -73,18 +70,8 @@ export default function StateSelection() {
           <h2 className="text-2xl font-semibold text-blue-700">AMERICA</h2>
         </div>
         
-        {/* User info */}
-        <div className="flex items-center gap-2 text-sm text-black">
-          <User className="w-4 h-4" />
-          <span>{user?.email}</span>
-          <button 
-            onClick={handleSignOut}
-            className="flex items-center gap-1 text-blue-600 hover:text-blue-700"
-          >
-            Sign out
-            <ArrowRight className="w-3 h-3" />
-          </button>
-        </div>
+        {/* User info - only show if user is logged in */}
+        <AuthStatus />
       </div>
 
       {/* Main content */}
@@ -119,6 +106,11 @@ export default function StateSelection() {
           <p className="text-black text-center text-sm">
             Choose one or more states you want to analyze, or leave empty to view all states
           </p>
+          {!user && (
+            <p className="text-blue-600 text-center text-xs mt-2">
+              💡 Your selections will be saved for this session
+            </p>
+          )}
         </div>
 
         {/* State selection */}
