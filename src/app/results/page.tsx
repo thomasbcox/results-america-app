@@ -26,13 +26,13 @@ const transformDataForCharts = (measureData: MeasureData | null, selectedStates:
       const nationalAverage = measureData.average
       
       // Since we only have 2023 data, create a single data point
-      result[stateName.toLowerCase()] = [
-        {
-          year: 2023,
-          value: stateValue,
-          national: nationalAverage
-        }
-      ]
+      const chartData = {
+        year: 2023,
+        value: stateValue,
+        national: nationalAverage
+      }
+      console.log(`Chart data for ${stateName}:`, chartData)
+      result[stateName.toLowerCase()] = [chartData]
     }
   })
   
@@ -84,18 +84,36 @@ export default function ResultsPage() {
   const [measureDetails, setMeasureDetails] = useState<StatisticData | null>(null)
   const [sessionValid, setSessionValid] = useState(false)
 
-  const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ value: number }>; label?: string }) => {
+  const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ value: number; dataKey: string; name: string }>; label?: string }) => {
     if (active && payload && payload.length) {
-      const stateValue = payload[0]?.value
-      const nationalValue = payload[1]?.value
-      const difference = stateValue - nationalValue
+      console.log('Tooltip payload:', payload)
+      
+      // Find state value and national value from payload
+      let stateValue: number | undefined
+      let nationalValue: number | undefined
+      
+      payload.forEach((item) => {
+        if (item.dataKey === 'value' && item.name === 'State Value') {
+          stateValue = item.value
+        } else if (item.dataKey === 'national' && item.name === 'National Average') {
+          nationalValue = item.value
+        }
+      })
+      
+      // Fallback: if we can't identify by name, use first two values
+      if (stateValue === undefined && nationalValue === undefined && payload.length >= 2) {
+        stateValue = payload[0]?.value
+        nationalValue = payload[1]?.value
+      }
+      
+      const difference = (stateValue || 0) - (nationalValue || 0)
       const unit = measureDetails?.unit || '%'
       
       return (
         <div className="bg-white p-3 border border-gray-300 rounded-md shadow-lg">
           <p className="font-medium text-black">Year: {label}</p>
-          <p className="text-black">State: {stateValue?.toFixed(2)}{unit}</p>
-          <p className="text-black">National: {nationalValue?.toFixed(2)}{unit}</p>
+          <p className="text-black">State: {stateValue?.toFixed(2) || 'N/A'}{unit}</p>
+          <p className="text-black">National: {nationalValue?.toFixed(2) || 'N/A'}{unit}</p>
           <p className="text-black">Difference: {difference?.toFixed(2)}{unit}</p>
         </div>
       )
