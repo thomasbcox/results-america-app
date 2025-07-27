@@ -30,7 +30,7 @@ function MeasureSelectionContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showStateWarning, setShowStateWarning] = useState(false);
-  const [dataQualityStatus, setDataQualityStatus] = useState<'real' | 'mock' | 'mixed'>('mock');
+
 
   useEffect(() => {
     if (!selectedStates || selectedStates.length === 0) {
@@ -67,21 +67,7 @@ function MeasureSelectionContent() {
         console.log('Filtered data length:', filteredData.length);
         setStatistics(filteredData);
         
-        // Determine overall data quality status
-        if (filteredData.length === 0) {
-          setDataQualityStatus('mock');
-        } else {
-          const realDataCount = filteredData.filter((stat: Statistic) => stat.dataQuality === 'real').length;
-          const mockDataCount = filteredData.filter((stat: Statistic) => stat.dataQuality === 'mock').length;
-          
-          if (realDataCount === 0) {
-            setDataQualityStatus('mock');
-          } else if (mockDataCount === 0) {
-            setDataQualityStatus('real');
-          } else {
-            setDataQualityStatus('mixed');
-          }
-        }
+
       } catch (err) {
         console.error('Error fetching statistics:', err);
         setError(err instanceof Error ? err.message : 'Failed to fetch statistics');
@@ -133,15 +119,7 @@ function MeasureSelectionContent() {
             </div>
           </div>
           <div className="flex items-center gap-4">
-            {dataQualityStatus === 'real' && (
-              <span className="text-green-600 text-sm">Using real database data</span>
-            )}
-            {dataQualityStatus === 'mock' && (
-              <span className="text-yellow-600 text-sm">Using mock data for demonstration</span>
-            )}
-            {dataQualityStatus === 'mixed' && (
-              <span className="text-blue-600 text-sm">Using mixed real and mock data</span>
-            )}
+            <span className="text-yellow-600 text-sm">Using mock data for demonstration</span>
           </div>
         </div>
       </div>
@@ -230,7 +208,7 @@ function MeasureSelectionContent() {
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-500">Available:</span>
-                        <span className="text-black">{statistic.availableSince}</span>
+                        <span className="text-black">2020-2023 (4 years)</span>
                       </div>
                     </div>
                     {!statistic.hasData && (

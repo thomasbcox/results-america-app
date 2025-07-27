@@ -46,13 +46,78 @@ The main admin dashboard provides:
 - Database seeding functionality
 - Magic link authentication system
 - Role-based access control
+- **CSV Import System** - Complete data import workflow with templates and validation
+- **Data Management Interface** (`/admin/data`) - Upload, validate, and publish CSV data
+- **Import History Tracking** - Full audit trail of all data imports
+- **Template System** - Pre-built templates for common data sources (BEA, BLS, Census)
 
 #### 🚧 **Planned Features** (Not Yet Implemented)
-- Data management interface (`/admin/data`)
 - Analytics dashboard (`/admin/analytics`)
 - System settings configuration (`/admin/settings`)
 - Export functionality
 - Performance monitoring
+
+## 📊 CSV Import System
+
+### Overview
+
+The CSV Import System provides a complete workflow for uploading, validating, staging, and publishing CSV data with full metadata tracking. This system replaces the need for external API integrations and gives you complete control over your data import process.
+
+### Accessing the System
+
+Navigate to `/admin/data` in your browser to access the CSV import interface. You'll see three tabs:
+
+- **Upload Data**: Upload new CSV files with template selection
+- **Import History**: View and manage previous imports
+- **Templates**: Browse available import templates
+
+### Available Templates
+
+#### BEA GDP Template
+- **Columns**: State, Year, GDP_Millions
+- **Validation**: State names, years 2010-2030, positive GDP values
+- **Sample**: California,2023,3500000
+
+#### BLS Employment Template
+- **Columns**: State, Year, Employment_Thousands
+- **Validation**: State names, years 2010-2030, reasonable employment values
+- **Sample**: California,2023,18500
+
+#### Census Population Template
+- **Columns**: State, Year, Population_Thousands
+- **Validation**: State names, years 2010-2030, reasonable population values
+- **Sample**: California,2023,39000
+
+#### Generic Data Template
+- **Columns**: State, Year, Value, Notes
+- **Validation**: Flexible validation rules
+- **Sample**: California,2023,100.5,Example metric
+
+### Import Workflow
+
+1. **Upload**: Select template and upload CSV file (max 10MB)
+2. **Stage**: Data is parsed and stored in staging tables
+3. **Validate**: Multi-level validation (schema, business rules, data quality)
+4. **Publish**: Move validated data to production tables
+5. **Track**: Complete audit trail in import history
+
+### Validation System
+
+The system performs multiple levels of validation:
+
+- **Schema Validation**: Column presence, types, and required fields
+- **Business Rule Validation**: State name matching, year ranges, value ranges
+- **Data Quality Validation**: Duplicate detection, outlier detection, negative value warnings
+- **Custom Validation**: Template-specific rules and regex patterns
+
+### Best Practices
+
+1. **Data Preparation**: Use consistent state names, validate years and values
+2. **Template Selection**: Choose the most specific template for your data
+3. **Validation Review**: Always review validation results before publishing
+4. **Metadata**: Provide clear import names and data source attribution
+
+For detailed usage instructions, see `CSV_IMPORT_SYSTEM.md`.
 
 ## 👥 User Management
 
@@ -89,6 +154,13 @@ The main admin dashboard provides:
 - `POST /api/admin/users/[id]/promote` - Promote user to admin
 - `DELETE /api/admin/users/[id]` - Deactivate user
 
+#### ✅ **Implemented**
+- `POST /api/admin/csv-upload` - Upload CSV files for import
+- `GET /api/admin/csv-imports` - List import history
+- `POST /api/admin/csv-imports/{id}/validate` - Validate staged data
+- `POST /api/admin/csv-imports/{id}/publish` - Publish validated data
+- `GET /api/admin/csv-templates` - List available templates
+
 #### 🚧 **Planned** (Not Yet Implemented)
 - `POST /api/admin/seed` - Seed the database
 - `POST /api/admin/cache` - Rebuild cache
@@ -115,6 +187,13 @@ The application uses a normalized PostgreSQL schema with the following main tabl
 - **dataSources**: External data providers
 - **dataPoints**: Actual data values (state × statistic × year)
 - **importSessions**: Data import tracking
+
+### CSV Import System Tables
+- **csvImports**: Main import records with status tracking
+- **csvImportStaging**: Raw CSV data before processing
+- **csvImportTemplates**: Predefined templates for different data types
+- **csvImportMetadata**: Flexible metadata storage for imports
+- **csvImportValidation**: Validation results and error tracking
 
 ### Authentication Tables
 - **users**: User accounts and authentication

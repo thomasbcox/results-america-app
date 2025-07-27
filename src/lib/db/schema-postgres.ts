@@ -140,4 +140,84 @@ export const userSuggestions = pgTable('user_suggestions', {
   updatedAt: timestamp('updated_at').notNull().default(sql`CURRENT_TIMESTAMP`),
 });
 
+// Phase 3: CSV Import System Schema
+// Comprehensive data import workflow with staging, validation, and publishing
+
+export const csvImports = pgTable('csv_imports', {
+  id: serial('id').primaryKey(),
+  name: text('name').notNull(), // e.g., "2023 GDP Data Import"
+  description: text('description'),
+  filename: text('filename').notNull(), // Original uploaded filename
+  fileSize: integer('file_size').notNull(), // File size in bytes
+  fileHash: text('file_hash').notNull(), // SHA256 hash for deduplication
+  status: text('status', { enum: ['uploaded', 'validating', 'validated', 'staged', 'publishing', 'published', 'failed'] }).notNull().default('uploaded'),
+  uploadedBy: integer('uploaded_by').notNull().references(() => users.id),
+  uploadedAt: timestamp('uploaded_at').notNull().default(sql`CURRENT_TIMESTAMP`),
+  validatedAt: timestamp('validated_at'),
+  publishedAt: timestamp('published_at'),
+  errorMessage: text('error_message'), // Error details if import failed
+  metadata: text('metadata'), // JSON string with import metadata
+  isActive: integer('is_active').default(1),
+});
+
+export const csvImportMetadata = pgTable('csv_import_metadata', {
+  id: serial('id').primaryKey(),
+  csvImportId: integer('csv_import_id').notNull().references(() => csvImports.id),
+  key: text('key').notNull(), // e.g., "data_source", "data_year", "statistic_name"
+  value: text('value').notNull(), // e.g., "BEA", "2023", "Real GDP"
+  dataType: text('data_type', { enum: ['string', 'number', 'date', 'boolean'] }).notNull().default('string'),
+  isRequired: integer('is_required').notNull().default(0),
+  validationRule: text('validation_rule'), // JSON string with validation rules
+}, (table) => ({
+  uniqueConstraint: uniqueIndex('idx_csv_import_metadata_unique').on(table.csvImportId, table.key),
+}));
+
+export const csvImportValidation = pgTable('csv_import_validation', {
+  id: serial('id').primaryKey(),
+  csvImportId: integer('csv_import_id').notNull().references(() => csvImports.id),
+  validationType: text('validation_type', { enum: ['schema', 'data_quality', 'business_rules', 'duplicate_check'] }).notNull(),
+  status: text('status', { enum: ['pending', 'running', 'passed', 'failed', 'warning'] }).notNull().default('pending'),
+  message: text('message'), // Validation result message
+  details: text('details'), // JSON string with detailed validation results
+  startedAt: timestamp('started_at').notNull().default(sql`CURRENT_TIMESTAMP`),
+  completedAt: timestamp('completed_at'),
+  errorCount: integer('error_count').default(0),
+  warningCount: integer('warning_count').default(0),
+});
+
+export const csvImportStaging = pgTable('csv_import_staging', {
+  id: serial('id').primaryKey(),
+  csvImportId: integer('csv_import_id').notNull().references(() => csvImports.id),
+  rowNumber: integer('row_number').notNull(), // Original CSV row number (1-based)
+  stateName: text('state_name'), // Extracted state name
+  stateId: integer('state_id').references(() => states.id), // Resolved state ID
+  year: integer('year'), // Extracted year
+  statisticName: text('statistic_name'), // Extracted statistic name
+  statisticId: integer('statistic_id').references(() => statistics.id), // Resolved statistic ID
+  value: real('value'), // Extracted numeric value
+  rawData: text('raw_data').notNull(), // JSON string with all original row data
+  validationStatus: text('validation_status', { enum: ['pending', 'valid', 'invalid', 'warning'] }).notNull().default('pending'),
+  validationErrors: text('validation_errors'), // JSON string with validation errors
+  isProcessed: integer('is_processed').notNull().default(0), // Whether this row was processed into dataPoints
+  processedAt: timestamp('processed_at'),
+}, (table) => ({
+  csvImportIndex: index('idx_csv_import_staging_import').on(table.csvImportId),
+  rowNumberIndex: index('idx_csv_import_staging_row').on(table.csvImportId, table.rowNumber),
+}));
+
+export const csvImportTemplates = pgTable('csv_import_templates', {
+  id: serial('id').primaryKey(),
+  name: text('name').notNull().unique(), // e.g., "BEA GDP Template"
+  description: text('description'),
+  categoryId: integer('category_id').references(() => categories.id),
+  dataSourceId: integer('data_source_id').references(() => dataSources.id),
+  templateSchema: text('template_schema').notNull(), // JSON string defining expected CSV structure
+  validationRules: text('validation_rules'), // JSON string with validation rules
+  sampleData: text('sample_data'), // JSON string with sample CSV data
+  isActive: integer('is_active').default(1),
+  createdBy: integer('created_by').notNull().references(() => users.id),
+  createdAt: timestamp('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: timestamp('updated_at').notNull().default(sql`CURRENT_TIMESTAMP`),
+});
+
 // Indexes can be added later if needed 

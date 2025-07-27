@@ -8,56 +8,27 @@ import { useSelection } from "@/lib/context"
 import ProgressIndicator from "@/components/ProgressIndicator"
 import DataQualityIndicator from "@/components/DataQualityIndicator"
 import AuthStatus from "@/components/AuthStatus"
-import type { MeasureData, ChartData, ChartDataPoint, StatePerformance, StatisticData } from "@/types/api"
+import type { ChartData, ChartDataPoint, StatisticData } from "@/types/api"
 
-// Helper function to transform API data for charts
-const transformDataForCharts = (measureData: MeasureData | null, selectedStates: string[]): ChartData => {
-  if (!measureData || !selectedStates.length || !measureData.states || !measureData.values) {
-    console.log('transformDataForCharts: Invalid data', { measureData, selectedStates })
-    return {}
+
+
+// Helper function to transform trend data for charts
+const transformTrendDataForCharts = (trendData: any): any[] => {
+  if (!trendData || !trendData.trends || !Array.isArray(trendData.trends)) {
+    console.log('transformTrendDataForCharts: Invalid data', { trendData })
+    return []
   }
   
-  const result: ChartData = {}
-  
-  selectedStates.forEach((stateName) => {
-    const stateIndex = measureData.states.indexOf(stateName)
-    if (stateIndex !== -1 && measureData.values[stateIndex] !== undefined) {
-      const stateValue = measureData.values[stateIndex]
-      const nationalAverage = measureData.average
-      
-      // Since we only have 2023 data, create a single data point
-      const chartData = {
-        year: 2023,
-        value: stateValue,
-        national: nationalAverage
-      }
-      console.log(`Chart data for ${stateName}:`, chartData)
-      result[stateName.toLowerCase()] = [chartData]
-    }
-  })
-  
-  return result
+  return trendData.trends.map((trend: any) => ({
+    year: trend.year,
+    value: trend.value,
+    national: trend.national || 0, // TODO: Get national average for each year
+    change: trend.change,
+    changePercent: trend.changePercent
+  }))
 }
 
-// Helper function to get top performers from the data
-const getTopPerformers = (measureData: MeasureData | null, count: number = 3): StatePerformance[] => {
-  if (!measureData || !measureData.states || !measureData.values) return []
-  
-  const stateValuePairs = measureData.states.map((state: string, index: number) => ({
-    name: state,
-    value: measureData.values[index] || 0
-  }))
-  
-  // Sort by value (assuming higher is better - this might need to be configurable)
-  stateValuePairs.sort((a, b) => b.value - a.value)
-  
-  return stateValuePairs.slice(0, count).map((item) => ({
-    name: item.name,
-    code: getStateCode(item.name),
-    value: item.value,
-    rank: 0 // Will be calculated later
-  }))
-}
+
 
 // Helper function to get state code from name
 const getStateCode = (stateName: string) => {
@@ -78,7 +49,7 @@ const getStateCode = (stateName: string) => {
 
 export default function ResultsPage() {
   const { selectedStates, selectedMeasure, selectedCategory } = useSelection()
-  const [measureData, setMeasureData] = useState<MeasureData | null>(null)
+  const [trendData, setTrendData] = useState<{[key: string]: any}>({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [measureDetails, setMeasureDetails] = useState<StatisticData | null>(null)
@@ -151,16 +122,74 @@ export default function ResultsPage() {
             setMeasureDetails(measure)
           }
         }
-        if (selectedMeasure) {
-          const dataResponse = await fetch(`/api/aggregation?type=statistic-comparison&statisticId=${selectedMeasure}`)
-          if (dataResponse.ok) {
-            const result = await dataResponse.json()
-            console.log('Measure data response:', result)
-            const data = result.data || null
-            console.log('Extracted measure data:', data)
-            console.log('Selected states:', selectedStates)
-            setMeasureData(data)
+        if (selectedMeasure && selectedStates && selectedStates.length > 0) {
+          // Fetch trend data for all selected states
+          const trendDataMap: {[key: string]: any} = {}
+          
+          for (const stateName of selectedStates) {
+            // TODO: Get actual state ID mapping - for now using simple mapping
+            const stateId = stateName === 'Alabama' ? 1 : 
+                           stateName === 'Alaska' ? 2 :
+                           stateName === 'Arizona' ? 3 :
+                           stateName === 'Arkansas' ? 4 :
+                           stateName === 'California' ? 5 :
+                           stateName === 'Colorado' ? 6 :
+                           stateName === 'Connecticut' ? 7 :
+                           stateName === 'Delaware' ? 8 :
+                           stateName === 'Florida' ? 9 :
+                           stateName === 'Georgia' ? 10 :
+                           stateName === 'Hawaii' ? 11 :
+                           stateName === 'Idaho' ? 12 :
+                           stateName === 'Illinois' ? 13 :
+                           stateName === 'Indiana' ? 14 :
+                           stateName === 'Iowa' ? 15 :
+                           stateName === 'Kansas' ? 16 :
+                           stateName === 'Kentucky' ? 17 :
+                           stateName === 'Louisiana' ? 18 :
+                           stateName === 'Maine' ? 19 :
+                           stateName === 'Maryland' ? 20 :
+                           stateName === 'Massachusetts' ? 21 :
+                           stateName === 'Michigan' ? 22 :
+                           stateName === 'Minnesota' ? 23 :
+                           stateName === 'Mississippi' ? 24 :
+                           stateName === 'Missouri' ? 25 :
+                           stateName === 'Montana' ? 26 :
+                           stateName === 'Nebraska' ? 27 :
+                           stateName === 'Nevada' ? 28 :
+                           stateName === 'New Hampshire' ? 29 :
+                           stateName === 'New Jersey' ? 30 :
+                           stateName === 'New Mexico' ? 31 :
+                           stateName === 'New York' ? 32 :
+                           stateName === 'North Carolina' ? 33 :
+                           stateName === 'North Dakota' ? 34 :
+                           stateName === 'Ohio' ? 35 :
+                           stateName === 'Oklahoma' ? 36 :
+                           stateName === 'Oregon' ? 37 :
+                           stateName === 'Pennsylvania' ? 38 :
+                           stateName === 'Rhode Island' ? 39 :
+                           stateName === 'South Carolina' ? 40 :
+                           stateName === 'South Dakota' ? 41 :
+                           stateName === 'Tennessee' ? 42 :
+                           stateName === 'Texas' ? 43 :
+                           stateName === 'Utah' ? 44 :
+                           stateName === 'Vermont' ? 45 :
+                           stateName === 'Virginia' ? 46 :
+                           stateName === 'Washington' ? 47 :
+                           stateName === 'West Virginia' ? 48 :
+                           stateName === 'Wisconsin' ? 49 :
+                           stateName === 'Wyoming' ? 50 : 1
+            
+            const trendResponse = await fetch(`/api/aggregation?type=trend-data&statisticId=${selectedMeasure}&stateId=${stateId}`)
+            if (trendResponse.ok) {
+              const trendResult = await trendResponse.json()
+              console.log(`Trend data response for ${stateName}:`, trendResult)
+              const trend = trendResult.data || null
+              console.log(`Extracted trend data for ${stateName}:`, trend)
+              trendDataMap[stateName.toLowerCase()] = trend
+            }
           }
+          
+          setTrendData(trendDataMap)
         }
       } catch (err) {
         console.error('Error fetching measure data:', err)
@@ -221,7 +250,12 @@ export default function ResultsPage() {
           </div>
           
           <div className="flex items-center gap-4">
-            <span className="text-green-600 text-sm">Using real database data</span>
+            {measureDetails?.dataQuality === 'real' ? (
+              <span className="text-green-600 text-sm">Using real database data</span>
+            ) : (
+              <span className="text-yellow-600 text-sm">Using mock data for demonstration</span>
+            )}
+            
             <button className="flex items-center gap-2 text-black hover:text-gray-700 text-sm">
               <Share2 className="w-4 h-4" />
               Share
@@ -367,14 +401,14 @@ export default function ResultsPage() {
                     {
                       id: 'results',
                       label: 'Results',
-                      completed: !!measureData,
+                      completed: Object.keys(trendData).length > 0,
                       current: true
                     }
                   ]}
                 />
               </div>
               
-              {!measureData && (
+              {Object.keys(trendData).length === 0 && (
                 <div className="text-center py-8">
                   <div className="max-w-md mx-auto bg-yellow-50 border border-yellow-200 rounded-lg p-6">
                     <div className="flex items-center justify-center mb-4">
@@ -393,184 +427,85 @@ export default function ResultsPage() {
                   </div>
                 </div>
               )}
-              {measureData && (
+              {Object.keys(trendData).length > 0 && (
                 <div className="text-center py-2 text-gray-600 mb-4">
-                  <p className="text-sm">📊 Data from 2023 - Single year comparison</p>
+                  <p className="text-sm">📊 Trend data from 2020-2023 (4 years)</p>
                 </div>
               )}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className={`grid gap-6 ${
+                selectedStates.length === 1 ? 'grid-cols-1' :
+                selectedStates.length === 2 ? 'grid-cols-1 lg:grid-cols-2' :
+                selectedStates.length === 3 ? 'grid-cols-1 lg:grid-cols-3' :
+                'grid-cols-1 lg:grid-cols-2 xl:grid-cols-4'
+              }`}>
               
-              {/* State 1 Card */}
-              <div className="bg-white rounded-lg shadow-md overflow-hidden">
-                {/* Card header */}
-                <div className="bg-yellow-400 px-4 py-3 flex items-center gap-3">
-                  <div className="w-8 h-6 bg-blue-600 rounded flex items-center justify-center">
-                    <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
-                  </div>
-                  <h3 className="font-bold text-black">{selectedStates[0] || 'State 1'}</h3>
-                </div>
-                
-                {/* Card content */}
-                <div className="p-4">
-                  <div className="flex items-start justify-between mb-4">
-                    <h4 className="text-lg font-semibold text-black">
-                      {measureDetails?.name || 'Loading...'} {measureDetails?.unit ? `(${measureDetails.unit})` : ''}
-                    </h4>
-                    <DataQualityIndicator
-                      dataQuality={measureDetails?.dataQuality || 'mock'}
-                      provenance={measureDetails?.provenance}
-                      sourceUrl={measureDetails?.sourceUrl}
-                      showBadge={true}
-                      showIcon={true}
-                      size="md"
-                    />
+              {selectedStates.map((stateName, index) => (
+                <div key={stateName} className="bg-white rounded-lg shadow-md overflow-hidden">
+                  {/* Card header */}
+                  <div className="bg-yellow-400 px-4 py-3 flex items-center gap-3">
+                    <div className="w-8 h-6 bg-blue-600 rounded flex items-center justify-center">
+                      <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
+                    </div>
+                    <h3 className="font-bold text-black">{stateName}</h3>
                   </div>
                   
-                  {/* Action buttons */}
-                  <div className="flex gap-2 mb-4">
-                    <button className="flex items-center gap-2 px-3 py-1 text-sm text-black hover:text-gray-700 border border-gray-300 rounded">
-                      <Share2 className="w-3 h-3" />
-                      Share
-                    </button>
-                    <button className="flex items-center gap-2 px-3 py-1 text-sm text-black hover:text-gray-700 border border-gray-300 rounded">
-                      <Download className="w-3 h-3" />
-                      Download
-                    </button>
-                  </div>
-                  
-                  {/* Chart */}
-                  <div className="h-64 mb-4">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <ComposedChart data={transformDataForCharts(measureData, selectedStates)[selectedStates[0]?.toLowerCase()] || []}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="year" />
-                        <YAxis />
-                        <Tooltip content={<CustomTooltip />} />
-                        <Legend />
-                        <Bar dataKey="value" fill="#3B82F6" name="State Value" />
-                        <Line type="monotone" dataKey="value" stroke="#3B82F6" strokeWidth={2} name="State Value" />
-                        <Line type="monotone" dataKey="national" stroke="#EF4444" strokeWidth={2} name="National Average" />
-                      </ComposedChart>
-                    </ResponsiveContainer>
-                  </div>
-                  
-                  {/* State rank */}
-                  <div className="flex justify-between items-center mb-4">
-                    <span className="text-sm text-black">State Rank:</span>
-                    <span className="bg-gray-200 px-3 py-1 rounded font-medium">
-                      #{measureData ? measureData.states.indexOf(selectedStates[0]) + 1 : 'N/A'}
-                    </span>
-                  </div>
-                  
-                  {/* Top performers */}
-                  <div>
-                    <h5 className="text-sm font-medium text-black mb-2">Top Performing States:</h5>
-                    <div className="space-y-1">
-                      {getTopPerformers(measureData, 3).map((state, index) => (
-                        <div key={state.code} className="text-sm text-black">
-                          {index + 1}. {state.name} /{state.code}
-                        </div>
-                      ))}
+                  {/* Card content */}
+                  <div className="p-4">
+                    <div className="flex items-start justify-between mb-4">
+                      <h4 className="text-lg font-semibold text-black">
+                        {measureDetails?.name || 'Loading...'} {measureDetails?.unit ? `(${measureDetails.unit})` : ''}
+                      </h4>
+                      <DataQualityIndicator
+                        dataQuality={measureDetails?.dataQuality || 'mock'}
+                        provenance={measureDetails?.provenance}
+                        sourceUrl={measureDetails?.sourceUrl}
+                        showBadge={true}
+                        showIcon={true}
+                        size="md"
+                      />
+                    </div>
+                    
+                    {/* Action buttons */}
+                    <div className="flex gap-2 mb-4">
+                      <button className="flex items-center gap-2 px-3 py-1 text-sm text-black hover:text-gray-700 border border-gray-300 rounded">
+                        <Share2 className="w-3 h-3" />
+                        Share
+                      </button>
+                      <button className="flex items-center gap-2 px-3 py-1 text-sm text-black hover:text-gray-700 border border-gray-300 rounded">
+                        <Download className="w-3 h-3" />
+                        Download
+                      </button>
+                    </div>
+                    
+                    {/* Chart */}
+                    <div className="h-64 mb-4">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <ComposedChart 
+                          data={transformTrendDataForCharts(trendData[stateName.toLowerCase()]) || []}
+                        >
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="year" />
+                          <YAxis />
+                          <Tooltip content={<CustomTooltip />} />
+                          <Legend />
+                          <Line type="monotone" dataKey="value" stroke="#3B82F6" strokeWidth={2} name="State Value" />
+                          <Line type="monotone" dataKey="national" stroke="#EF4444" strokeWidth={2} name="National Average" />
+                        </ComposedChart>
+                      </ResponsiveContainer>
+                    </div>
+                    
+                    {/* Card footer */}
+                    <div className="mt-4 pt-4 border-t border-gray-200 text-center">
+                      <div className="flex justify-center mb-1">
+                        {[...Array(5)].map((_, i) => (
+                          <div key={i} className="w-3 h-3 text-blue-600">★</div>
+                        ))}
+                      </div>
+                      <span className="text-xs text-black">RESULTS AMERICA</span>
                     </div>
                   </div>
-                  
-                  {/* Card footer */}
-                  <div className="mt-4 pt-4 border-t border-gray-200 text-center">
-                    <div className="flex justify-center mb-1">
-                      {[...Array(5)].map((_, i) => (
-                        <div key={i} className="w-3 h-3 text-blue-600">★</div>
-                      ))}
-                    </div>
-                    <span className="text-xs text-black">RESULTS AMERICA</span>
-                  </div>
                 </div>
-              </div>
-
-              {/* State 2 Card */}
-              <div className="bg-white rounded-lg shadow-md overflow-hidden">
-                {/* Card header */}
-                <div className="bg-yellow-400 px-4 py-3 flex items-center gap-3">
-                  <div className="w-8 h-6 bg-gray-400 rounded flex items-center justify-center">
-                    <div className="w-2 h-2 bg-gray-600 rounded-full"></div>
-                  </div>
-                  <h3 className="font-bold text-black">{selectedStates[1] || 'State 2'}</h3>
-                </div>
-                
-                {/* Card content */}
-                <div className="p-4">
-                  <div className="flex items-start justify-between mb-4">
-                    <h4 className="text-lg font-semibold text-black">
-                      {measureDetails?.name || 'Loading...'} {measureDetails?.unit ? `(${measureDetails.unit})` : ''}
-                    </h4>
-                    <DataQualityIndicator
-                      dataQuality={measureDetails?.dataQuality || 'mock'}
-                      provenance={measureDetails?.provenance}
-                      sourceUrl={measureDetails?.sourceUrl}
-                      showBadge={true}
-                      showIcon={true}
-                      size="md"
-                    />
-                  </div>
-                  
-                  {/* Action buttons */}
-                  <div className="flex gap-2 mb-4">
-                    <button className="flex items-center gap-2 px-3 py-1 text-sm text-black hover:text-gray-700 border border-gray-300 rounded">
-                      <Share2 className="w-3 h-3" />
-                      Share
-                    </button>
-                    <button className="flex items-center gap-2 px-3 py-1 text-sm text-black hover:text-gray-700 border border-gray-300 rounded">
-                      <Download className="w-3 h-3" />
-                      Download
-                    </button>
-                  </div>
-                  
-                  {/* Chart */}
-                  <div className="h-64 mb-4">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <ComposedChart data={transformDataForCharts(measureData, selectedStates)[selectedStates[1]?.toLowerCase()] || []}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="year" />
-                        <YAxis />
-                        <Tooltip content={<CustomTooltip />} />
-                        <Legend />
-                        <Bar dataKey="value" fill="#3B82F6" name="State Value" />
-                        <Line type="monotone" dataKey="value" stroke="#3B82F6" strokeWidth={2} name="State Value" />
-                        <Line type="monotone" dataKey="national" stroke="#EF4444" strokeWidth={2} name="National Average" />
-                      </ComposedChart>
-                    </ResponsiveContainer>
-                  </div>
-                  
-                  {/* State rank */}
-                  <div className="flex justify-between items-center mb-4">
-                    <span className="text-sm text-black">State Rank:</span>
-                    <span className="bg-gray-200 px-3 py-1 rounded font-medium">
-                      #{measureData ? measureData.states.indexOf(selectedStates[1]) + 1 : 'N/A'}
-                    </span>
-                  </div>
-                  
-                  {/* Top performers */}
-                  <div>
-                    <h5 className="text-sm font-medium text-black mb-2">Top Performing States:</h5>
-                    <div className="space-y-1">
-                      {getTopPerformers(measureData, 3).map((state, index) => (
-                        <div key={state.code} className="text-sm text-black">
-                          {index + 1}. {state.name} /{state.code}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  
-                  {/* Card footer */}
-                  <div className="mt-4 pt-4 border-t border-gray-200 text-center">
-                    <div className="flex justify-center mb-1">
-                      {[...Array(5)].map((_, i) => (
-                        <div key={i} className="w-3 h-3 text-blue-600">★</div>
-                      ))}
-                    </div>
-                    <span className="text-xs text-black">RESULTS AMERICA</span>
-                  </div>
-                </div>
-              </div>
+              ))}
             </div>
             </>
           )}

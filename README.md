@@ -76,6 +76,11 @@ results-america-app/
 - **dataSources**: External data providers
 - **dataPoints**: Actual data values (state × statistic × year)
 - **importSessions**: Data import tracking
+- **csvImports**: CSV import records and status tracking
+- **csvImportStaging**: Raw CSV data before processing
+- **csvImportTemplates**: Predefined templates for data import
+- **csvImportMetadata**: Flexible metadata storage for imports
+- **csvImportValidation**: Validation results and error tracking
 - **users**: User accounts (magic link auth)
 - **sessions**: User sessions
 - **magicLinks**: Magic link tokens
@@ -111,6 +116,11 @@ results-america-app/
 ### Protected APIs (Auth Required)
 - `GET /api/admin/stats` - System statistics (Admin only)
 - `GET /api/admin/users` - User management (Admin only)
+- `POST /api/admin/csv-upload` - Upload CSV files (Admin only)
+- `GET /api/admin/csv-imports` - Import history (Admin only)
+- `POST /api/admin/csv-imports/{id}/validate` - Validate data (Admin only)
+- `POST /api/admin/csv-imports/{id}/publish` - Publish data (Admin only)
+- `GET /api/admin/csv-templates` - Import templates (Admin only)
 - `POST /api/auth/magic-link` - Request magic link
 - `GET /api/auth/verify` - Verify magic link
 - `POST /api/auth/logout` - Logout
@@ -154,6 +164,7 @@ NODE_ENV=production
 ## 📚 Documentation
 
 - [Admin Guide](./ADMIN_GUIDE.md) - Admin dashboard and system management
+- [CSV Import System](./CSV_IMPORT_SYSTEM.md) - Complete CSV import workflow documentation
 - [Database Setup](./DATABASE_SETUP.md) - Database configuration and migration
 - [Roadmap](./ROADMAP.md) - Development roadmap and phases
 - [User Authentication](./USER_AUTHENTICATION.md) - Authentication system details

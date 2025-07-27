@@ -63,6 +63,13 @@ The app uses a normalized PostgreSQL schema with these tables:
 - `import_sessions` - Data import tracking
 - `national_averages` - Pre-computed national averages
 
+### CSV Import System Tables
+- `csv_imports` - Main import records with status tracking
+- `csv_import_staging` - Raw CSV data before processing
+- `csv_import_templates` - Predefined templates for different data types
+- `csv_import_metadata` - Flexible metadata storage for imports
+- `csv_import_validation` - Validation results and error tracking
+
 ### Authentication Tables
 - `users` - User accounts and authentication
 - `sessions` - User sessions for magic link auth
