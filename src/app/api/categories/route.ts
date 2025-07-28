@@ -40,11 +40,7 @@ async function handleGetCategories(request: NextRequest) {
   // Handle search
   if (search) {
     const results = await CategoriesService.searchCategories(search);
-    return NextResponse.json({
-      success: true,
-      data: results,
-      pagination: getDefaultPagination(results.length, 1, results.length),
-    });
+    return createSuccessResponse(results);
   }
 
   // Handle pagination
@@ -53,11 +49,7 @@ async function handleGetCategories(request: NextRequest) {
       { page, limit },
       { sortBy, sortOrder }
     );
-    return NextResponse.json({
-      success: true,
-      data: paginated.data,
-      pagination: paginated.pagination,
-    });
+    return createSuccessResponse(paginated.data);
   }
 
   // Handle sorting without pagination
@@ -66,31 +58,19 @@ async function handleGetCategories(request: NextRequest) {
       { page: 1, limit: 50 },
       { sortBy, sortOrder }
     );
-    return NextResponse.json({
-      success: true,
-      data: paginated.data,
-      pagination: paginated.pagination,
-    });
+    return createSuccessResponse(paginated.data);
   }
 
   // Handle withStats parameter
   if (withStats) {
     const categories = await CategoriesService.getCategoriesWithStatistics();
-    return NextResponse.json({
-      success: true,
-      data: categories,
-      pagination: getDefaultPagination(categories.length, 1, categories.length),
-    });
+    return createSuccessResponse(categories);
   }
 
   // Default: return all categories
   const categories = await CategoriesService.getAllCategories();
   console.log('API /api/categories returning categories:', JSON.stringify(categories, null, 2));
-  return NextResponse.json({
-    success: true,
-    data: categories,
-    pagination: getDefaultPagination(categories.length, 1, categories.length),
-  });
+  return createSuccessResponse(categories);
 }
 
 export const GET = withErrorHandling(handleGetCategories); 

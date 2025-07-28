@@ -46,21 +46,13 @@ async function handleGetStatistics(request: NextRequest) {
   // Handle search
   if (search) {
     const results = await StatisticsService.searchStatistics(search);
-    return NextResponse.json({
-      success: true,
-      data: results,
-      pagination: getDefaultPagination(results.length, 1, results.length),
-    });
+    return createSuccessResponse(results);
   }
 
   // Handle category filtering
   if (categoryId) {
     const results = await StatisticsService.getStatisticsByCategory(parseInt(categoryId));
-    return NextResponse.json({
-      success: true,
-      data: results,
-      pagination: getDefaultPagination(results.length, 1, results.length),
-    });
+    return createSuccessResponse(results);
   }
 
   // Handle pagination
@@ -69,11 +61,7 @@ async function handleGetStatistics(request: NextRequest) {
       { page, limit },
       { sortBy, sortOrder }
     );
-    return NextResponse.json({
-      success: true,
-      data: paginated.data,
-      pagination: paginated.pagination,
-    });
+    return createSuccessResponse(paginated.data);
   }
 
   // Handle sorting without pagination
@@ -82,31 +70,19 @@ async function handleGetStatistics(request: NextRequest) {
       { page: 1, limit: 50 },
       { sortBy, sortOrder }
     );
-    return NextResponse.json({
-      success: true,
-      data: paginated.data,
-      pagination: paginated.pagination,
-    });
+    return createSuccessResponse(paginated.data);
   }
 
   // Handle withAvailability parameter
   if (withAvailability) {
     const statistics = await StatisticsService.getStatisticsWithAvailability();
-    return NextResponse.json({
-      success: true,
-      data: statistics,
-      pagination: getDefaultPagination(statistics.length, 1, statistics.length),
-    });
+    return createSuccessResponse(statistics);
   }
 
   // Default: return all statistics
   const statistics = await StatisticsService.getAllStatistics();
   console.log('API /api/statistics returning statistics:', JSON.stringify(statistics, null, 2));
-  return NextResponse.json({
-    success: true,
-    data: statistics,
-    pagination: getDefaultPagination(statistics.length, 1, statistics.length),
-  });
+  return createSuccessResponse(statistics);
 }
 
 export const GET = withErrorHandling(handleGetStatistics); 

@@ -238,37 +238,58 @@ export class AdminService {
    * Get recent activity
    */
   static async getRecentActivity(limit: number = 10) {
-    // Get recent user registrations
-    const recentUsers = await db
-      .select({
-        id: users.id,
-        email: users.email,
-        name: users.name,
-        createdAt: users.createdAt,
-        type: sql`'user_registration'`,
-      })
-      .from(users)
-      .orderBy(desc(users.createdAt))
-      .limit(limit);
-
-    // Get recent suggestions
+    // This would typically combine recent user registrations, suggestions, etc.
+    // For now, return recent suggestions
     const recentSuggestions = await db
-      .select({
-        id: userSuggestions.id,
-        title: userSuggestions.title,
-        email: userSuggestions.email,
-        createdAt: userSuggestions.createdAt,
-        type: sql`'suggestion'`,
-      })
+      .select()
       .from(userSuggestions)
       .orderBy(desc(userSuggestions.createdAt))
       .limit(limit);
 
-    // Combine and sort by date
-    const allActivity = [...recentUsers, ...recentSuggestions].sort(
-      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    );
+    return recentSuggestions;
+  }
 
-    return allActivity.slice(0, limit);
+  /**
+   * Get import details by ID
+   */
+  static async getImportDetails(importId: number) {
+    // Import the CSV import tables
+    const { csvImports, csvImportStaging, csvImportMetadata } = await import('../db/schema-postgres');
+    
+    const importRecord = await db
+      .select()
+      .from(csvImports)
+      .where(eq(csvImports.id, importId))
+      .limit(1);
+
+    if (importRecord.length === 0) {
+      throw new NotFoundError('Import not found');
+    }
+
+    const import_ = importRecord[0];
+
+    // Get staging data
+    const stagingData = await db
+      .select()
+      .from(csvImportStaging)
+      .where(eq(csvImportStaging.csvImportId, importId));
+
+    // Get metadata
+    const metadata = await db
+      .select()
+      .from(csvImportMetadata)
+      .where(eq(csvImportMetadata.csvImportId, importId))
+      .limit(1);
+
+    return {
+      import: import_,
+      staging: {
+        totalRecords: stagingData.length,
+        validRecords: stagingData.filter(record => record.validationStatus === 'valid').length,
+        invalidRecords: stagingData.filter(record => record.validationStatus === 'invalid').length,
+        sampleRecords: stagingData.slice(0, 5), // First 5 records as sample
+      },
+      metadata: metadata[0] || null,
+    };
   }
 } 

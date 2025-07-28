@@ -131,10 +131,11 @@ export const userFavorites = pgTable('user_favorites', {
 export const userSuggestions = pgTable('user_suggestions', {
   id: serial('id').primaryKey(),
   userId: integer('user_id').notNull().references(() => users.id),
+  email: text('email').notNull(), // User's email for contact
   title: text('title').notNull(),
   description: text('description').notNull(),
   category: text('category'), // Suggested category
-  status: text('status', { enum: ['pending', 'approved', 'rejected'] }).notNull().default('pending'),
+  status: text('status', { enum: ['pending', 'approved', 'rejected', 'implemented'] }).notNull().default('pending'),
   adminNotes: text('admin_notes'),
   createdAt: timestamp('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
   updatedAt: timestamp('updated_at').notNull().default(sql`CURRENT_TIMESTAMP`),

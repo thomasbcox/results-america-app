@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Mail, ArrowRight, Loader2 } from "lucide-react";
+import { Mail, ArrowRight, Loader2, ArrowLeft } from "lucide-react";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -31,16 +32,15 @@ export default function LoginPage() {
       const data = await response.json();
 
       if (response.ok) {
-        setMessage({
-          type: 'success',
-          text: 'Magic link sent! Check your email and click the link to sign in.',
-        });
-        
-        // In development, show the magic link
-        if (data.magicLink) {
+        // For demo purposes, redirect to the verification page
+        // In a real app, the user would click the link in their email
+        if (data.success && data.token) {
+          // Redirect to the verification page with the token
+          window.location.href = `/auth/verify?token=${data.token}`
+        } else {
           setMessage({
             type: 'success',
-            text: `Magic link sent! Click here to sign in: ${data.magicLink}`,
+            text: 'Magic link sent! Check your email and click the link to sign in.',
           });
         }
       } else {
@@ -63,6 +63,13 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
+          <Link
+            href="/"
+            className="inline-flex items-center text-sm text-blue-600 hover:text-blue-700 mb-4"
+          >
+            <ArrowLeft className="w-4 h-4 mr-1" />
+            Back to Home
+          </Link>
           <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
             Sign in to your account
           </h2>

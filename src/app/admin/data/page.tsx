@@ -4,23 +4,20 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useToast } from "@/components/ui/toast";
+import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { 
   Upload, 
   FileText, 
   CheckCircle, 
-  AlertCircle, 
   XCircle, 
   Clock, 
-  Database,
-  Download,
-  Eye,
-  Play,
+  Play, 
+  Eye, 
+  Download, 
   Settings,
-  History
+  AlertCircle
 } from "lucide-react";
 
 interface CSVImportTemplate {
@@ -46,6 +43,8 @@ interface ImportHistory {
 }
 
 export default function AdminDataPage() {
+  const { addToast } = useToast();
+  const { confirm } = useConfirmDialog();
   const [templates, setTemplates] = useState<CSVImportTemplate[]>([]);
   const [importHistory, setImportHistory] = useState<ImportHistory[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<number | null>(null);
@@ -59,6 +58,23 @@ export default function AdminDataPage() {
   });
   const [uploading, setUploading] = useState(false);
   const [activeTab, setActiveTab] = useState('upload');
+  const [pastedData, setPastedData] = useState('');
+  const [uploadMethod, setUploadMethod] = useState<'file' | 'paste'>('file');
+
+  const handlePasteData = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    let data = e.target.value;
+    
+    // Detect if data contains tabs (Excel/Google Sheets format)
+    if (data.includes('\t')) {
+      // Convert tab-separated data to comma-separated
+      data = data.replace(/\t/g, ',');
+    }
+    
+    // Handle any double commas that might result from empty cells
+    data = data.replace(/,,/g, ',');
+    
+    setPastedData(data);
+  };
 
   useEffect(() => {
     fetchTemplates();
@@ -91,23 +107,52 @@ export default function AdminDataPage() {
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file && file.type === 'text/csv') {
+    if (file) {
       setSelectedFile(file);
-    } else {
-      alert('Please select a valid CSV file');
     }
   };
 
   const handleUpload = async () => {
-    if (!selectedFile || !selectedTemplate) {
-      alert('Please select a file and template');
+    if (!selectedTemplate) {
+      addToast({
+        type: 'error',
+        title: 'Missing Template',
+        message: 'Please select a template'
+      });
+      return;
+    }
+
+    if (uploadMethod === 'file' && !selectedFile) {
+      addToast({
+        type: 'error',
+        title: 'Missing File',
+        message: 'Please select a file'
+      });
+      return;
+    }
+
+    if (uploadMethod === 'paste' && !pastedData.trim()) {
+      addToast({
+        type: 'error',
+        title: 'Missing Data',
+        message: 'Please paste your data'
+      });
       return;
     }
 
     setUploading(true);
     try {
       const formData = new FormData();
-      formData.append('file', selectedFile);
+      
+      if (uploadMethod === 'file') {
+        formData.append('file', selectedFile!);
+      } else {
+        // Create a file from pasted data
+        const blob = new Blob([pastedData], { type: 'text/csv' });
+        const file = new File([blob], 'pasted-data.csv', { type: 'text/csv' });
+        formData.append('file', file);
+      }
+      
       formData.append('templateId', selectedTemplate.toString());
       formData.append('metadata', JSON.stringify(importMetadata));
 
@@ -116,15 +161,15 @@ export default function AdminDataPage() {
         body: formData,
       });
 
-      const result = await response.json();
-
-      if (result.success) {
-        alert(`Upload successful! ${result.message}`);
-        setActiveTab('history');
-        fetchImportHistory();
-        // Reset form
+      if (response.ok) {
+        addToast({
+          type: 'success',
+          title: 'Upload Successful',
+          message: 'Data uploaded successfully!'
+        });
         setSelectedFile(null);
         setSelectedTemplate(null);
+        setPastedData('');
         setImportMetadata({
           name: '',
           description: '',
@@ -132,11 +177,22 @@ export default function AdminDataPage() {
           dataYear: new Date().getFullYear().toString(),
           statisticName: ''
         });
+        fetchImportHistory();
       } else {
-        alert(`Upload failed: ${result.message}`);
+        const error = await response.json();
+        addToast({
+          type: 'error',
+          title: 'Upload Failed',
+          message: error.error || 'Unknown error'
+        });
       }
     } catch (error) {
-      alert('Upload failed');
+      console.error('Upload error:', error);
+      addToast({
+        type: 'error',
+        title: 'Upload Failed',
+        message: 'Upload failed due to a network error'
+      });
     } finally {
       setUploading(false);
     }
@@ -147,95 +203,144 @@ export default function AdminDataPage() {
       const response = await fetch(`/api/admin/csv-imports/${importId}/validate`, {
         method: 'POST',
       });
-      const result = await response.json();
-      
-      if (result.success) {
-        alert(`Validation completed: ${result.message}`);
+      if (response.ok) {
+        addToast({
+          type: 'success',
+          title: 'Validation Successful',
+          message: 'Import validated successfully!'
+        });
         fetchImportHistory();
       } else {
-        alert(`Validation failed: ${result.message}`);
+        const error = await response.json();
+        addToast({
+          type: 'error',
+          title: 'Validation Failed',
+          message: error.error || 'Unknown error'
+        });
       }
     } catch (error) {
-      alert('Validation failed');
+      console.error('Validation error:', error);
+      addToast({
+        type: 'error',
+        title: 'Validation Failed',
+        message: 'Validation failed due to a network error'
+      });
     }
   };
 
   const handlePublish = async (importId: number) => {
-    if (!confirm('Are you sure you want to publish this data? This will make it available to users.')) {
-      return;
-    }
+    confirm({
+      title: 'Confirm Publishing',
+      message: 'Are you sure you want to publish this import? This will make the data available to users.',
+      confirmText: 'Publish',
+      cancelText: 'Cancel',
+      variant: 'warning',
+      onConfirm: async () => {
+        try {
+          const response = await fetch(`/api/admin/csv-imports/${importId}/publish`, {
+            method: 'POST',
+          });
+          if (response.ok) {
+            addToast({
+              type: 'success',
+              title: 'Publishing Successful',
+              message: 'Import published successfully!'
+            });
+            fetchImportHistory();
+          } else {
+            const error = await response.json();
+            addToast({
+              type: 'error',
+              title: 'Publishing Failed',
+              message: error.error || 'Unknown error'
+            });
+          }
+        } catch (error) {
+          console.error('Publishing error:', error);
+          addToast({
+            type: 'error',
+            title: 'Publishing Failed',
+            message: 'Publishing failed due to a network error'
+          });
+        }
+      }
+    });
+  };
 
+  const handleViewImport = async (importId: number) => {
     try {
-      const response = await fetch(`/api/admin/csv-imports/${importId}/publish`, {
-        method: 'POST',
-      });
-      const result = await response.json();
-      
-      if (result.success) {
-        alert(`Publishing successful: ${result.message}`);
-        fetchImportHistory();
+      const response = await fetch(`/api/admin/csv-imports/${importId}`);
+      if (response.ok) {
+        const data = await response.json();
+        // For now, show the data in a toast. In the future, this could open a modal
+        addToast({
+          type: 'info',
+          title: 'Import Details',
+          message: `Import ID: ${importId}, Status: ${data.data?.status || 'unknown'}`
+        });
       } else {
-        alert(`Publishing failed: ${result.message}`);
+        addToast({
+          type: 'error',
+          title: 'View Failed',
+          message: 'Failed to load import details'
+        });
       }
     } catch (error) {
-      alert('Publishing failed');
+      console.error('View import error:', error);
+      addToast({
+        type: 'error',
+        title: 'View Failed',
+        message: 'Failed to load import details due to a network error'
+      });
     }
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'uploaded':
-        return <Clock className="h-4 w-4 text-blue-500" />;
-      case 'validating':
-        return <Clock className="h-4 w-4 text-yellow-500" />;
-      case 'validated':
-        return <CheckCircle className="h-4 w-4 text-green-500" />;
       case 'staged':
-        return <Database className="h-4 w-4 text-purple-500" />;
-      case 'publishing':
-        return <Play className="h-4 w-4 text-orange-500" />;
+        return <Clock className="h-5 w-5 text-yellow-500" />;
+      case 'validated':
+        return <CheckCircle className="h-5 w-5 text-green-500" />;
       case 'published':
-        return <CheckCircle className="h-4 w-4 text-green-500" />;
-      case 'failed':
-        return <XCircle className="h-4 w-4 text-red-500" />;
+        return <CheckCircle className="h-5 w-5 text-blue-500" />;
+      case 'error':
+        return <XCircle className="h-5 w-5 text-red-500" />;
       default:
-        return <Clock className="h-4 w-4 text-gray-500" />;
+        return <AlertCircle className="h-5 w-5 text-gray-500" />;
     }
   };
 
   const getStatusBadge = (status: string) => {
-    const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-      uploaded: "outline",
-      validating: "secondary",
-      validated: "default",
-      staged: "default",
-      publishing: "secondary",
-      published: "default",
-      failed: "destructive"
+    const variants: { [key: string]: "default" | "secondary" | "destructive" | "outline" } = {
+      staged: 'secondary',
+      validated: 'default',
+      published: 'default',
+      error: 'destructive'
     };
 
     return (
-      <Badge variant={variants[status] || "outline"}>
+      <Badge variant={variants[status] || 'outline'}>
         {status.charAt(0).toUpperCase() + status.slice(1)}
       </Badge>
     );
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="px-4 py-6 sm:px-0">
-          <h1 className="text-3xl font-bold text-gray-900">Data Management</h1>
-          <p className="mt-2 text-gray-600">
-            Upload, validate, and publish CSV data with full metadata tracking
-          </p>
-        </div>
+    <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+      {/* Header */}
+      <div className="px-4 py-6 sm:px-0">
+        <h1 className="text-3xl font-bold text-gray-900">Data Management</h1>
+        <p className="mt-2 text-gray-600">
+          Upload, validate, and publish CSV data imports
+        </p>
+      </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="px-4 sm:px-0">
+      {/* Main Content */}
+      <div className="px-4 sm:px-0">
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="upload">Upload Data</TabsTrigger>
-            <TabsTrigger value="history">Import History</TabsTrigger>
+            <TabsTrigger value="upload">Upload</TabsTrigger>
+            <TabsTrigger value="history">History</TabsTrigger>
             <TabsTrigger value="templates">Templates</TabsTrigger>
           </TabsList>
 
@@ -248,113 +353,220 @@ export default function AdminDataPage() {
                   Upload CSV File
                 </CardTitle>
                 <CardDescription>
-                  Select a template and upload your CSV file for validation and publishing
+                  Select a template and upload your CSV file for processing
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
-                {/* Template Selection */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Template</label>
-                  <Select value={selectedTemplate?.toString() || ''} onValueChange={(value) => setSelectedTemplate(Number(value))}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a template" />
-                    </SelectTrigger>
-                    <SelectContent>
+              <CardContent>
+                <div className="space-y-4">
+                  {/* Template Selection */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Select Template
+                    </label>
+                    <select
+                      value={selectedTemplate || ''}
+                      onChange={(e) => setSelectedTemplate(Number(e.target.value) || null)}
+                      className="w-full p-2 border border-gray-300 rounded-md"
+                    >
+                      <option value="">Choose a template...</option>
                       {templates.map((template) => (
-                        <SelectItem key={template.id} value={template.id.toString()}>
+                        <option key={template.id} value={template.id}>
                           {template.name}
-                        </SelectItem>
+                        </option>
                       ))}
-                    </SelectContent>
-                  </Select>
+                    </select>
+                  </div>
+
+                  {/* Template Headers Display */}
                   {selectedTemplate && (
-                    <p className="text-sm text-gray-600">
-                      {templates.find(t => t.id === selectedTemplate)?.description}
-                    </p>
+                    <div className="bg-gray-50 p-4 rounded-md">
+                      <h4 className="text-sm font-medium text-gray-700 mb-2">Template Headers</h4>
+                      {(() => {
+                        const template = templates.find(t => t.id === selectedTemplate);
+                        if (template?.templateSchema?.expectedHeaders) {
+                          return (
+                            <div className="space-y-2">
+                              <p className="text-sm text-gray-600">
+                                Your data should have these columns (in any order):
+                              </p>
+                              <div className="flex flex-wrap gap-2">
+                                {template.templateSchema.expectedHeaders.map((header: string, index: number) => (
+                                  <Badge key={index} variant="outline" className="text-xs">
+                                    {header}
+                                  </Badge>
+                                ))}
+                              </div>
+                              {template.templateSchema.flexibleColumns && (
+                                <p className="text-xs text-blue-600 mt-2">
+                                  💡 This template supports additional columns beyond the required ones.
+                                </p>
+                              )}
+                              {template.templateSchema.multiYearSupport && (
+                                <p className="text-xs text-green-600 mt-1">
+                                  📅 This template supports multiple years of data in a single file.
+                                </p>
+                              )}
+                            </div>
+                          );
+                        }
+                        return <p className="text-sm text-gray-500">Template details not available</p>;
+                      })()}
+                    </div>
                   )}
-                </div>
 
-                {/* File Upload */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">CSV File</label>
-                  <Input
-                    type="file"
-                    accept=".csv"
-                    onChange={handleFileSelect}
-                    className="cursor-pointer"
-                  />
-                  {selectedFile && (
-                    <p className="text-sm text-gray-600">
-                      Selected: {selectedFile.name} ({(selectedFile.size / 1024).toFixed(1)} KB)
-                    </p>
+                  {/* Upload Method Selection */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Upload Method
+                    </label>
+                    <div className="flex space-x-4">
+                      <label className="flex items-center">
+                        <input
+                          type="radio"
+                          value="file"
+                          checked={uploadMethod === 'file'}
+                          onChange={(e) => setUploadMethod(e.target.value as 'file' | 'paste')}
+                          className="mr-2"
+                        />
+                        File Upload
+                      </label>
+                      <label className="flex items-center">
+                        <input
+                          type="radio"
+                          value="paste"
+                          checked={uploadMethod === 'paste'}
+                          onChange={(e) => setUploadMethod(e.target.value as 'file' | 'paste')}
+                          className="mr-2"
+                        />
+                        Paste from Excel
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* File Upload */}
+                  {uploadMethod === 'file' && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Select File
+                      </label>
+                      <input
+                        type="file"
+                        accept=".csv"
+                        onChange={handleFileSelect}
+                        className="w-full p-2 border border-gray-300 rounded-md"
+                      />
+                    </div>
                   )}
-                </div>
 
-                {/* Metadata */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Import Name</label>
-                    <Input
-                      value={importMetadata.name}
-                      onChange={(e) => setImportMetadata({...importMetadata, name: e.target.value})}
-                      placeholder="e.g., 2023 GDP Data Import"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Data Year</label>
-                    <Input
-                      type="number"
-                      value={importMetadata.dataYear}
-                      onChange={(e) => setImportMetadata({...importMetadata, dataYear: e.target.value})}
-                      placeholder="2023"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Data Source</label>
-                    <Input
-                      value={importMetadata.dataSource}
-                      onChange={(e) => setImportMetadata({...importMetadata, dataSource: e.target.value})}
-                      placeholder="e.g., Bureau of Economic Analysis"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Statistic Name</label>
-                    <Input
-                      value={importMetadata.statisticName}
-                      onChange={(e) => setImportMetadata({...importMetadata, statisticName: e.target.value})}
-                      placeholder="e.g., Real GDP"
-                    />
-                  </div>
-                </div>
+                  {/* Paste Data */}
+                  {uploadMethod === 'paste' && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Paste Excel Data
+                      </label>
+                      <textarea
+                        value={pastedData}
+                        onChange={handlePasteData}
+                        className="w-full p-2 border border-gray-300 rounded-md font-mono text-sm"
+                        rows={10}
+                        placeholder={`Paste your data here. Supports both CSV and Excel formats.
 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Description</label>
-                  <Textarea
-                    value={importMetadata.description}
-                    onChange={(e) => setImportMetadata({...importMetadata, description: e.target.value})}
-                    placeholder="Describe the data being imported..."
-                    rows={3}
-                  />
-                </div>
+CSV Format:
+State,Year,Category,Measure,Value
+California,2020,Economy,GDP,3500000
+Texas,2020,Economy,GDP,2200000
 
-                {/* Upload Button */}
-                <Button 
-                  onClick={handleUpload} 
-                  disabled={!selectedFile || !selectedTemplate || uploading}
-                  className="w-full"
-                >
-                  {uploading ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Uploading...
-                    </>
-                  ) : (
-                    <>
-                      <Upload className="h-4 w-4 mr-2" />
-                      Upload and Stage Data
-                    </>
+Excel/Google Sheets Format (tab-separated):
+State	Year	Category	Measure	Value
+California	2020	Economy	GDP	3500000
+Texas	2020	Economy	GDP	2200000
+
+Both formats will be automatically converted to CSV.`}
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        💡 Tip: Copy from Excel, Google Sheets, or any CSV file and paste directly here. Tab-separated data will be automatically converted to CSV format.
+                      </p>
+                    </div>
                   )}
-                </Button>
+
+                  {/* Metadata */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Import Name
+                      </label>
+                      <input
+                        type="text"
+                        value={importMetadata.name}
+                        onChange={(e) => setImportMetadata({...importMetadata, name: e.target.value})}
+                        className="w-full p-2 border border-gray-300 rounded-md"
+                        placeholder="e.g., 2023 Economic Data"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Data Source
+                      </label>
+                      <input
+                        type="text"
+                        value={importMetadata.dataSource}
+                        onChange={(e) => setImportMetadata({...importMetadata, dataSource: e.target.value})}
+                        className="w-full p-2 border border-gray-300 rounded-md"
+                        placeholder="e.g., Bureau of Economic Analysis"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Data Year
+                      </label>
+                      <input
+                        type="number"
+                        value={importMetadata.dataYear}
+                        onChange={(e) => setImportMetadata({...importMetadata, dataYear: e.target.value})}
+                        className="w-full p-2 border border-gray-300 rounded-md"
+                        placeholder="2023"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Statistic Name
+                      </label>
+                      <input
+                        type="text"
+                        value={importMetadata.statisticName}
+                        onChange={(e) => setImportMetadata({...importMetadata, statisticName: e.target.value})}
+                        className="w-full p-2 border border-gray-300 rounded-md"
+                        placeholder="e.g., Real GDP"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Description
+                    </label>
+                    <textarea
+                      value={importMetadata.description}
+                      onChange={(e) => setImportMetadata({...importMetadata, description: e.target.value})}
+                      className="w-full p-2 border border-gray-300 rounded-md"
+                      rows={3}
+                      placeholder="Brief description of this data import..."
+                    />
+                  </div>
+
+                  <Button
+                    onClick={handleUpload}
+                    disabled={
+                      !selectedTemplate || 
+                      uploading || 
+                      (uploadMethod === 'file' && !selectedFile) ||
+                      (uploadMethod === 'paste' && !pastedData.trim())
+                    }
+                    className="w-full"
+                  >
+                    {uploading ? 'Uploading...' : `Upload ${uploadMethod === 'file' ? 'File' : 'Data'}`}
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -364,11 +576,11 @@ export default function AdminDataPage() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <History className="h-5 w-5" />
+                  <FileText className="h-5 w-5" />
                   Import History
                 </CardTitle>
                 <CardDescription>
-                  Track all CSV imports and their current status
+                  View and manage your CSV imports
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -401,7 +613,7 @@ export default function AdminDataPage() {
                                 Publish
                               </Button>
                             )}
-                            <Button size="sm" variant="outline">
+                            <Button size="sm" variant="outline" onClick={() => handleViewImport(import_.id)}>
                               <Eye className="h-4 w-4 mr-1" />
                               View
                             </Button>

@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
 
     const history = await CSVImportService.getImportHistory(limit);
 
-    return createSuccessResponse('Import history retrieved successfully', history);
+    return createSuccessResponse(history);
 
   } catch (error) {
     console.error('Error fetching import history:', error);

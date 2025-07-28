@@ -1,0 +1,13 @@
+State	Year	Category	Measure	Value	Notes
+California	2020	Economy	GDP	3500000	Pre-pandemic levels
+California	2021	Economy	GDP	3700000	Recovery year
+California	2022	Economy	GDP	3900000	Strong growth
+California	2023	Economy	GDP	4100000	Continued expansion
+Texas	2020	Economy	GDP	2200000	Energy sector impact
+Texas	2021	Economy	GDP	2300000	Recovery phase
+Texas	2022	Economy	GDP	2400000	Steady growth
+Texas	2023	Economy	GDP	2500000	Technology boom
+New York	2020	Demographics	Population	19500	Urban center
+New York	2021	Demographics	Population	19700	Gradual growth
+New York	2022	Demographics	Population	19900	Migration patterns
+New York	2023	Demographics	Population	20100	Metropolitan growth 

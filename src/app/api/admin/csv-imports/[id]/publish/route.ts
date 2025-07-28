@@ -16,9 +16,9 @@ export async function POST(
     const result = await CSVImportService.publishImport(importId);
 
     if (result.success) {
-      return createSuccessResponse(result.message, {
+      return createSuccessResponse({
         publishedRows: result.publishedRows
-      });
+      }, result.message);
     } else {
       return createErrorResponse(result.message, 400);
     }

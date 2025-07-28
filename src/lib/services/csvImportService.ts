@@ -37,6 +37,8 @@ export interface CSVSchema {
     validation?: ValidationRule;
   }[];
   expectedHeaders: string[];
+  flexibleColumns?: boolean; // Allow additional columns beyond the expected headers
+  multiYearSupport?: boolean; // Support multiple years in one file
 }
 
 export interface ValidationRule {
@@ -202,10 +204,13 @@ export class CSVImportService {
           stateName: mappedData.stateName,
           stateId: mappedData.stateId,
           year: mappedData.year,
-          statisticName: mappedData.statisticName,
+          statisticName: mappedData.statisticName || mappedData.measure,
           statisticId: mappedData.statisticId,
           value: mappedData.value,
-          rawData: JSON.stringify(record),
+          rawData: JSON.stringify({
+            ...record,
+            additionalColumns: mappedData.additionalColumns
+          }),
           validationStatus: validation.isValid ? 'valid' : 'invalid',
           validationErrors: validation.errors.length > 0 ? JSON.stringify(validation.errors) : null
         };
@@ -503,11 +508,26 @@ export class CSVImportService {
   private static mapCSVRow(record: any, schema: CSVSchema): any {
     const mapped: any = {};
 
+    // Map defined columns
     for (const column of schema.columns) {
       const value = record[column.name];
       
       if (column.mapping) {
         mapped[column.mapping] = this.convertValue(value, column.type);
+      }
+    }
+
+    // Handle flexible columns - store additional columns as metadata
+    if (schema.flexibleColumns) {
+      const additionalColumns: Record<string, any> = {};
+      for (const [key, value] of Object.entries(record)) {
+        const isDefinedColumn = schema.columns.some(col => col.name === key);
+        if (!isDefinedColumn && value !== null && value !== undefined && value !== '') {
+          additionalColumns[key] = this.convertValue(value, 'string');
+        }
+      }
+      if (Object.keys(additionalColumns).length > 0) {
+        mapped.additionalColumns = additionalColumns;
       }
     }
 

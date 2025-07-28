@@ -1,5 +1,5 @@
 "use client"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useSelection } from "@/lib/context"
 import { GraduationCap, Building2, Heart, DollarSign, TrendingUp, ShieldCheck, MapPin, BarChart3, Users, Star, ArrowRight } from "lucide-react"
 import Image from "next/image"
@@ -7,45 +7,54 @@ import Link from "next/link"
 
 export default function LandingPage() {
   const { user, signIn, signOut } = useSelection()
-  const [showSignIn, setShowSignIn] = useState(false)
-  const [email, setEmail] = useState("")
-  const [name, setName] = useState("")
-  const [status, setStatus] = useState<"idle"|"loading"|"sent"|"error">("idle")
-  const [error, setError] = useState("")
 
-  const handleSignIn = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setStatus("loading")
-    setError("")
-    
-    if (email.trim()) {
-      try {
-        const res = await fetch("/api/auth/magic-link", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email: email.trim(), name: name.trim() })
-        })
-        
-        if (res.ok) {
-          setStatus("sent")
-          // For demo purposes, sign in immediately
-          signIn(email.trim(), name.trim() || undefined)
-          setShowSignIn(false)
-          setEmail("")
-          setName("")
-        } else {
-          setStatus("error")
-          setError("Failed to send magic link. Please try again.")
+
+  // Check if user is authenticated on page load (only once)
+  useEffect(() => {
+    const checkAuth = async () => {
+      if (!user) {
+        try {
+          console.log('🔍 Checking authentication on page load...')
+          const response = await fetch('/api/auth/me')
+          const data = await response.json()
+          console.log('📡 /api/auth/me response:', data)
+          
+          if (response.ok) {
+            if (data.success && data.data) {
+              // User is authenticated on server but not in context
+              const serverUser = data.data
+              console.log('✅ User authenticated on server:', serverUser)
+              await signIn(serverUser.email, serverUser.name)
+            }
+          } else {
+            console.log('❌ User not authenticated on server:', data)
+          }
+          
+          setAuthCheck({
+            timestamp: new Date().toISOString(),
+            response: data,
+            status: response.status,
+            ok: response.ok
+          })
+        } catch (error) {
+          console.error('❌ Failed to check authentication:', error)
+          setAuthCheck({
+            timestamp: new Date().toISOString(),
+            error: error.message,
+            status: 'error'
+          })
         }
-      } catch (error) {
-        setStatus("error")
-        setError("Failed to send magic link. Please try again.")
       }
     }
-  }
+    
+    checkAuth()
+  }, []) // Only run once on mount, not on every user change
 
-  const handleSignOut = () => {
-    signOut()
+  
+
+  const handleSignOut = async () => {
+    console.log('🚪 Signing out...')
+    await signOut()
   }
 
   const features = [
@@ -96,10 +105,19 @@ export default function LandingPage() {
         </div>
         
         {/* User actions */}
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
           {user ? (
             <>
               <span className="px-4 py-2 text-sm text-gray-600">{user.email}</span>
+              {user.role === 'admin' && (
+                <Link
+                  href="/admin"
+                  className="px-4 py-2 bg-red-600 text-white rounded text-sm hover:bg-red-700 transition-colors flex items-center gap-1"
+                >
+                  <ShieldCheck className="w-4 h-4" />
+                  Admin
+                </Link>
+              )}
               <button
                 className="px-4 py-2 border border-blue-600 rounded text-blue-600 bg-white hover:bg-blue-50"
                 onClick={handleSignOut}
@@ -109,15 +127,17 @@ export default function LandingPage() {
             </>
           ) : (
             <>
-              <button
+              <Link
+                href="/auth/login"
                 className="px-4 py-2 text-sm text-blue-600 hover:text-blue-700 underline"
-                onClick={() => setShowSignIn(true)}
               >
                 Sign in for enhanced features
-              </button>
+              </Link>
             </>
           )}
         </div>
+
+        
       </div>
 
       {/* Hero Section */}
@@ -274,12 +294,12 @@ export default function LandingPage() {
             </div>
           </div>
           {!user && (
-            <button
-              onClick={() => setShowSignIn(true)}
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+            <Link
+              href="/auth/login"
+              className="px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors inline-block"
             >
               Sign in for Enhanced Features
-            </button>
+            </Link>
           )}
         </div>
       </div>
@@ -327,65 +347,7 @@ export default function LandingPage() {
         </p>
       </div>
 
-      {/* Sign-in Modal */}
-      {showSignIn && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-black">Sign In for Enhanced Features</h2>
-              <button
-                onClick={() => setShowSignIn(false)}
-                className="text-gray-600 hover:text-black"
-              >
-                ✕
-              </button>
-            </div>
-            <p className="text-gray-600 mb-4 text-sm">
-              Sign in to save favorites, track your progress, and get personalized recommendations.
-            </p>
-            <form onSubmit={handleSignIn} className="space-y-4">
-              <div>
-                <label htmlFor="name" className="block text-sm font-medium text-black mb-1">Name (optional)</label>
-                <input
-                  id="name"
-                  type="text"
-                  value={name}
-                  onChange={e => setName(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-black bg-white"
-                  placeholder="John Doe"
-                />
-              </div>
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-black mb-1">Email</label>
-                <input
-                  id="email"
-                  type="email"
-                  required
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-black bg-white"
-                  placeholder="you@example.com"
-                />
-              </div>
-              <button
-                type="submit"
-                className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700"
-                disabled={status === "loading"}
-              >
-                {status === "loading" ? "Sending..." : "Sign In"}
-              </button>
-              {status === "error" && (
-                <p className="text-red-600 text-sm">{error}</p>
-              )}
-            </form>
-            <div className="mt-4 text-center">
-              <p className="text-sm text-gray-600">
-                Or <Link href="/states" className="text-blue-600 hover:text-blue-700 underline">continue without signing in</Link>
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
+
     </div>
   )
 }

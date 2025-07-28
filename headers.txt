@@ -1,0 +1,9 @@
+HTTP/1.1 200 OK
+vary: RSC, Next-Router-State-Tree, Next-Router-Prefetch, Next-Router-Segment-Prefetch
+content-type: application/json
+set-cookie: session_token=a37db1d0-ce2a-432a-9597-644615750828; Path=/; Expires=Tue, 26 Aug 2025 22:47:31 GMT; Max-Age=2592000; HttpOnly; SameSite=lax
+Date: Sun, 27 Jul 2025 22:47:31 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+Transfer-Encoding: chunked
+

@@ -42,11 +42,7 @@ async function handleGetStates(request: NextRequest) {
   // Handle search
   if (search) {
     const results = await StatesService.searchStates(search);
-    return NextResponse.json({
-      success: true,
-      data: results,
-      pagination: getDefaultPagination(results.length, 1, results.length),
-    });
+    return createSuccessResponse(results);
   }
 
   // Handle pagination
@@ -55,12 +51,8 @@ async function handleGetStates(request: NextRequest) {
       { page, limit },
       { sortBy, sortOrder }
     );
-    // Flatten the response for paginated results
-    return NextResponse.json({
-      success: true,
-      data: paginated.data,
-      pagination: paginated.pagination,
-    });
+    // Return paginated data
+    return createSuccessResponse(paginated.data);
   }
 
   // Handle sorting without pagination
@@ -69,11 +61,7 @@ async function handleGetStates(request: NextRequest) {
       { page: 1, limit: 50 },
       { sortBy, sortOrder }
     );
-    return NextResponse.json({
-      success: true,
-      data: paginated.data,
-      pagination: paginated.pagination,
-    });
+    return createSuccessResponse(paginated.data);
   }
 
   // Default: return all states
@@ -81,11 +69,7 @@ async function handleGetStates(request: NextRequest) {
   // Debug log
   // eslint-disable-next-line no-console
   console.log('API /api/states returning states:', JSON.stringify(states, null, 2));
-  return NextResponse.json({
-    success: true,
-    data: states,
-    pagination: getDefaultPagination(states.length, 1, states.length),
-  });
+  return createSuccessResponse(states);
 }
 
 export const GET = withErrorHandling(handleGetStates); 

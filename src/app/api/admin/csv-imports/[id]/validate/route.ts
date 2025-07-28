@@ -16,10 +16,10 @@ export async function POST(
     const result = await CSVImportService.validateImport(importId);
 
     if (result.isValid) {
-      return createSuccessResponse('Validation completed successfully', {
+      return createSuccessResponse({
         stats: result.stats,
         warnings: result.warnings
-      });
+      }, 'Validation completed successfully');
     } else {
       return createErrorResponse('Validation failed', 400, {
         errors: result.errors,

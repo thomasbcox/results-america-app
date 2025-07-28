@@ -6,7 +6,7 @@ export async function GET(request: NextRequest) {
   try {
     const templates = await CSVImportService.getTemplates();
 
-    return createSuccessResponse('Templates retrieved successfully', templates);
+    return createSuccessResponse(templates);
 
   } catch (error) {
     console.error('Error fetching templates:', error);

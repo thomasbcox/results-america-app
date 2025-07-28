@@ -4,6 +4,7 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 interface User {
   email: string
   name?: string
+  role?: string
   sessionExpiry: number // Unix timestamp when session expires
 }
 
@@ -14,8 +15,8 @@ interface SelectionContextType {
   selectedMeasure: number | null
   favorites: number[]
   sessionExpiryWarning: boolean
-  signIn: (email: string, name?: string) => void
-  signOut: () => void
+  signIn: (email: string, name?: string) => Promise<void>
+  signOut: () => Promise<void>
   setSelectedStates: (states: string[]) => void
   setSelectedCategory: (category: string | null) => void
   setSelectedMeasure: (measure: number | null) => void
@@ -132,10 +133,55 @@ export function SelectionProvider({ children }: { children: ReactNode }) {
     storage.setItem('favorites', JSON.stringify(favorites))
   }, [favorites, user])
 
-  const signIn = (email: string, name?: string) => {
-    const sessionExpiry = createSessionExpiry()
-    const newUser = { email, name, sessionExpiry }
-    setUser(newUser)
+  const signIn = async (email: string, name?: string) => {
+    console.log('🔐 signIn called with:', { email, name })
+    // After magic link verification, fetch the actual user data from server
+    try {
+      console.log('📡 Fetching user data from /api/auth/me...')
+      const response = await fetch('/api/auth/me')
+      console.log('📡 /api/auth/me response status:', response.status)
+      
+      if (response.ok) {
+        const data = await response.json()
+        console.log('📡 /api/auth/me response data:', data)
+        
+        if (data.success && data.data) {
+          // The API response structure is: { success: true, data: { user: {...} } }
+          const userData = data.data.user || data.data
+          console.log('✅ Server user data:', userData)
+          
+          const newUser = { 
+            email: userData.email, 
+            name: userData.name, 
+            role: userData.role,
+            sessionExpiry: createSessionExpiry() 
+          }
+          console.log('👤 Setting user in context:', newUser)
+          setUser(newUser)
+        } else {
+          console.error('❌ Failed to get user data from server - no data in response')
+          // Fallback to basic user if server fetch fails
+          const sessionExpiry = createSessionExpiry()
+          const newUser = { email, name, sessionExpiry }
+          console.log('👤 Setting fallback user in context (no data):', newUser)
+          setUser(newUser)
+        }
+      } else {
+        console.error('❌ Failed to fetch user data from server - response not ok')
+        // Fallback to basic user if server fetch fails
+        const sessionExpiry = createSessionExpiry()
+        const newUser = { email, name, sessionExpiry }
+        console.log('👤 Setting fallback user in context (response not ok):', newUser)
+        setUser(newUser)
+      }
+    } catch (error) {
+      console.error('❌ Failed to fetch user data from server:', error)
+      // Fallback to basic user if server fetch fails
+      const sessionExpiry = createSessionExpiry()
+      const newUser = { email, name, sessionExpiry }
+      console.log('👤 Setting fallback user in context (catch error):', newUser)
+      setUser(newUser)
+    }
     
     // Migrate sessionStorage data to localStorage
     const sessionStates = sessionStorage.getItem('selectedStates')
@@ -161,7 +207,17 @@ export function SelectionProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const signOut = () => {
+  const signOut = async () => {
+    console.log('🚪 signOut called')
+    // Call server logout endpoint to clear session cookie
+    try {
+      console.log('📡 Calling /api/auth/logout...')
+      const response = await fetch('/api/auth/logout', { method: 'POST' })
+      console.log('📡 /api/auth/logout response status:', response.status)
+    } catch (error) {
+      console.error('❌ Failed to logout from server:', error)
+    }
+    
     // Migrate localStorage data to sessionStorage before clearing
     const localStates = localStorage.getItem('selectedStates')
     const localCategory = localStorage.getItem('selectedCategory')
@@ -213,6 +269,8 @@ export function SelectionProvider({ children }: { children: ReactNode }) {
   const dismissSessionWarning = () => {
     setSessionExpiryWarning(false)
   }
+
+
 
   return (
     <SelectionContext.Provider value={{
