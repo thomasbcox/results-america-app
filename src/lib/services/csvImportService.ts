@@ -97,7 +97,25 @@ export class CSVImportService {
       
       // Read and parse the file
       const fileBuffer = await file.arrayBuffer();
-      const fileContent = new TextDecoder().decode(fileBuffer);
+      let fileContent = new TextDecoder().decode(fileBuffer);
+      
+      // Preprocess CSV content to handle common issues
+      console.log('Preprocessing CSV content');
+      
+      // Remove any BOM (Byte Order Mark) if present
+      fileContent = fileContent.replace(/^\uFEFF/, '');
+      
+      // Normalize line endings
+      fileContent = fileContent.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+      
+      // Remove empty lines
+      fileContent = fileContent.split('\n').filter(line => line.trim()).join('\n');
+      
+      // Fix common CSV issues: remove extra commas at end of lines
+      fileContent = fileContent.replace(/,\s*$/gm, '');
+      
+      console.log('CSV preprocessing complete, content length:', fileContent.length);
+      
       const fileHash = createHash('sha256').update(fileContent).digest('hex');
       
       console.log('File processed:', { 
@@ -137,12 +155,28 @@ export class CSVImportService {
 
       // Parse CSV
       console.log('Parsing CSV content');
-      const records = parse(fileContent, {
-        columns: true,
-        skip_empty_lines: true,
-        trim: true
-      });
-      console.log('CSV parsed:', { recordCount: records.length });
+      let records;
+      try {
+        records = parse(fileContent, {
+          columns: true,
+          skip_empty_lines: true,
+          trim: true,
+          relax_column_count: true, // Allow inconsistent column counts
+          relax_quotes: true, // Be more lenient with quotes
+          skip_records_with_error: true // Skip problematic rows instead of failing
+        });
+        console.log('CSV parsed:', { recordCount: records.length });
+      } catch (parseError) {
+        console.error('CSV parsing error:', parseError);
+        return {
+          success: false,
+          message: 'CSV parsing failed',
+          errors: [
+            `CSV parsing error: ${parseError instanceof Error ? parseError.message : 'Unknown parsing error'}`,
+            'Please check that your CSV file has consistent formatting and proper column headers'
+          ]
+        };
+      }
 
       // Create import record
       console.log('Creating import record');
