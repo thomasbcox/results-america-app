@@ -174,26 +174,13 @@ export default function AdminLayout({
             {/* Right side - User menu */}
             <div className="flex items-center">
               <div className="flex items-center space-x-2">
-                {/* User info - compact version for smaller screens */}
+                {/* User info */}
                 <div className="hidden lg:flex items-center space-x-1">
-                  <div className="flex items-center space-x-1">
-                    <User className="h-4 w-4 text-gray-400" />
-                    <span className="text-sm text-gray-700">{user.name}</span>
-                    <span className="inline-flex items-center px-1 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
-                      {user.role}
-                    </span>
-                  </div>
-                </div>
-
-                {/* User info - full version for very large screens */}
-                <div className="hidden 2xl:flex items-center space-x-1">
-                  <div className="flex items-center space-x-1">
-                    <User className="h-4 w-4 text-gray-400" />
-                    <span className="text-sm text-gray-700">{user.name}</span>
-                    <span className="inline-flex items-center px-1 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
-                      {user.role}
-                    </span>
-                  </div>
+                  <User className="h-4 w-4 text-gray-400" />
+                  <span className="text-sm text-gray-700">{user.name}</span>
+                  <span className="inline-flex items-center px-1 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                    {user.role}
+                  </span>
                   <span className="text-sm text-gray-500">•</span>
                   <span className="text-sm text-gray-500">{user.email}</span>
                 </div>
