@@ -17,7 +17,9 @@ import {
   Eye, 
   Download, 
   Settings,
-  AlertCircle
+  AlertCircle,
+  AlertTriangle,
+  X
 } from "lucide-react";
 
 interface CSVImportTemplate {
@@ -60,6 +62,19 @@ export default function AdminDataPage() {
   const [activeTab, setActiveTab] = useState('upload');
   const [pastedData, setPastedData] = useState('');
   const [uploadMethod, setUploadMethod] = useState<'file' | 'paste'>('file');
+  const [errorDetails, setErrorDetails] = useState<{
+    show: boolean;
+    importId: number | null;
+    errors: string[];
+    warnings: string[];
+    stats: any;
+  }>({
+    show: false,
+    importId: null,
+    errors: [],
+    warnings: [],
+    stats: {}
+  });
 
   const handlePasteData = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     let data = e.target.value;
@@ -291,6 +306,40 @@ export default function AdminDataPage() {
         type: 'error',
         title: 'View Failed',
         message: 'Failed to load import details due to a network error'
+      });
+    }
+  };
+
+  const handleViewErrorDetails = async (importId: number) => {
+    try {
+      const response = await fetch(`/api/admin/csv-imports/${importId}/validate`, {
+        method: 'POST',
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        // If validation succeeds, there are no errors to show
+        addToast({
+          type: 'info',
+          title: 'No Errors',
+          message: 'This import has no validation errors'
+        });
+      } else {
+        const errorData = await response.json();
+        setErrorDetails({
+          show: true,
+          importId,
+          errors: errorData.data?.errors || [],
+          warnings: errorData.data?.warnings || [],
+          stats: errorData.data?.stats || {}
+        });
+      }
+    } catch (error) {
+      console.error('Error details error:', error);
+      addToast({
+        type: 'error',
+        title: 'Error Details Failed',
+        message: 'Failed to load error details due to a network error'
       });
     }
   };
@@ -613,6 +662,12 @@ Both formats will be automatically converted to CSV.`}
                                 Publish
                               </Button>
                             )}
+                            {import_.status === 'failed' && (
+                              <Button size="sm" variant="destructive" onClick={() => handleViewErrorDetails(import_.id)}>
+                                <AlertTriangle className="h-4 w-4 mr-1" />
+                                Error Details
+                              </Button>
+                            )}
                             <Button size="sm" variant="outline" onClick={() => handleViewImport(import_.id)}>
                               <Eye className="h-4 w-4 mr-1" />
                               View
@@ -683,6 +738,106 @@ Both formats will be automatically converted to CSV.`}
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Error Details Modal */}
+      {errorDetails.show && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-gray-900">Validation Error Details</h2>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setErrorDetails({ ...errorDetails, show: false })}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+
+            {/* Statistics */}
+            {errorDetails.stats && (
+              <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+                <h3 className="font-medium text-gray-900 mb-2">Validation Statistics</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                  <div>
+                    <span className="text-gray-600">Total Rows:</span>
+                    <span className="ml-2 font-medium">{errorDetails.stats.totalRows}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Valid Rows:</span>
+                    <span className="ml-2 font-medium text-green-600">{errorDetails.stats.validRows}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Invalid Rows:</span>
+                    <span className="ml-2 font-medium text-red-600">{errorDetails.stats.invalidRows}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Warnings:</span>
+                    <span className="ml-2 font-medium text-yellow-600">{errorDetails.stats.warnings}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Errors */}
+            {errorDetails.errors.length > 0 && (
+              <div className="mb-6">
+                <h3 className="font-medium text-red-900 mb-2 flex items-center">
+                  <AlertTriangle className="h-4 w-4 mr-2" />
+                  Validation Errors ({errorDetails.errors.length})
+                </h3>
+                <div className="space-y-2">
+                  {errorDetails.errors.map((error, index) => (
+                    <div key={index} className="p-3 bg-red-50 border border-red-200 rounded-md">
+                      <p className="text-sm text-red-800">{error}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Warnings */}
+            {errorDetails.warnings.length > 0 && (
+              <div className="mb-6">
+                <h3 className="font-medium text-yellow-900 mb-2 flex items-center">
+                  <AlertCircle className="h-4 w-4 mr-2" />
+                  Warnings ({errorDetails.warnings.length})
+                </h3>
+                <div className="space-y-2">
+                  {errorDetails.warnings.map((warning, index) => (
+                    <div key={index} className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                      <p className="text-sm text-yellow-800">{warning}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Actions */}
+            <div className="flex justify-end gap-2 pt-4 border-t">
+              <Button
+                variant="outline"
+                onClick={() => setErrorDetails({ ...errorDetails, show: false })}
+              >
+                Close
+              </Button>
+              {errorDetails.errors.length === 0 && (
+                <Button
+                  onClick={() => {
+                    setErrorDetails({ ...errorDetails, show: false });
+                    if (errorDetails.importId) {
+                      handleValidate(errorDetails.importId);
+                    }
+                  }}
+                >
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  Re-validate
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 } 
