@@ -114,16 +114,31 @@ export default function AdminDataPage() {
     try {
       console.log('Fetching import history...');
       const response = await fetch('/api/admin/csv-imports');
-      if (response.ok) {
-        const data = await response.json();
-        console.log('Import history response:', data);
-        setImportHistory(data.data || []);
-        console.log('Import history set:', data.data?.length || 0, 'items');
+      const result = await response.json();
+      console.log('Import history response:', result);
+      
+      if (result.success) {
+        console.log('Import history set:', result.data.length, 'items');
+        // Add debugging for status values
+        result.data.forEach((import_: ImportHistory) => {
+          console.log(`Import ${import_.id} (${import_.name}): status = ${import_.status}`);
+        });
+        setImportHistory(result.data);
       } else {
-        console.error('Failed to fetch import history:', response.status);
+        console.error('Failed to fetch import history:', result.error);
+        addToast({
+          type: 'error',
+          title: 'Error',
+          message: 'Failed to fetch import history'
+        });
       }
     } catch (error) {
-      console.error('Failed to fetch import history:', error);
+      console.error('Error fetching import history:', error);
+      addToast({
+        type: 'error',
+        title: 'Error',
+        message: 'Failed to fetch import history'
+      });
     }
   };
 

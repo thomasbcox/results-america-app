@@ -351,10 +351,14 @@ export class CSVImportService {
    * Validate staged data
    */
   static async validateImport(importId: number): Promise<CSVValidationResult> {
+    console.log(`🔍 Starting validation for import ${importId}`);
+    
     const stagedData = await db.select()
       .from(csvImportStaging)
       .where(eq(csvImportStaging.csvImportId, importId))
       .orderBy(csvImportStaging.rowNumber);
+
+    console.log(`📊 Found ${stagedData.length} staged rows to validate`);
 
     const errors: string[] = [];
     const warnings: string[] = [];
@@ -362,9 +366,15 @@ export class CSVImportService {
     let invalidRows = 0;
 
     // Business rule validations
-    for (const row of stagedData) {
+    for (let i = 0; i < stagedData.length; i++) {
+      const row = stagedData[i];
       const rowErrors: string[] = [];
       const rowWarnings: string[] = [];
+
+      // Progress logging every 50 rows
+      if (i % 50 === 0) {
+        console.log(`⏳ Validating row ${i + 1}/${stagedData.length}`);
+      }
 
       // Check state exists
       if (row.stateName && !row.stateId) {
@@ -376,7 +386,7 @@ export class CSVImportService {
         rowErrors.push(`Statistic "${row.statisticName}" not found in database`);
       }
 
-      // Check for duplicate data
+      // Check for duplicate data - but make this a warning, not an error
       if (row.stateId && row.statisticId && row.year) {
         const existingData = await db.select()
           .from(dataPoints)
@@ -411,10 +421,15 @@ export class CSVImportService {
       warnings.push(...rowWarnings.map(w => `Row ${row.rowNumber}: ${w}`));
     }
 
-    // Update validation status
+    console.log(`✅ Validation complete: ${validRows} valid, ${invalidRows} invalid, ${warnings.length} warnings`);
+
+    // Update validation status - only fail if there are actual errors, not warnings
+    const finalStatus = errors.length > 0 ? 'failed' : 'validated';
+    console.log(`📝 Setting import status to: ${finalStatus}`);
+    
     await db.update(csvImports)
       .set({ 
-        status: errors.length > 0 ? 'failed' : 'validated',
+        status: finalStatus,
         validatedAt: new Date(),
         errorMessage: errors.length > 0 ? errors.slice(0, 5).join('; ') : null
       })
