@@ -19,7 +19,8 @@ import {
   Settings,
   AlertCircle,
   AlertTriangle,
-  X
+  X,
+  Copy
 } from "lucide-react";
 
 interface CSVImportTemplate {
@@ -42,6 +43,8 @@ interface ImportHistory {
   validatedAt?: string;
   publishedAt?: string;
   uploadedBy: string;
+  duplicateOf?: number;
+  originalImportName?: string;
 }
 
 export default function AdminDataPage() {
@@ -657,6 +660,14 @@ Both formats will be automatically converted to CSV.`}
                             <p className="text-xs text-gray-500">
                               Uploaded by {import_.uploadedBy} on {new Date(import_.uploadedAt).toLocaleDateString()}
                             </p>
+                            {import_.duplicateOf && import_.originalImportName && (
+                              <div className="flex items-center gap-1 mt-1">
+                                <Badge variant="secondary" className="text-xs">
+                                  <Copy className="h-3 w-3 mr-1" />
+                                  Duplicate of "{import_.originalImportName}"
+                                </Badge>
+                              </div>
+                            )}
                           </div>
                         </div>
                         <div className="flex items-center gap-2">

@@ -16,6 +16,7 @@ import {
 import { eq, and, desc } from 'drizzle-orm';
 import { createHash } from 'crypto';
 import { parse } from 'csv-parse/sync';
+import { sql } from 'drizzle-orm';
 
 export interface CSVImportTemplate {
   id: number;
@@ -114,10 +115,11 @@ export class CSVImportService {
 
       console.log('Duplicate check:', { existingCount: existingImport.length });
 
+      let duplicateOf: number | null = null;
       if (existingImport.length > 0) {
-        console.log('Duplicate file detected, but allowing re-upload with new name');
-        // Instead of blocking completely, allow re-upload but warn user
-        // The file will be processed normally, but user should be aware it's a duplicate
+        console.log('Duplicate file detected, but allowing re-upload');
+        duplicateOf = existingImport[0].id;
+        // Allow re-upload but track the duplicate relationship
       }
 
       // Get template
@@ -150,12 +152,13 @@ export class CSVImportService {
         filename: file.name,
         fileSize: file.size,
         fileHash,
+        duplicateOf, // Store the duplicate relationship
         status: 'uploaded',
         uploadedBy,
         metadata: JSON.stringify(metadata)
       }).returning();
       
-      console.log('Import record created:', { id: importRecord.id, name: importRecord.name });
+      console.log('Import record created:', { id: importRecord.id, name: importRecord.name, duplicateOf });
 
       // Store metadata
       console.log('Storing metadata');
@@ -560,7 +563,13 @@ export class CSVImportService {
       uploadedAt: csvImports.uploadedAt,
       validatedAt: csvImports.validatedAt,
       publishedAt: csvImports.publishedAt,
-      uploadedBy: users.name
+      uploadedBy: users.name,
+      duplicateOf: csvImports.duplicateOf,
+      // Get the name of the original import if this is a duplicate
+      originalImportName: sql<string>`(
+        SELECT name FROM csv_imports 
+        WHERE id = ${csvImports.duplicateOf}
+      )`
     })
     .from(csvImports)
     .leftJoin(users, eq(csvImports.uploadedBy, users.id))
