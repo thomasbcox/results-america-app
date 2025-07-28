@@ -47,12 +47,29 @@ interface ImportHistory {
   originalImportName?: string;
 }
 
+interface Category {
+  id: number;
+  name: string;
+  description?: string;
+}
+
+interface Measure {
+  id: number;
+  name: string;
+  categoryId: number;
+  description?: string;
+}
+
 export default function AdminDataPage() {
   const { addToast } = useToast();
   const { confirm } = useConfirmDialog();
   const [templates, setTemplates] = useState<CSVImportTemplate[]>([]);
   const [importHistory, setImportHistory] = useState<ImportHistory[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [measures, setMeasures] = useState<Measure[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<number | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
+  const [selectedMeasure, setSelectedMeasure] = useState<number | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [importMetadata, setImportMetadata] = useState({
     name: '',
@@ -96,14 +113,26 @@ export default function AdminDataPage() {
   useEffect(() => {
     fetchTemplates();
     fetchImportHistory();
+    fetchCategories();
   }, []);
+
+  // Reset measure selection when category changes
+  useEffect(() => {
+    if (selectedCategory) {
+      fetchMeasures(selectedCategory);
+      setSelectedMeasure(null);
+    } else {
+      setMeasures([]);
+      setSelectedMeasure(null);
+    }
+  }, [selectedCategory]);
 
   const fetchTemplates = async () => {
     try {
       const response = await fetch('/api/admin/csv-templates');
-      if (response.ok) {
-        const data = await response.json();
-        setTemplates(data.data || []);
+      const result = await response.json();
+      if (result.success) {
+        setTemplates(result.data);
       }
     } catch (error) {
       console.error('Failed to fetch templates:', error);
@@ -139,6 +168,30 @@ export default function AdminDataPage() {
         title: 'Error',
         message: 'Failed to fetch import history'
       });
+    }
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const response = await fetch('/api/categories');
+      const result = await response.json();
+      if (result.success) {
+        setCategories(result.data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch categories:', error);
+    }
+  };
+
+  const fetchMeasures = async (categoryId: number) => {
+    try {
+      const response = await fetch(`/api/statistics?categoryId=${categoryId}`);
+      const result = await response.json();
+      if (result.success) {
+        setMeasures(result.data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch measures:', error);
     }
   };
 
@@ -191,7 +244,21 @@ export default function AdminDataPage() {
       }
       
       formData.append('templateId', selectedTemplate.toString());
-      formData.append('metadata', JSON.stringify(importMetadata));
+      
+      // Get selected category and measure names
+      const selectedCategoryName = categories.find(c => c.id === selectedCategory)?.name || '';
+      const selectedMeasureName = measures.find(m => m.id === selectedMeasure)?.name || '';
+      
+      // Create enhanced metadata with category and measure info
+      const enhancedMetadata = {
+        ...importMetadata,
+        categoryId: selectedCategory,
+        categoryName: selectedCategoryName,
+        measureId: selectedMeasure,
+        measureName: selectedMeasureName
+      };
+      
+      formData.append('metadata', JSON.stringify(enhancedMetadata));
 
       const response = await fetch('/api/admin/csv-upload', {
         method: 'POST',
@@ -221,6 +288,8 @@ export default function AdminDataPage() {
         // Reset form
         setSelectedFile(null);
         setSelectedTemplate(null);
+        setSelectedCategory(null);
+        setSelectedMeasure(null);
         setPastedData('');
         setImportMetadata({
           name: '',
@@ -505,6 +574,46 @@ export default function AdminDataPage() {
                     </div>
                   )}
 
+                  {/* Category Selection */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Data Category
+                    </label>
+                    <select
+                      value={selectedCategory || ''}
+                      onChange={(e) => setSelectedCategory(Number(e.target.value) || null)}
+                      className="w-full p-2 border border-gray-300 rounded-md"
+                    >
+                      <option value="">Choose a category...</option>
+                      {categories.map((category) => (
+                        <option key={category.id} value={category.id}>
+                          {category.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Measure Selection */}
+                  {selectedCategory && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Data Measure
+                      </label>
+                      <select
+                        value={selectedMeasure || ''}
+                        onChange={(e) => setSelectedMeasure(Number(e.target.value) || null)}
+                        className="w-full p-2 border border-gray-300 rounded-md"
+                      >
+                        <option value="">Choose a measure...</option>
+                        {measures.map((measure) => (
+                          <option key={measure.id} value={measure.id}>
+                            {measure.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
                   {/* Upload Method Selection */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -637,6 +746,8 @@ Both formats will be automatically converted to CSV.`}
                     onClick={handleUpload}
                     disabled={
                       !selectedTemplate || 
+                      !selectedCategory ||
+                      !selectedMeasure ||
                       uploading || 
                       (uploadMethod === 'file' && !selectedFile) ||
                       (uploadMethod === 'paste' && !pastedData.trim())
