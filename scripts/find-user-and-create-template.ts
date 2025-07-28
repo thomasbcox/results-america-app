@@ -10,7 +10,7 @@ async function findUserAndCreateTemplate() {
   try {
     // Find all users
     const allUsers = await db.select().from(users);
-    console.log('📋 Found users:', allUsers.map(u => ({ id: u.id, email: u.email, role: u.role })));
+    console.log('📋 Found users:', allUsers.map((u: any) => ({ id: u.id, email: u.email, role: u.role })));
 
     if (allUsers.length === 0) {
       console.log('❌ No users found. Please create a user first.');
