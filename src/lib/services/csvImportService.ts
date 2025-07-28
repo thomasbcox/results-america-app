@@ -187,6 +187,22 @@ export class CSVImportService {
     let invalidRows = 0;
     let warnings = 0;
 
+    // Get all states for matching
+    const allStates = await db.select().from(states);
+    const stateMap = new Map();
+    allStates.forEach(state => {
+      // Map full names
+      stateMap.set(state.name.toLowerCase(), state.id);
+      // Map abbreviations
+      stateMap.set(state.abbreviation.toLowerCase(), state.id);
+      // Map common variations
+      stateMap.set(state.name.toLowerCase().replace(/\s+/g, ''), state.id);
+    });
+
+    // Get all categories and measures for fuzzy matching
+    const allCategories = await db.select().from(categories);
+    const allStatistics = await db.select().from(statistics);
+
     for (let i = 0; i < records.length; i++) {
       const record = records[i];
       const rowNumber = i + 2; // +2 because CSV is 1-based and we skip header
@@ -194,6 +210,57 @@ export class CSVImportService {
       try {
         // Map CSV columns to internal fields
         const mappedData = this.mapCSVRow(record, template.templateSchema);
+        
+        // Improve state name matching
+        if (mappedData.stateName) {
+          const stateNameLower = mappedData.stateName.toLowerCase().trim();
+          const stateId = stateMap.get(stateNameLower);
+          
+          if (stateId) {
+            mappedData.stateId = stateId;
+          } else {
+            // Try fuzzy matching for state names
+            const bestMatch = this.findBestMatch(stateNameLower, Array.from(stateMap.keys()));
+            if (bestMatch && bestMatch.score > 0.8) {
+              mappedData.stateId = stateMap.get(bestMatch.value);
+              mappedData.stateName = bestMatch.value; // Update to canonical name
+            }
+          }
+        }
+
+        // Improve category and measure matching
+        if (mappedData.categoryName) {
+          const categoryMatch = this.findBestMatch(
+            mappedData.categoryName.toLowerCase(),
+            allCategories.map(c => c.name.toLowerCase())
+          );
+          if (categoryMatch && categoryMatch.score > 0.7) {
+            const matchedCategory = allCategories.find(c => 
+              c.name.toLowerCase() === categoryMatch.value
+            );
+            if (matchedCategory) {
+              mappedData.categoryId = matchedCategory.id;
+              mappedData.categoryName = matchedCategory.name; // Update to canonical name
+            }
+          }
+        }
+
+        if (mappedData.statisticName || mappedData.measure) {
+          const measureName = (mappedData.statisticName || mappedData.measure).toLowerCase();
+          const measureMatch = this.findBestMatch(
+            measureName,
+            allStatistics.map(s => s.name.toLowerCase())
+          );
+          if (measureMatch && measureMatch.score > 0.7) {
+            const matchedStatistic = allStatistics.find(s => 
+              s.name.toLowerCase() === measureMatch.value
+            );
+            if (matchedStatistic) {
+              mappedData.statisticId = matchedStatistic.id;
+              mappedData.statisticName = matchedStatistic.name; // Update to canonical name
+            }
+          }
+        }
         
         // Basic validation
         const validation = this.validateRow(mappedData, template.validationRules);
@@ -597,8 +664,66 @@ export class CSVImportService {
         return new RegExp(rule.value).test(String(value));
       case 'enum':
         return rule.value.includes(value);
+      case 'custom':
+        return rule.value(value);
       default:
         return true;
     }
+  }
+
+  /**
+   * Fuzzy string matching using Levenshtein distance
+   */
+  private static findBestMatch(input: string, candidates: string[]): { value: string; score: number } | null {
+    if (candidates.length === 0) return null;
+
+    let bestMatch = candidates[0];
+    let bestScore = 0;
+
+    for (const candidate of candidates) {
+      const score = this.calculateSimilarity(input, candidate);
+      if (score > bestScore) {
+        bestScore = score;
+        bestMatch = candidate;
+      }
+    }
+
+    return bestScore > 0.5 ? { value: bestMatch, score: bestScore } : null;
+  }
+
+  /**
+   * Calculate similarity between two strings using Levenshtein distance
+   */
+  private static calculateSimilarity(str1: string, str2: string): number {
+    const matrix = [];
+    const len1 = str1.length;
+    const len2 = str2.length;
+
+    // Initialize matrix
+    for (let i = 0; i <= len1; i++) {
+      matrix[i] = [i];
+    }
+    for (let j = 0; j <= len2; j++) {
+      matrix[0][j] = j;
+    }
+
+    // Fill matrix
+    for (let i = 1; i <= len1; i++) {
+      for (let j = 1; j <= len2; j++) {
+        if (str1[i - 1] === str2[j - 1]) {
+          matrix[i][j] = matrix[i - 1][j - 1];
+        } else {
+          matrix[i][j] = Math.min(
+            matrix[i - 1][j] + 1,     // deletion
+            matrix[i][j - 1] + 1,     // insertion
+            matrix[i - 1][j - 1] + 1  // substitution
+          );
+        }
+      }
+    }
+
+    const distance = matrix[len1][len2];
+    const maxLength = Math.max(len1, len2);
+    return maxLength === 0 ? 1 : (maxLength - distance) / maxLength;
   }
 } 

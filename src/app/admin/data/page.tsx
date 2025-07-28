@@ -55,7 +55,6 @@ export default function AdminDataPage() {
     name: '',
     description: '',
     dataSource: '',
-    dataYear: new Date().getFullYear().toString(),
     statisticName: ''
   });
   const [uploading, setUploading] = useState(false);
@@ -177,11 +176,14 @@ export default function AdminDataPage() {
       });
 
       if (response.ok) {
+        const result = await response.json();
         addToast({
           type: 'success',
           title: 'Upload Successful',
           message: 'Data uploaded successfully!'
         });
+        
+        // Reset form
         setSelectedFile(null);
         setSelectedTemplate(null);
         setPastedData('');
@@ -189,10 +191,13 @@ export default function AdminDataPage() {
           name: '',
           description: '',
           dataSource: '',
-          dataYear: new Date().getFullYear().toString(),
           statisticName: ''
         });
-        fetchImportHistory();
+        
+        // Wait a moment for the database to be updated, then refresh history
+        setTimeout(() => {
+          fetchImportHistory();
+        }, 500);
       } else {
         const error = await response.json();
         addToast({
@@ -562,18 +567,6 @@ Both formats will be automatically converted to CSV.`}
                         onChange={(e) => setImportMetadata({...importMetadata, dataSource: e.target.value})}
                         className="w-full p-2 border border-gray-300 rounded-md"
                         placeholder="e.g., Bureau of Economic Analysis"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Data Year
-                      </label>
-                      <input
-                        type="number"
-                        value={importMetadata.dataYear}
-                        onChange={(e) => setImportMetadata({...importMetadata, dataYear: e.target.value})}
-                        className="w-full p-2 border border-gray-300 rounded-md"
-                        placeholder="2023"
                       />
                     </div>
                     <div>
