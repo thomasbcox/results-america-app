@@ -25,7 +25,14 @@
     "create-admin": "tsx scripts/create-admin.ts",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:external-import": "tsx scripts/test-external-import.ts"
+    "test:external-import": "tsx scripts/test-external-import.ts",
+    "test:simple-csv-import": "tsx scripts/test-simple-csv-import.ts",
+    "test:csv-unit": "jest tests/csv/unit",
+    "test:csv-integration": "jest tests/csv/integration",
+    "test:csv-performance": "jest tests/csv/performance",
+    "test:csv-edge-cases": "jest tests/csv/edge-cases",
+    "test:csv-security": "jest tests/csv/security",
+    "test:csv-all": "jest tests/csv"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.4",

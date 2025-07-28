@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth, AuthenticatedRequest } from '@/lib/middleware/auth';
-import { CSVImportService } from '@/lib/services/csvImportService';
+import { SimpleCSVImportService } from '@/lib/services/simpleCSVImportService';
 import { createSuccessResponse, createErrorResponse } from '@/lib/response';
 
 export async function POST(request: AuthenticatedRequest) {
   return withAdminAuth(request, async (req) => {
     try {
-      console.log('CSV upload started');
+      console.log('Simple CSV upload started');
       const formData = await request.formData();
       const file = formData.get('file') as File;
       const templateId = formData.get('templateId') as string;
@@ -50,9 +50,9 @@ export async function POST(request: AuthenticatedRequest) {
       const uploadedBy = req.user!.id;
       console.log('Uploaded by user ID:', uploadedBy);
 
-      // Upload and stage the CSV
-      console.log('Calling CSVImportService.uploadCSV');
-      const result = await CSVImportService.uploadCSV(
+      // Upload and process the CSV using simplified service
+      console.log('Calling SimpleCSVImportService.uploadCSV');
+      const result = await SimpleCSVImportService.uploadCSV(
         file,
         parseInt(templateId),
         parsedMetadata,
@@ -76,7 +76,7 @@ export async function POST(request: AuthenticatedRequest) {
       }
 
     } catch (error) {
-      console.error('CSV upload error:', error);
+      console.error('Simple CSV upload error:', error);
       return createErrorResponse('Upload failed', 500);
     }
   });

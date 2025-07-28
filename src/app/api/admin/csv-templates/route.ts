@@ -1,15 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { CSVImportService } from '@/lib/services/csvImportService';
+import { withAdminAuth, AuthenticatedRequest } from '@/lib/middleware/auth';
+import { SimpleCSVImportService } from '@/lib/services/simpleCSVImportService';
 import { createSuccessResponse, createErrorResponse } from '@/lib/response';
 
-export async function GET(request: NextRequest) {
-  try {
-    const templates = await CSVImportService.getTemplates();
-
-    return createSuccessResponse(templates);
-
-  } catch (error) {
-    console.error('Error fetching templates:', error);
-    return createErrorResponse('Failed to fetch templates', 500);
-  }
+export async function GET(request: AuthenticatedRequest) {
+  return withAdminAuth(request, async (req) => {
+    try {
+      console.log('Getting simplified CSV templates');
+      const templates = await SimpleCSVImportService.getTemplates();
+      
+      console.log(`Found ${templates.length} templates`);
+      return createSuccessResponse(templates, 'Templates retrieved successfully');
+    } catch (error) {
+      console.error('Error getting templates:', error);
+      return createErrorResponse('Failed to get templates', 500);
+    }
+  });
 } 
