@@ -153,12 +153,12 @@ export default function AdminLayout({
               </div>
 
               {/* Navigation Links */}
-              <div className="hidden lg:ml-6 lg:flex lg:space-x-4">
+              <div className="hidden xl:ml-6 xl:flex xl:space-x-2">
                 {navigation.map((item) => (
                   <Link
                     key={item.name}
                     href={item.href}
-                    className={`inline-flex items-center px-2 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${
+                    className={`inline-flex items-center px-1.5 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${
                       item.current
                         ? 'bg-blue-100 text-blue-700 border border-blue-200 shadow-sm'
                         : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 border border-transparent hover:border-gray-200'
@@ -173,13 +173,24 @@ export default function AdminLayout({
 
             {/* Right side - User menu */}
             <div className="flex items-center">
-              <div className="flex items-center space-x-3">
-                {/* User info */}
-                <div className="hidden xl:flex items-center space-x-2">
+              <div className="flex items-center space-x-2">
+                {/* User info - compact version for smaller screens */}
+                <div className="hidden lg:flex items-center space-x-1">
                   <div className="flex items-center space-x-1">
                     <User className="h-4 w-4 text-gray-400" />
                     <span className="text-sm text-gray-700">{user.name}</span>
-                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                    <span className="inline-flex items-center px-1 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                      {user.role}
+                    </span>
+                  </div>
+                </div>
+
+                {/* User info - full version for very large screens */}
+                <div className="hidden 2xl:flex items-center space-x-1">
+                  <div className="flex items-center space-x-1">
+                    <User className="h-4 w-4 text-gray-400" />
+                    <span className="text-sm text-gray-700">{user.name}</span>
+                    <span className="inline-flex items-center px-1 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
                       {user.role}
                     </span>
                   </div>
@@ -195,7 +206,7 @@ export default function AdminLayout({
                   className="flex items-center space-x-1 border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 hover:text-red-700 transition-colors duration-200"
                 >
                   <LogOut className="h-4 w-4" />
-                  <span className="hidden lg:inline">Logout</span>
+                  <span className="hidden xl:inline">Logout</span>
                 </Button>
               </div>
             </div>
