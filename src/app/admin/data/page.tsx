@@ -96,6 +96,9 @@ export default function AdminDataPage() {
     stats: {}
   });
 
+  const [validatingImports, setValidatingImports] = useState<Set<number>>(new Set());
+  const [validationProgress, setValidationProgress] = useState<{[key: number]: {current: number, total: number}}>({});
+
   const handlePasteData = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     let data = e.target.value;
     
@@ -127,6 +130,45 @@ export default function AdminDataPage() {
       setSelectedMeasure(null);
     }
   }, [selectedCategory]);
+
+  // Poll validation progress for imports being validated
+  useEffect(() => {
+    if (validatingImports.size === 0) return;
+
+    const pollProgress = async () => {
+      for (const importId of validatingImports) {
+        try {
+          const response = await fetch(`/api/admin/csv-imports/${importId}`);
+          if (response.ok) {
+            const result = await response.json();
+            if (result.success && result.data) {
+              const importData = result.data;
+              // If validation is complete, remove from validating set
+              if (importData.status !== 'staged') {
+                setValidatingImports(prev => {
+                  const newSet = new Set(prev);
+                  newSet.delete(importId);
+                  return newSet;
+                });
+                setValidationProgress(prev => {
+                  const newProgress = { ...prev };
+                  delete newProgress[importId];
+                  return newProgress;
+                });
+                // Refresh history to get updated status
+                fetchImportHistory();
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Error polling validation progress:', error);
+        }
+      }
+    };
+
+    const interval = setInterval(pollProgress, 2000); // Poll every 2 seconds
+    return () => clearInterval(interval);
+  }, [validatingImports]);
 
   const fetchTemplates = async () => {
     try {
@@ -334,16 +376,32 @@ export default function AdminDataPage() {
   };
 
   const handleValidate = async (importId: number) => {
+    // Add to validating set
+    setValidatingImports(prev => new Set(prev).add(importId));
+    
     try {
       const response = await fetch(`/api/admin/csv-imports/${importId}/validate`, {
         method: 'POST',
       });
+      
       if (response.ok) {
-        addToast({
-          type: 'success',
-          title: 'Validation Successful',
-          message: 'Import validated successfully!'
-        });
+        const result = await response.json();
+        
+        if (result.success) {
+          addToast({
+            type: 'success',
+            title: 'Validation Successful',
+            message: 'Import validated successfully!'
+          });
+        } else {
+          addToast({
+            type: 'error',
+            title: 'Validation Failed',
+            message: result.message || 'Validation failed'
+          });
+        }
+        
+        // Refresh history to get updated status
         fetchImportHistory();
       } else {
         const error = await response.json();
@@ -359,6 +417,20 @@ export default function AdminDataPage() {
         type: 'error',
         title: 'Validation Failed',
         message: 'Validation failed due to a network error'
+      });
+    } finally {
+      // Remove from validating set
+      setValidatingImports(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(importId);
+        return newSet;
+      });
+      
+      // Clear progress for this import
+      setValidationProgress(prev => {
+        const newProgress = { ...prev };
+        delete newProgress[importId];
+        return newProgress;
       });
     }
   };
@@ -406,13 +478,21 @@ export default function AdminDataPage() {
     try {
       const response = await fetch(`/api/admin/csv-imports/${importId}`);
       if (response.ok) {
-        const data = await response.json();
-        // For now, show the data in a toast. In the future, this could open a modal
-        addToast({
-          type: 'info',
-          title: 'Import Details',
-          message: `Import ID: ${importId}, Status: ${data.data?.status || 'unknown'}`
-        });
+        const result = await response.json();
+        if (result.success && result.data) {
+          const importData = result.data;
+          addToast({
+            type: 'info',
+            title: 'Import Details',
+            message: `Import ID: ${importId}, Status: ${importData.status || 'unknown'}`
+          });
+        } else {
+          addToast({
+            type: 'error',
+            title: 'View Failed',
+            message: 'Failed to load import details'
+          });
+        }
       } else {
         addToast({
           type: 'error',
@@ -808,26 +888,61 @@ Both formats will be automatically converted to CSV.`}
                         </div>
                         <div className="flex items-center gap-2">
                           {getStatusBadge(import_.status)}
+                          {validatingImports.has(import_.id) && validationProgress[import_.id] && (
+                            <div className="flex items-center gap-2 text-sm text-gray-600">
+                              <Clock className="h-4 w-4 animate-spin" />
+                              <span>
+                                Validating row {validationProgress[import_.id].current}/{validationProgress[import_.id].total}
+                              </span>
+                            </div>
+                          )}
                           <div className="flex gap-1">
                             {import_.status === 'staged' && (
-                              <Button size="sm" onClick={() => handleValidate(import_.id)}>
-                                <CheckCircle className="h-4 w-4 mr-1" />
-                                Validate
+                              <Button 
+                                size="sm" 
+                                onClick={() => handleValidate(import_.id)}
+                                disabled={validatingImports.has(import_.id)}
+                              >
+                                {validatingImports.has(import_.id) ? (
+                                  <>
+                                    <Clock className="h-4 w-4 mr-1 animate-spin" />
+                                    Validating...
+                                  </>
+                                ) : (
+                                  <>
+                                    <CheckCircle className="h-4 w-4 mr-1" />
+                                    Validate
+                                  </>
+                                )}
                               </Button>
                             )}
                             {import_.status === 'validated' && (
-                              <Button size="sm" onClick={() => handlePublish(import_.id)}>
+                              <Button 
+                                size="sm" 
+                                onClick={() => handlePublish(import_.id)}
+                                disabled={validatingImports.has(import_.id)}
+                              >
                                 <Play className="h-4 w-4 mr-1" />
                                 Publish
                               </Button>
                             )}
                             {import_.status === 'failed' && (
-                              <Button size="sm" variant="destructive" onClick={() => handleViewErrorDetails(import_.id)}>
+                              <Button 
+                                size="sm" 
+                                variant="destructive" 
+                                onClick={() => handleViewErrorDetails(import_.id)}
+                                disabled={validatingImports.has(import_.id)}
+                              >
                                 <AlertTriangle className="h-4 w-4 mr-1" />
                                 Error Details
                               </Button>
                             )}
-                            <Button size="sm" variant="outline" onClick={() => handleViewImport(import_.id)}>
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              onClick={() => handleViewImport(import_.id)}
+                              disabled={validatingImports.has(import_.id)}
+                            >
                               <Eye className="h-4 w-4 mr-1" />
                               View
                             </Button>
