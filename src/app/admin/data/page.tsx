@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -81,6 +81,7 @@ export default function AdminDataPage() {
   const [activeTab, setActiveTab] = useState('upload');
   const [pastedData, setPastedData] = useState('');
   const [uploadMethod, setUploadMethod] = useState<'file' | 'paste'>('file');
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [errorDetails, setErrorDetails] = useState<{
     show: boolean;
     importId: number | null;
@@ -202,6 +203,12 @@ export default function AdminDataPage() {
     }
   };
 
+  const clearFileInput = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   const handleUpload = async () => {
     if (!selectedTemplate) {
       addToast({
@@ -285,8 +292,9 @@ export default function AdminDataPage() {
           message: 'Data uploaded successfully!'
         });
         
-        // Reset form
+        // Reset form only on success
         setSelectedFile(null);
+        clearFileInput();
         setSelectedTemplate(null);
         setSelectedCategory(null);
         setSelectedMeasure(null);
@@ -311,6 +319,7 @@ export default function AdminDataPage() {
           title: 'Upload Failed',
           message: error.error || 'Unknown error'
         });
+        // Don't reset form on failure - keep all data for retry
       }
     } catch (error) {
       console.error('Upload error:', error);
@@ -653,6 +662,7 @@ export default function AdminDataPage() {
                         type="file"
                         accept=".csv"
                         onChange={handleFileSelect}
+                        ref={fileInputRef}
                         className="w-full p-2 border border-gray-300 rounded-md"
                       />
                     </div>
