@@ -101,6 +101,8 @@ export class CSVImportService {
       
       // Preprocess CSV content to handle common issues
       console.log('Preprocessing CSV content');
+      console.log('Original content length:', fileContent.length);
+      console.log('First 200 characters:', fileContent.substring(0, 200));
       
       // Remove any BOM (Byte Order Mark) if present
       fileContent = fileContent.replace(/^\uFEFF/, '');
@@ -115,6 +117,12 @@ export class CSVImportService {
       fileContent = fileContent.replace(/,\s*$/gm, '');
       
       console.log('CSV preprocessing complete, content length:', fileContent.length);
+      console.log('First 200 characters after preprocessing:', fileContent.substring(0, 200));
+      
+      // Let's also check the first few lines to see the structure
+      const lines = fileContent.split('\n');
+      console.log('First 5 lines:', lines.slice(0, 5));
+      console.log('Line 308 (if exists):', lines[307] || 'Line 308 does not exist');
       
       const fileHash = createHash('sha256').update(fileContent).digest('hex');
       
@@ -168,14 +176,34 @@ export class CSVImportService {
         console.log('CSV parsed:', { recordCount: records.length });
       } catch (parseError) {
         console.error('CSV parsing error:', parseError);
-        return {
-          success: false,
-          message: 'CSV parsing failed',
-          errors: [
-            `CSV parsing error: ${parseError instanceof Error ? parseError.message : 'Unknown parsing error'}`,
-            'Please check that your CSV file has consistent formatting and proper column headers'
-          ]
-        };
+        
+        // Try a more aggressive fallback parsing
+        console.log('Trying fallback parsing with even more lenient options...');
+        try {
+          records = parse(fileContent, {
+            columns: true,
+            skip_empty_lines: true,
+            trim: true,
+            relax_column_count: true,
+            relax_quotes: true,
+            skip_records_with_error: true,
+            relax: true, // Most lenient option
+            skip_empty_lines: true,
+            from_line: 1 // Start from first line
+          });
+          console.log('Fallback parsing succeeded:', { recordCount: records.length });
+        } catch (fallbackError) {
+          console.error('Fallback parsing also failed:', fallbackError);
+          return {
+            success: false,
+            message: 'CSV parsing failed',
+            errors: [
+              `CSV parsing error: ${parseError instanceof Error ? parseError.message : 'Unknown parsing error'}`,
+              `Fallback parsing also failed: ${fallbackError instanceof Error ? fallbackError.message : 'Unknown error'}`,
+              'Please check that your CSV file has consistent formatting and proper column headers'
+            ]
+          };
+        }
       }
 
       // Create import record
