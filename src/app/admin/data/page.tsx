@@ -109,10 +109,15 @@ export default function AdminDataPage() {
 
   const fetchImportHistory = async () => {
     try {
+      console.log('Fetching import history...');
       const response = await fetch('/api/admin/csv-imports');
       if (response.ok) {
         const data = await response.json();
+        console.log('Import history response:', data);
         setImportHistory(data.data || []);
+        console.log('Import history set:', data.data?.length || 0, 'items');
+      } else {
+        console.error('Failed to fetch import history:', response.status);
       }
     } catch (error) {
       console.error('Failed to fetch import history:', error);
@@ -177,6 +182,18 @@ export default function AdminDataPage() {
 
       if (response.ok) {
         const result = await response.json();
+        console.log('Upload success response:', result);
+        
+        if (result.success === false) {
+          // Handle case where API returns 200 but success is false
+          addToast({
+            type: 'error',
+            title: 'Upload Failed',
+            message: result.message || 'Upload failed'
+          });
+          return;
+        }
+        
         addToast({
           type: 'success',
           title: 'Upload Successful',
@@ -195,7 +212,9 @@ export default function AdminDataPage() {
         });
         
         // Wait a moment for the database to be updated, then refresh history
+        console.log('Scheduling history refresh in 500ms...');
         setTimeout(() => {
+          console.log('Executing history refresh...');
           fetchImportHistory();
         }, 500);
       } else {

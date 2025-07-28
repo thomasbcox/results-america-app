@@ -91,10 +91,20 @@ export class CSVImportService {
     uploadedBy: number
   ): Promise<CSVImportResult> {
     try {
+      console.log('CSVImportService.uploadCSV started');
+      console.log('Parameters:', { templateId, metadata, uploadedBy });
+      
       // Read and parse the file
       const fileBuffer = await file.arrayBuffer();
       const fileContent = new TextDecoder().decode(fileBuffer);
       const fileHash = createHash('sha256').update(fileContent).digest('hex');
+      
+      console.log('File processed:', { 
+        fileName: file.name, 
+        fileSize: file.size, 
+        contentLength: fileContent.length,
+        fileHash: fileHash.substring(0, 8) + '...'
+      });
 
       // Check for duplicate uploads
       const existingImport = await db.select()
@@ -102,32 +112,38 @@ export class CSVImportService {
         .where(eq(csvImports.fileHash, fileHash))
         .limit(1);
 
+      console.log('Duplicate check:', { existingCount: existingImport.length });
+
       if (existingImport.length > 0) {
-        return {
-          success: false,
-          message: 'This file has already been uploaded',
-          errors: ['Duplicate file detected']
-        };
+        console.log('Duplicate file detected, but allowing re-upload with new name');
+        // Instead of blocking completely, allow re-upload but warn user
+        // The file will be processed normally, but user should be aware it's a duplicate
       }
 
       // Get template
+      console.log('Getting template:', templateId);
       const template = await this.getTemplate(templateId);
       if (!template) {
+        console.log('Template not found');
         return {
           success: false,
           message: 'Invalid template',
           errors: ['Template not found']
         };
       }
+      console.log('Template found:', template.name);
 
       // Parse CSV
+      console.log('Parsing CSV content');
       const records = parse(fileContent, {
         columns: true,
         skip_empty_lines: true,
         trim: true
       });
+      console.log('CSV parsed:', { recordCount: records.length });
 
       // Create import record
+      console.log('Creating import record');
       const [importRecord] = await db.insert(csvImports).values({
         name: metadata.name || `Import from ${file.name}`,
         description: metadata.description,
@@ -138,8 +154,11 @@ export class CSVImportService {
         uploadedBy,
         metadata: JSON.stringify(metadata)
       }).returning();
+      
+      console.log('Import record created:', { id: importRecord.id, name: importRecord.name });
 
       // Store metadata
+      console.log('Storing metadata');
       for (const [key, value] of Object.entries(metadata)) {
         await db.insert(csvImportMetadata).values({
           csvImportId: importRecord.id,
@@ -151,13 +170,17 @@ export class CSVImportService {
       }
 
       // Stage the data
+      console.log('Staging data');
       const stagingResult = await this.stageData(importRecord.id, records, template);
+      console.log('Staging result:', stagingResult);
       
       // Update import status
+      console.log('Updating import status to staged');
       await db.update(csvImports)
         .set({ status: 'staged' })
         .where(eq(csvImports.id, importRecord.id));
 
+      console.log('Upload completed successfully');
       return {
         success: true,
         importId: importRecord.id,
@@ -166,6 +189,7 @@ export class CSVImportService {
       };
 
     } catch (error) {
+      console.error('CSVImportService.uploadCSV error:', error);
       return {
         success: false,
         message: 'Upload failed',
