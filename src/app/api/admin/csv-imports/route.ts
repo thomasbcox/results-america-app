@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { CSVImportService } from '@/lib/services/csvImportService';
 import { createSuccessResponse, createErrorResponse } from '@/lib/response';
+import { ServiceError } from '@/lib/errors';
 
 export async function GET(request: NextRequest) {
   try {
@@ -13,6 +14,6 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('Error fetching import history:', error);
-    return createErrorResponse('Failed to fetch import history', 500);
+    return createErrorResponse(new ServiceError('Failed to fetch import history', 'FETCH_ERROR', 500));
   }
 } 

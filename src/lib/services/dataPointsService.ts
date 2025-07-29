@@ -1,4 +1,4 @@
-import { db } from '../db/index';
+import { getDb } from '../db/index';
 import { dataPoints, states, statistics, categories, dataSources, importSessions } from '../db/schema-postgres';
 import { eq, and, inArray } from 'drizzle-orm';
 import type { 
@@ -10,6 +10,7 @@ import type {
 
 export class DataPointsService {
   static async getDataPointsForState(stateId: number, year?: number): Promise<DataPointData[]> {
+    const db = getDb();
     const conditions = [eq(dataPoints.stateId, stateId)];
     if (year) {
       conditions.push(eq(dataPoints.year, year));
@@ -43,6 +44,7 @@ export class DataPointsService {
   }
 
   static async getDataPointsForStatistic(statisticId: number, year?: number): Promise<DataPointData[]> {
+    const db = getDb();
     const conditions = [eq(dataPoints.statisticId, statisticId)];
     if (year) {
       conditions.push(eq(dataPoints.year, year));
@@ -77,6 +79,7 @@ export class DataPointsService {
   }
 
   static async getDataPointsForComparison(stateIds: number[], statisticIds: number[], year: number): Promise<DataPointData[]> {
+    const db = getDb();
     const results = await db.select({
       id: dataPoints.id,
       statisticId: dataPoints.statisticId,
@@ -111,11 +114,13 @@ export class DataPointsService {
   }
 
   static async createDataPoint(data: CreateDataPointInput): Promise<DataPointData> {
+    const db = getDb();
     const [dataPoint] = await db.insert(dataPoints).values(data).returning();
     return dataPoint;
   }
 
   static async updateDataPoint(id: number, data: UpdateDataPointInput): Promise<DataPointData> {
+    const db = getDb();
     const [dataPoint] = await db.update(dataPoints).set(data).where(eq(dataPoints.id, id)).returning();
     if (!dataPoint) {
       throw new Error(`Data point with id ${id} not found`);
@@ -124,6 +129,7 @@ export class DataPointsService {
   }
 
   static async deleteDataPoint(id: number): Promise<boolean> {
+    const db = getDb();
     const result = await db.delete(dataPoints).where(eq(dataPoints.id, id)).returning();
     return result.length > 0;
   }

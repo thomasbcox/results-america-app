@@ -1,4 +1,4 @@
-import { db } from '../db';
+import { getDb } from '../db';
 import { users, sessions, magicLinks } from '../db/schema-postgres';
 import { eq, and, lt, gt, sql } from 'drizzle-orm';
 import { randomBytes, randomUUID } from 'crypto';
@@ -17,6 +17,7 @@ export class AuthService {
    * Create a magic link for email authentication
    */
   static async createMagicLink(email: string): Promise<{ token: string; expiresAt: Date }> {
+    const db = getDb();
     // Clean up expired magic links
     await this.cleanupExpiredMagicLinks();
 
@@ -55,6 +56,7 @@ export class AuthService {
    * Verify and consume a magic link
    */
   static async verifyMagicLink(token: string): Promise<User> {
+    const db = getDb();
     const magicLink = await db
       .select()
       .from(magicLinks)
@@ -120,6 +122,7 @@ export class AuthService {
    * Create a session for a user
    */
   static async createSession(userId: number): Promise<Session> {
+    const db = getDb();
     const token = randomUUID();
     const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
 
@@ -149,6 +152,7 @@ export class AuthService {
    * Get user by session token
    */
   static async getUserBySession(token: string): Promise<User | null> {
+    const db = getDb();
     const session = await db
       .select({
         session: sessions,
@@ -181,6 +185,7 @@ export class AuthService {
    * Delete a session (logout)
    */
   static async deleteSession(token: string): Promise<void> {
+    const db = getDb();
     await db
       .delete(sessions)
       .where(eq(sessions.token, token));
@@ -190,6 +195,7 @@ export class AuthService {
    * Clean up expired magic links
    */
   private static async cleanupExpiredMagicLinks(): Promise<void> {
+    const db = getDb();
     try {
       const now = new Date().toISOString();
       await db
@@ -210,6 +216,7 @@ export class AuthService {
    * Clean up expired sessions
    */
   static async cleanupExpiredSessions(): Promise<void> {
+    const db = getDb();
     await db
       .delete(sessions)
       .where(lt(sessions.expiresAt, new Date()));
@@ -219,6 +226,7 @@ export class AuthService {
    * Get user by ID
    */
   static async getUserById(id: number): Promise<User | null> {
+    const db = getDb();
     const user = await db
       .select()
       .from(users)
@@ -237,6 +245,7 @@ export class AuthService {
    * Get user by email
    */
   static async getUserByEmail(email: string): Promise<User | null> {
+    const db = getDb();
     const user = await db
       .select()
       .from(users)
@@ -255,6 +264,7 @@ export class AuthService {
    * Update user profile
    */
   static async updateUser(id: number, updates: Partial<Pick<User, 'name' | 'email'>>): Promise<User> {
+    const db = getDb();
     const [user] = await db
       .update(users)
       .set({
@@ -276,6 +286,7 @@ export class AuthService {
    * Promote user to admin (admin only)
    */
   static async promoteToAdmin(userId: number): Promise<User> {
+    const db = getDb();
     const [user] = await db
       .update(users)
       .set({
@@ -297,6 +308,7 @@ export class AuthService {
    * Deactivate user (admin only)
    */
   static async deactivateUser(userId: number): Promise<User> {
+    const db = getDb();
     const [user] = await db
       .update(users)
       .set({

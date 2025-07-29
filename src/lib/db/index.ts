@@ -41,38 +41,70 @@ const getDatabaseConfig = () => {
   }
 };
 
-// Create database connection based on type
-let db: any;
+// Lazy database connection
+let databaseInstance: any = null;
+let dbInitialized = false;
 
-try {
-  const dbConfig = getDatabaseConfig();
-  
-  if (dbConfig.type === 'sqlite') {
-    // SQLite for tests
-    const sqlite = new Database(dbConfig.path);
-    db = drizzle(sqlite, { schema: sqliteSchema });
-    console.log(`✅ SQLite database connected: ${dbConfig.description}`);
-  } else {
-    // PostgreSQL for dev/prod
-    if (!dbConfig.url) {
-      throw new Error('DATABASE_URL environment variable is required for PostgreSQL');
+const initializeDatabase = () => {
+  if (dbInitialized) {
+    return databaseInstance;
+  }
+
+  try {
+    const dbConfig = getDatabaseConfig();
+    
+    if (dbConfig.type === 'sqlite') {
+      // SQLite for tests
+      const sqlite = new Database(dbConfig.path);
+      databaseInstance = drizzle(sqlite, { schema: sqliteSchema });
+      console.log(`✅ SQLite database connected: ${dbConfig.description}`);
+    } else {
+      // PostgreSQL for dev/prod
+      if (!dbConfig.url) {
+        // In build mode, don't throw error, just return null
+        if (process.env.NODE_ENV === 'production' && !process.env.DATABASE_URL) {
+          console.warn('⚠️ DATABASE_URL not set during build - database will be initialized at runtime');
+          databaseInstance = null;
+          dbInitialized = true;
+          return databaseInstance;
+        }
+        throw new Error('DATABASE_URL environment variable is required for PostgreSQL');
+      }
+      
+      const client = postgres(dbConfig.url, {
+        max: 1, // Use connection pooling
+        ssl: 'require', // Neon requires SSL
+      });
+      
+      databaseInstance = drizzlePostgres(client, { schema: postgresSchema });
+      console.log(`✅ PostgreSQL database connected: ${dbConfig.description}`);
     }
     
-    const client = postgres(dbConfig.url, {
-      max: 1, // Use connection pooling
-      ssl: 'require', // Neon requires SSL
-    });
-    
-    db = drizzlePostgres(client, { schema: postgresSchema });
-    console.log(`✅ PostgreSQL database connected: ${dbConfig.description}`);
+    dbInitialized = true;
+    return databaseInstance;
+  } catch (error) {
+    console.error(`❌ Failed to connect to database`, error);
+    // In build mode, don't throw error
+    if (process.env.NODE_ENV === 'production' && !process.env.DATABASE_URL) {
+      console.warn('⚠️ Database connection failed during build - will retry at runtime');
+      databaseInstance = null;
+      dbInitialized = true;
+      return databaseInstance;
+    }
+    throw new Error(`Database connection failed: ${error}`);
   }
-} catch (error) {
-  console.error(`❌ Failed to connect to database`, error);
-  throw new Error(`Database connection failed: ${error}`);
-}
+};
 
-// Export the database instance
-export { db };
+// Export a function that gets the database instance
+export const getDb = () => {
+  if (!dbInitialized) {
+    return initializeDatabase();
+  }
+  return databaseInstance;
+};
+
+// For backward compatibility, export db as a getter function
+export const db = getDb;
 
 // Export schemas for migrations
 export { sqliteSchema, postgresSchema }; 

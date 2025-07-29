@@ -1,10 +1,10 @@
 #!/usr/bin/env tsx
 
-import { db } from '../src/lib/db';
+import { getDb } from '../src/lib/db';
 import { users } from '../src/lib/db/schema-postgres';
 
 async function checkUsers() {
-  console.log('👥 Checking users in database...');
+  const db = getDb();  console.log('👥 Checking users in database...');
   
   try {
     const allUsers = await db.select().from(users);

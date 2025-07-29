@@ -1,12 +1,12 @@
 #!/usr/bin/env tsx
 
 import { SimpleCSVImportService } from '../src/lib/services/simpleCSVImportService';
-import { db } from '../src/lib/db';
+import { getDb } from '../src/lib/db';
 import { csvImports, csvImportStaging, dataPoints } from '../src/lib/db/schema-postgres';
 import { eq } from 'drizzle-orm';
 
 async function testSimpleCSVImport() {
-  console.log('🧪 Testing Simplified CSV Import System...\n');
+  const db = getDb();  console.log('🧪 Testing Simplified CSV Import System...\n');
 
   try {
     // Test 1: Get templates
@@ -131,7 +131,7 @@ Illinois,2023,${900000 + timestamp % 1000}`;
         .where(eq(csvImportStaging.csvImportId, importRecord.id));
       console.log(`     Staged rows: ${stagedData.length}`);
       
-      const validStaged = stagedData.filter(row => row.validationStatus === 'valid');
+      const validStaged = stagedData.filter((row: any) => row.validationStatus === 'valid');
       console.log(`     Valid rows: ${validStaged.length}`);
     }
 

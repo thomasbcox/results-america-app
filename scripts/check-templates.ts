@@ -1,10 +1,10 @@
 #!/usr/bin/env tsx
 
-import { db } from '../src/lib/db/index';
+import { getDb } from '../src/lib/db/index';
 import { csvImportTemplates } from '../src/lib/db/schema-postgres';
 
 async function checkTemplates() {
-  console.log('🔍 Checking CSV templates in database...');
+  const db = getDb();  console.log('🔍 Checking CSV templates in database...');
 
   try {
     const templates = await db.select().from(csvImportTemplates);

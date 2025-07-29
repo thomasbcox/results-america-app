@@ -1,4 +1,4 @@
-import { db } from '../db';
+import { getDb } from '../db';
 import { statistics } from '../db/schema';
 import { eq } from 'drizzle-orm';
 import { ValidationError, NotFoundError } from '../errors';
@@ -6,6 +6,7 @@ import type { IStatisticsManagementService, UpdateStatisticData, StatisticData }
 
 export class StatisticsManagementService {
   static async updateStatistic(id: number, data: UpdateStatisticData) {
+    const db = getDb();
     // Validate data quality
     if (data.dataQuality && !['mock', 'real'].includes(data.dataQuality)) {
       throw new ValidationError('Data quality must be either "mock" or "real"');
@@ -32,6 +33,7 @@ export class StatisticsManagementService {
   }
 
   static async getStatistic(id: number) {
+    const db = getDb();
     const [statistic] = await db.select().from(statistics)
       .where(eq(statistics.id, id))
       .limit(1);

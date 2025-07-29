@@ -2,6 +2,12 @@
 
 ## **ENFORCE THIS SEQUENCE IN EVERY DEBUGGING SESSION**
 
+### **0. KEY PRINCIPLES**
+1. Only change tables when absolutely needed and the human approves the change. Tables should change extremely rarely.
+1. When there's a problem between a database table and a service layer, change the service layer to fit the tables.
+1. When there's a problem between a service layer and an API, verify the service layer is implemented correctly for its tables, and then change the API to fit the service layer.
+1. When there's a problem between front end code and an API, change the front end code to fit the API, not the other way around. 
+
 ### **1. DATABASE LAYER** 🔍
 ```bash
 curl -X GET http://localhost:3050/api/states | jq '.success, (.data | length)'
@@ -9,6 +15,7 @@ curl -X GET http://localhost:3050/api/states | jq '.success, (.data | length)'
 - [ ] Database connection working?
 - [ ] Correct schema imported for environment?
 - [ ] Table structure matches expectations?
+- [ ] Tables are in 3rd Normal Form?
 
 ### **2. SERVICE LAYER** ⚙️
 ```bash

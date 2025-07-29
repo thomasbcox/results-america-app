@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { CSVImportService } from '@/lib/services/csvImportService';
-import { createSuccessResponse, createErrorResponse } from '@/lib/response';
+import { createSuccessResponse, createErrorResponse, createBadRequestResponse } from '@/lib/response';
+import { ServiceError } from '@/lib/errors';
 
 export async function POST(
   request: NextRequest,
@@ -11,7 +12,7 @@ export async function POST(
     const importId = parseInt(id);
 
     if (isNaN(importId)) {
-      return createErrorResponse('Invalid import ID', 400);
+      return createBadRequestResponse('Invalid import ID');
     }
 
     const result = await CSVImportService.validateImport(importId);
@@ -22,15 +23,11 @@ export async function POST(
         warnings: result.warnings
       }, 'Validation completed successfully');
     } else {
-      return createErrorResponse('Validation failed', 400, {
-        errors: result.errors,
-        warnings: result.warnings,
-        stats: result.stats
-      });
+      return createBadRequestResponse('Validation failed');
     }
 
   } catch (error) {
     console.error('Validation error:', error);
-    return createErrorResponse('Validation failed', 500);
+    return createErrorResponse(new ServiceError('Validation failed', 'VALIDATION_ERROR', 500));
   }
 } 

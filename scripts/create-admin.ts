@@ -1,9 +1,9 @@
-import { db } from '../src/lib/db';
+import { getDb } from '../src/lib/db';
 import { users } from '../src/lib/db/schema';
 import { AuthService } from '../src/lib/services/authService';
 
 async function createAdmin() {
-  const email = process.argv[2];
+  const db = getDb();  const email = process.argv[2];
   
   if (!email) {
     console.error('Please provide an email address: npm run create-admin <email>');

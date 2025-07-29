@@ -1,13 +1,13 @@
 #!/usr/bin/env tsx
 
-import { db } from '../src/lib/db';
+import { getDb } from '../src/lib/db';
 import { dataPoints, statistics, nationalAverages } from '../src/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { importBEAGDPData, importBLSEmploymentData, importCensusPopulationData } from '../src/lib/services/externalDataService';
 import { NationalAverageService } from '../src/lib/services/aggregationService';
 
 async function testExternalDataImport() {
-  console.log('🧪 Testing External Data Import System...\n');
+  const db = getDb();  console.log('🧪 Testing External Data Import System...\n');
 
   try {
     // Test 1: Import BEA GDP Data

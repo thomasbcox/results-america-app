@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth, AuthenticatedRequest } from '@/lib/middleware/auth';
 import { SimpleCSVImportService } from '@/lib/services/simpleCSVImportService';
 import { createSuccessResponse, createErrorResponse } from '@/lib/response';
+import { ServiceError } from '@/lib/errors';
 
 export async function GET(request: AuthenticatedRequest) {
   return withAdminAuth(request, async (req) => {
@@ -13,7 +14,7 @@ export async function GET(request: AuthenticatedRequest) {
       return createSuccessResponse(templates, 'Templates retrieved successfully');
     } catch (error) {
       console.error('Error getting templates:', error);
-      return createErrorResponse('Failed to get templates', 500);
+      return createErrorResponse(new ServiceError('Failed to get templates', 'FETCH_ERROR', 500));
     }
   });
 } 

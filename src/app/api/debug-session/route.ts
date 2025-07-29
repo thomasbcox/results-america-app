@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
     const cookies = request.cookies.getAll();
     const sessionToken = request.cookies.get('session_token')?.value;
     
-    const debugInfo = {
+    const debugInfo: any = {
       cookies: cookies.map(c => ({ name: c.name, value: c.value })),
       sessionToken: sessionToken || 'not found',
       hasSessionToken: !!sessionToken,
@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
         const userData = await response.json();
         debugInfo.userData = userData;
       } catch (error) {
-        debugInfo.userDataError = error.message;
+        debugInfo.userDataError = error instanceof Error ? error.message : 'Unknown error';
       }
     }
 

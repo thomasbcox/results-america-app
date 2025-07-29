@@ -151,8 +151,7 @@ export const csvImports = pgTable('csv_imports', {
   filename: text('filename').notNull(), // Original uploaded filename
   fileSize: integer('file_size').notNull(), // File size in bytes
   fileHash: text('file_hash').notNull(), // SHA256 hash for deduplication
-  duplicateOf: integer('duplicate_of').references(() => csvImports.id), // Points to original import if this is a duplicate
-  status: text('status', { enum: ['uploaded', 'validating', 'validated', 'staged', 'publishing', 'published', 'failed'] }).notNull().default('uploaded'),
+  status: text('status', { enum: ['uploaded', 'validating', 'validation_failed', 'importing', 'imported', 'failed'] }).notNull().default('uploaded'),
   uploadedBy: integer('uploaded_by').notNull().references(() => users.id),
   uploadedAt: timestamp('uploaded_at').notNull().default(sql`CURRENT_TIMESTAMP`),
   validatedAt: timestamp('validated_at'),
@@ -160,6 +159,39 @@ export const csvImports = pgTable('csv_imports', {
   errorMessage: text('error_message'), // Error details if import failed
   metadata: text('metadata'), // JSON string with import metadata
   isActive: integer('is_active').default(1),
+  duplicateOf: integer('duplicate_of'), // Points to original import if this is a duplicate
+  totalRows: integer('total_rows'),
+  validRows: integer('valid_rows'),
+  errorRows: integer('error_rows'),
+  processingTimeMs: integer('processing_time_ms'),
+});
+
+export const importLogs = pgTable('import_logs', {
+  id: serial('id').primaryKey(),
+  csvImportId: integer('csv_import_id').notNull().references(() => csvImports.id),
+  logLevel: text('log_level', { enum: ['info', 'validation_error', 'system_error'] }).notNull(),
+  rowNumber: integer('row_number'), // CSV row number (1-based)
+  fieldName: text('field_name'), // Which field had the problem
+  fieldValue: text('field_value'), // The problematic value
+  expectedValue: text('expected_value'), // What it should have been
+  failureCategory: text('failure_category', { 
+    enum: ['missing_required', 'invalid_reference', 'data_type', 'business_rule', 'database_error', 'csv_parsing']
+  }).notNull(),
+  message: text('message').notNull(),
+  details: text('details'), // JSON string with additional context
+  timestamp: timestamp('timestamp').notNull().default(sql`CURRENT_TIMESTAMP`),
+});
+
+export const importValidationSummary = pgTable('import_validation_summary', {
+  id: serial('id').primaryKey(),
+  csvImportId: integer('csv_import_id').notNull().references(() => csvImports.id),
+  totalRows: integer('total_rows').notNull(),
+  validRows: integer('valid_rows').notNull(),
+  errorRows: integer('error_rows').notNull(),
+  failureBreakdown: text('failure_breakdown'), // JSON: { "missing_required": 15, "invalid_reference": 8, ... }
+  validationTimeMs: integer('validation_time_ms'),
+  status: text('status', { enum: ['validated_failed', 'validated_passed', 'imported_success', 'imported_failed'] }).notNull(),
+  completedAt: timestamp('completed_at').notNull().default(sql`CURRENT_TIMESTAMP`),
 });
 
 export const csvImportMetadata = pgTable('csv_import_metadata', {

@@ -1,10 +1,10 @@
 #!/usr/bin/env tsx
 
-import { db } from '../src/lib/db';
+import { getDb } from '../src/lib/db';
 import { categories, statistics } from '../src/lib/db/schema-postgres';
 
 async function checkCategoriesAndStats() {
-  console.log('📊 Checking categories and statistics...');
+  const db = getDb();  console.log('📊 Checking categories and statistics...');
   
   try {
     const allCategories = await db.select().from(categories);

@@ -1,10 +1,10 @@
-import { db } from '../db/index';
+import { getDb } from '../db/index';
 import { statistics, dataPoints, categories, dataSources } from '../db/schema';
 import { eq, and, count } from 'drizzle-orm';
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 
 // Check if a specific statistic has data points
-export async function hasDataForStatistic(statisticId: number, database = db) {
+export async function hasDataForStatistic(statisticId: number, database = getDb()) {
   const result = await database
     .select({ count: count() })
     .from(dataPoints)
@@ -14,7 +14,7 @@ export async function hasDataForStatistic(statisticId: number, database = db) {
 }
 
 // Get all statistics that have data
-export async function getStatisticsWithData(database = db) {
+export async function getStatisticsWithData(database = getDb()) {
   const result = await database
     .select({ statisticId: dataPoints.statisticId })
     .from(dataPoints)
@@ -30,7 +30,7 @@ export async function getStatisticsWithData(database = db) {
 }
 
 // Get categories that have statistics with data
-export async function getCategoriesWithData(database = db) {
+export async function getCategoriesWithData(database = getDb()) {
   const statisticsWithData = await getStatisticsWithData(database);
   
   if (statisticsWithData.length === 0) return [];
@@ -65,13 +65,13 @@ export async function getCategoriesWithData(database = db) {
 }
 
 // Check if a category has any statistics with data
-export async function hasDataForCategory(categoryName: string, database = db) {
+export async function hasDataForCategory(categoryName: string, database = getDb()) {
   const categoriesWithData = await getCategoriesWithData(database);
   return categoriesWithData.includes(categoryName);
 }
 
 // Get statistics for a category that have data
-export async function getStatisticsForCategoryWithData(categoryName: string, database = db) {
+export async function getStatisticsForCategoryWithData(categoryName: string, database = getDb()) {
   const statisticsWithData = await getStatisticsWithData(database);
   
   if (statisticsWithData.length === 0) return [];

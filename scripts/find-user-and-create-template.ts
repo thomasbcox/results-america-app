@@ -1,11 +1,11 @@
 #!/usr/bin/env tsx
 
-import { db } from '../src/lib/db/index';
+import { getDb } from '../src/lib/db/index';
 import { csvImportTemplates, categories, dataSources, users } from '../src/lib/db/schema-postgres';
 import { eq } from 'drizzle-orm';
 
 async function findUserAndCreateTemplate() {
-  console.log('🔍 Finding users and creating flexible template...');
+  const db = getDb();  console.log('🔍 Finding users and creating flexible template...');
 
   try {
     // Find all users
@@ -18,7 +18,7 @@ async function findUserAndCreateTemplate() {
     }
 
     // Use the first admin user, or the first user if no admin
-    const adminUser = allUsers.find(u => u.role === 'admin') || allUsers[0];
+    const adminUser = allUsers.find((u: any) => u.role === 'admin') || allUsers[0];
     console.log('👤 Using user:', { id: adminUser.id, email: adminUser.email, role: adminUser.role });
 
     // Get or create categories and data sources

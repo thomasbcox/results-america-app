@@ -1,4 +1,4 @@
-import { db } from '../db/index';
+import { getDb } from '../db/index';
 import { states } from '../db/schema-normalized';
 import { eq } from 'drizzle-orm';
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
@@ -18,6 +18,7 @@ import type {
 
 export class StatesService {
   static async getAllStates(useCache = true): Promise<StateData[]> {
+    const db = getDb();
     if (useCache) {
       try {
         const cached = cache.get<StateData[]>('states');
@@ -67,6 +68,7 @@ export class StatesService {
   }
 
   static async getStateById(id: number): Promise<StateData | null> {
+    const db = getDb();
     const result = await db.select().from(states).where(eq(states.id, id)).limit(1);
     if (result.length === 0) return null;
     
@@ -78,6 +80,7 @@ export class StatesService {
   }
 
   static async createState(data: CreateStateInput): Promise<StateData> {
+    const db = getDb();
     const [state] = await db.insert(states).values(data).returning();
     cache.delete('states'); // Invalidate cache
     return {
@@ -87,6 +90,7 @@ export class StatesService {
   }
 
   static async updateState(id: number, data: UpdateStateInput): Promise<StateData> {
+    const db = getDb();
     const [state] = await db.update(states).set(data).where(eq(states.id, id)).returning();
     if (!state) {
       throw new Error(`State with id ${id} not found`);
@@ -99,6 +103,7 @@ export class StatesService {
   }
 
   static async deleteState(id: number): Promise<boolean> {
+    const db = getDb();
     const result = await db.delete(states).where(eq(states.id, id)).returning();
     cache.delete('states'); // Invalidate cache
     return result.length > 0;

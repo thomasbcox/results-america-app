@@ -1,4 +1,4 @@
-import { db } from '../db/index';
+import { getDb } from '../db/index';
 import { 
   csvImports, 
   csvImportMetadata, 
@@ -91,6 +91,7 @@ export class CSVImportService {
     metadata: Record<string, any>,
     uploadedBy: number
   ): Promise<CSVImportResult> {
+    const db = getDb();
     try {
       console.log('CSVImportService.uploadCSV started');
       console.log('Parameters:', { templateId, metadata, uploadedBy });
@@ -187,8 +188,6 @@ export class CSVImportService {
             relax_column_count: true,
             relax_quotes: true,
             skip_records_with_error: true,
-            relax: true, // Most lenient option
-            skip_empty_lines: true,
             from_line: 1 // Start from first line
           });
           console.log('Fallback parsing succeeded:', { recordCount: records.length });
@@ -271,6 +270,7 @@ export class CSVImportService {
     records: any[],
     template: CSVImportTemplate
   ): Promise<{ success: boolean; stats: any }> {
+    const db = getDb();
     const stagedRows = [];
     let validRows = 0;
     let invalidRows = 0;
@@ -279,7 +279,7 @@ export class CSVImportService {
     // Get all states for matching
     const allStates = await db.select().from(states);
     const stateMap = new Map();
-    allStates.forEach(state => {
+    allStates.forEach((state: any) => {
       // Map full names
       stateMap.set(state.name.toLowerCase(), state.id);
       // Map abbreviations
@@ -321,10 +321,10 @@ export class CSVImportService {
         if (mappedData.categoryName) {
           const categoryMatch = this.findBestMatch(
             mappedData.categoryName.toLowerCase(),
-            allCategories.map(c => c.name.toLowerCase())
+            allCategories.map((c: any) => c.name.toLowerCase())
           );
           if (categoryMatch && categoryMatch.score > 0.7) {
-            const matchedCategory = allCategories.find(c => 
+            const matchedCategory = allCategories.find((c: any) => 
               c.name.toLowerCase() === categoryMatch.value
             );
             if (matchedCategory) {
@@ -338,10 +338,10 @@ export class CSVImportService {
           const measureName = (mappedData.statisticName || mappedData.measure).toLowerCase();
           const measureMatch = this.findBestMatch(
             measureName,
-            allStatistics.map(s => s.name.toLowerCase())
+            allStatistics.map((s: any) => s.name.toLowerCase())
           );
           if (measureMatch && measureMatch.score > 0.7) {
-            const matchedStatistic = allStatistics.find(s => 
+            const matchedStatistic = allStatistics.find((s: any) => 
               s.name.toLowerCase() === measureMatch.value
             );
             if (matchedStatistic) {
@@ -413,6 +413,7 @@ export class CSVImportService {
    * Validate staged data
    */
   static async validateImport(importId: number): Promise<CSVValidationResult> {
+    const db = getDb();
     console.log(`🔍 Starting validation for import ${importId}`);
     
     const stagedData = await db.select()
@@ -514,6 +515,7 @@ export class CSVImportService {
    * Publish validated data to the main dataPoints table
    */
   static async publishImport(importId: number): Promise<{ success: boolean; message: string; publishedRows: number }> {
+    const db = getDb();
     try {
       // Get import details
       const [importRecord] = await db.select()
@@ -550,8 +552,8 @@ export class CSVImportService {
 
       // Prepare data points
       const dataPointsToInsert = stagedData
-        .filter(row => row.stateId && row.statisticId && row.value !== null)
-        .map(row => ({
+        .filter((row: any) => row.stateId && row.statisticId && row.value !== null)
+        .map((row: any) => ({
           importSessionId: importSession.id,
           year: row.year || new Date().getFullYear(),
           stateId: row.stateId!,
@@ -599,12 +601,13 @@ export class CSVImportService {
    * Get import templates
    */
   static async getTemplates(): Promise<CSVImportTemplate[]> {
+    const db = getDb();
     const templates = await db.select()
       .from(csvImportTemplates)
       .where(eq(csvImportTemplates.isActive, 1))
       .orderBy(csvImportTemplates.name);
 
-    return templates.map(t => ({
+    return templates.map((t: any) => ({
       ...t,
       templateSchema: JSON.parse(t.templateSchema),
       validationRules: JSON.parse(t.validationRules)
@@ -615,6 +618,7 @@ export class CSVImportService {
    * Get template by ID
    */
   static async getTemplate(id: number): Promise<CSVImportTemplate | null> {
+    const db = getDb();
     const [template] = await db.select()
       .from(csvImportTemplates)
       .where(eq(csvImportTemplates.id, id));
@@ -632,6 +636,7 @@ export class CSVImportService {
    * Get import history
    */
   static async getImportHistory(limit = 50): Promise<any[]> {
+    const db = getDb();
     return await db.select({
       id: csvImports.id,
       name: csvImports.name,
@@ -658,6 +663,7 @@ export class CSVImportService {
    * Get import details with staging data
    */
   static async getImportDetails(importId: number): Promise<any> {
+    const db = getDb();
     const [importRecord] = await db.select()
       .from(csvImports)
       .where(eq(csvImports.id, importId));

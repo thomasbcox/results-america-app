@@ -174,7 +174,7 @@ export default function AdminUsersPage() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4">
                       <div>
-                        <h3 className="font-medium">{user.name}</h3>
+                        <h3 className="font-medium">{user.email.split('@')[0]}</h3>
                         <p className="text-sm text-gray-600">{user.email}</p>
                         <p className="text-xs text-gray-500">
                           Joined {new Date(user.createdAt).toLocaleDateString()}

@@ -1,4 +1,4 @@
-import { db } from '../db/index';
+import { getDb } from '../db/index';
 import { dataPoints, statistics, states } from '../db/schema-postgres';
 import { eq, desc, asc, and, inArray } from 'drizzle-orm';
 import { ValidationError, NotFoundError } from '../errors';
@@ -68,6 +68,7 @@ export class NationalAverageService {
   }
 
   static async getStoredNationalAverage(statisticId: number, year: number): Promise<{ value: number; stateCount: number } | null> {
+    const db = getDb();
     const result = await db.select({
       value: dataPoints.value,
       stateCount: dataPoints.stateId,
@@ -92,6 +93,7 @@ export class NationalAverageService {
   }
 
   static async computeAndStoreNationalAverage(statisticId: number, year: number): Promise<number> {
+    const db = getDb();
     const result = await db.select({
       value: dataPoints.value,
     })
@@ -112,6 +114,7 @@ export class NationalAverageService {
   }
 
   static async recalculateAllNationalAverages(year: number): Promise<void> {
+    const db = getDb();
     const statisticsList = await db.select({ id: statistics.id }).from(statistics);
     
     for (const stat of statisticsList) {
@@ -139,15 +142,8 @@ export class AggregationService {
   /**
    * Get statistic comparison data (national averages, rankings, etc.)
    */
-  static async getStatisticComparison(statisticId: number, year: number = 2023): Promise<{
-    states: string[];
-    values: number[];
-    average: number;
-    year: number;
-    statisticId: number;
-    statisticName: string;
-    unit: string;
-  }> {
+  static async getStatisticComparison(statisticId: number, year: number = 2023): Promise<ComparisonData> {
+    const db = getDb();
     // First, let's get the basic data points
     const dataPointsResult = await db.select({
       stateId: dataPoints.stateId,
@@ -185,22 +181,30 @@ export class AggregationService {
     }
 
     // Create a map of stateId to stateName
-    const stateMap = new Map(statesResult.map(s => [s.id, s.name]));
+    const stateMap = new Map(statesResult.map((s: any) => [s.id, s.name]));
     
     // Extract states and values arrays
-    const stateNames = dataPointsResult.map(dp => stateMap.get(dp.stateId) || 'Unknown').sort();
-    const values = dataPointsResult.map(dp => dp.value);
+    const stateNames = dataPointsResult.map((dp: any) => stateMap.get(dp.stateId) || 'Unknown').sort();
+    const values = dataPointsResult.map((dp: any) => dp.value);
     
-    // Calculate average
+    // Calculate statistics
     const average = values.reduce((sum: number, val: number) => sum + val, 0) / values.length;
+    const sortedValues = [...values].sort((a, b) => a - b);
+    const median = sortedValues.length % 2 === 0 
+      ? (sortedValues[sortedValues.length / 2 - 1] + sortedValues[sortedValues.length / 2]) / 2
+      : sortedValues[Math.floor(sortedValues.length / 2)];
+    const min = Math.min(...values);
+    const max = Math.max(...values);
 
     return {
-      states: stateNames,
-      values,
-      average,
-      year,
       statisticId,
       statisticName: statisticResult[0].name,
+      year,
+      average,
+      median,
+      min,
+      max,
+      stateCount: values.length,
       unit: statisticResult[0].unit,
     };
   }
@@ -209,6 +213,7 @@ export class AggregationService {
    * Get state comparison data (how a state ranks across all statistics)
    */
   static async getStateComparison(stateId: number, year: number = 2023): Promise<StateComparisonData> {
+    const db = getDb();
     // Validate state exists
     const state = await db.select({
       id: states.id,
@@ -278,6 +283,7 @@ export class AggregationService {
     year: number = 2023,
     order: 'asc' | 'desc' = 'desc'
   ): Promise<TopBottomPerformersData> {
+    const db = getDb();
     // Validate statistic exists
     const statistic = await db.select({
       id: statistics.id,
@@ -326,6 +332,7 @@ export class AggregationService {
    * Get trend data for a statistic and state over multiple years
    */
   static async getTrendData(statisticId: number, stateId: number): Promise<TrendData> {
+    const db = getDb();
     // Validate statistic and state exist
     const [statistic, state] = await Promise.all([
       db.select({ id: statistics.id, name: statistics.name })

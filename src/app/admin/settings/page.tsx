@@ -5,21 +5,31 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/toast";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
-import { Settings, Save, Database, Shield, Bell } from "lucide-react";
+import { Settings, Save, Database, Shield, Bell, Globe } from "lucide-react";
 
 export default function AdminSettingsPage() {
   const { addToast } = useToast();
   const { confirm } = useConfirmDialog();
+  const [loading, setLoading] = useState(false);
   const [settings, setSettings] = useState({
+    siteName: 'Results America',
+    siteDescription: 'Data-driven insights for state comparison',
     maintenanceMode: false,
     debugMode: false,
     emailNotifications: true,
-    dataRetentionDays: 365
+    dataRetentionDays: 365,
+    allowRegistrations: true,
+    requireEmailVerification: true,
+    maxFileUploadSize: 10,
+    enableNotifications: true,
+    enableAnalytics: false
   });
 
   const handleSave = async () => {
+    setLoading(true);
     try {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
@@ -35,6 +45,8 @@ export default function AdminSettingsPage() {
         title: 'Save Failed',
         message: 'Failed to save settings'
       });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -47,10 +59,17 @@ export default function AdminSettingsPage() {
       variant: 'warning',
       onConfirm: () => {
         setSettings({
+          siteName: 'Results America',
+          siteDescription: 'Data-driven insights for state comparison',
           maintenanceMode: false,
           debugMode: false,
           emailNotifications: true,
-          dataRetentionDays: 365
+          dataRetentionDays: 365,
+          allowRegistrations: true,
+          requireEmailVerification: true,
+          maxFileUploadSize: 10,
+          enableNotifications: true,
+          enableAnalytics: false
         });
         addToast({
           type: 'success',
@@ -230,7 +249,7 @@ export default function AdminSettingsPage() {
             Reset to Defaults
           </Button>
           <Button
-            onClick={handleSaveSettings}
+            onClick={handleSave}
             disabled={loading}
           >
             {loading ? 'Saving...' : 'Save Settings'}

@@ -1,4 +1,4 @@
-import { db } from '../db';
+import { getDb } from '../db';
 import { categories, dataSources, statistics, states, dataPoints, importSessions } from '../db/schema';
 import { eq } from 'drizzle-orm';
 import { ExternalDataImportSchema, ExternalDataQuerySchema } from '../validators';
@@ -67,6 +67,7 @@ export class ExternalDataService {
   }
 
   static async importData(params: ExternalDataImportType): Promise<ImportResult> {
+    const db = getDb();
     const { source, action } = params;
     if (action !== 'import') {
       throw new ValidationError('Only import action is supported');
@@ -93,6 +94,7 @@ export class ExternalDataService {
   }
 
   static async importBEAGDPData(): Promise<ImportJob> {
+    const db = getDb();
     const jobId = `bea-gdp-${Date.now()}`;
     const job: ImportJob = {
       id: jobId,
@@ -177,6 +179,7 @@ export class ExternalDataService {
   }
 
   static async importBLSEmploymentData(): Promise<ImportJob> {
+    const db = getDb();
     const jobId = `bls-employment-${Date.now()}`;
     const job: ImportJob = {
       id: jobId,
@@ -261,6 +264,7 @@ export class ExternalDataService {
   }
 
   static async importCensusPopulationData(): Promise<ImportJob> {
+    const db = getDb();
     const jobId = `census-population-${Date.now()}`;
     const job: ImportJob = {
       id: jobId,
@@ -350,6 +354,7 @@ export class ExternalDataService {
     icon: string;
     sortOrder: number;
   }) {
+    const db = getDb();
     const [category] = await db.insert(categories).values(data).onConflictDoNothing().returning();
     if (category) return category;
     
@@ -362,6 +367,7 @@ export class ExternalDataService {
     description: string;
     url: string;
   }) {
+    const db = getDb();
     const [dataSource] = await db.insert(dataSources).values(data).onConflictDoNothing().returning();
     if (dataSource) return dataSource;
     
@@ -380,6 +386,7 @@ export class ExternalDataService {
     dataQuality: 'mock' | 'real';
     provenance: string;
   }) {
+    const db = getDb();
     const [statistic] = await db.insert(statistics).values({
       ...data,
       isActive: 1,

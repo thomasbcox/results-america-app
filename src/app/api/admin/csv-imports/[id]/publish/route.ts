@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { CSVImportService } from '@/lib/services/csvImportService';
-import { createSuccessResponse, createErrorResponse } from '@/lib/response';
+import { createSuccessResponse, createErrorResponse, createBadRequestResponse } from '@/lib/response';
+import { ServiceError } from '@/lib/errors';
 
 export async function POST(
   request: NextRequest,
@@ -11,7 +12,7 @@ export async function POST(
     const importId = parseInt(id);
 
     if (isNaN(importId)) {
-      return createErrorResponse('Invalid import ID', 400);
+      return createBadRequestResponse('Invalid import ID');
     }
 
     const result = await CSVImportService.publishImport(importId);
@@ -21,11 +22,11 @@ export async function POST(
         publishedRows: result.publishedRows
       }, result.message);
     } else {
-      return createErrorResponse(result.message, 400);
+      return createBadRequestResponse(result.message);
     }
 
   } catch (error) {
     console.error('Publishing error:', error);
-    return createErrorResponse('Publishing failed', 500);
+    return createErrorResponse(new ServiceError('Publishing failed', 'PUBLISH_ERROR', 500));
   }
 } 

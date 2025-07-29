@@ -1,10 +1,10 @@
 #!/usr/bin/env tsx
 
-import { db } from '../src/lib/db/index';
+import { getDb } from '../src/lib/db/index';
 import { csvImports, csvImportStaging, csvImportMetadata } from '../src/lib/db/schema-postgres';
 
 async function checkImports() {
-  console.log('🔍 Checking CSV imports in database...');
+  const db = getDb();  console.log('🔍 Checking CSV imports in database...');
 
   try {
     // Check imports

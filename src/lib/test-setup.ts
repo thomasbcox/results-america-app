@@ -11,7 +11,7 @@ import { existsSync, unlinkSync } from 'fs';
 config({ path: '.env' });
 
 // Set test environment
-process.env.NODE_ENV = 'test';
+(process.env as any).NODE_ENV = 'test';
 
 // Mock console methods to reduce noise in tests
 global.console = {
@@ -110,7 +110,7 @@ export async function clearTestData() {
       await testDb.run('PRAGMA foreign_keys = ON');
     } catch (error) {
       // Ignore errors if tables don't exist yet
-      console.log('Tables not ready for clearing yet:', error.message);
+      console.log('Tables not ready for clearing yet:', error instanceof Error ? error.message : 'Unknown error');
     }
   }
 }
@@ -119,158 +119,168 @@ export async function setupTestDatabase() {
   const db = createFreshTestDb();
   sharedTestDb = db; // Set the shared instance
   
-  // Create tables using Drizzle schema
-  await db.run(`
-    CREATE TABLE IF NOT EXISTS states (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL UNIQUE,
-      abbreviation TEXT NOT NULL UNIQUE,
-      is_active INTEGER DEFAULT 1
-    )
-  `);
-  
-  await db.run(`
-    CREATE TABLE IF NOT EXISTS categories (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL UNIQUE,
-      description TEXT,
-      icon TEXT,
-      sort_order INTEGER DEFAULT 0,
-      is_active INTEGER DEFAULT 1
-    )
-  `);
-  
-  await db.run(`
-    CREATE TABLE IF NOT EXISTS data_sources (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL UNIQUE,
-      description TEXT,
-      url TEXT,
-      is_active INTEGER DEFAULT 1
-    )
-  `);
-  
-  await db.run(`
-    CREATE TABLE IF NOT EXISTS statistics (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      ra_number TEXT,
-      category_id INTEGER NOT NULL,
-      data_source_id INTEGER,
-      name TEXT NOT NULL,
-      description TEXT,
-      sub_measure TEXT,
-      calculation TEXT,
-      unit TEXT NOT NULL,
-      available_since TEXT,
-      is_active INTEGER DEFAULT 1,
-      FOREIGN KEY (category_id) REFERENCES categories(id),
-      FOREIGN KEY (data_source_id) REFERENCES data_sources(id)
-    )
-  `);
-  
-  await db.run(`
-    CREATE TABLE IF NOT EXISTS import_sessions (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL,
-      description TEXT,
-      data_source_id INTEGER,
-      import_date TEXT DEFAULT CURRENT_TIMESTAMP,
-      data_year INTEGER,
-      record_count INTEGER,
-      is_active INTEGER DEFAULT 1,
-      FOREIGN KEY (data_source_id) REFERENCES data_sources(id)
-    )
-  `);
-  
-  await db.run(`
-    CREATE TABLE IF NOT EXISTS data_points (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      import_session_id INTEGER NOT NULL,
-      year INTEGER NOT NULL,
-      state_id INTEGER NOT NULL,
-      statistic_id INTEGER NOT NULL,
-      value REAL NOT NULL,
-      FOREIGN KEY (import_session_id) REFERENCES import_sessions(id),
-      FOREIGN KEY (state_id) REFERENCES states(id),
-      FOREIGN KEY (statistic_id) REFERENCES statistics(id)
-    )
-  `);
-  
-  await db.run(`
-    CREATE TABLE IF NOT EXISTS national_averages (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      statistic_id INTEGER NOT NULL,
-      year INTEGER NOT NULL,
-      value REAL NOT NULL,
-      calculation_method TEXT NOT NULL DEFAULT 'arithmetic_mean',
-      state_count INTEGER NOT NULL,
-      last_calculated INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
-      FOREIGN KEY (statistic_id) REFERENCES statistics(id),
-      UNIQUE(statistic_id, year)
-    )
-  `);
-  
-  await db.run(`
-    CREATE TABLE IF NOT EXISTS users (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      email TEXT NOT NULL UNIQUE,
-      name TEXT,
-      role TEXT NOT NULL DEFAULT 'user',
-      is_active INTEGER NOT NULL DEFAULT 1,
-      email_verified INTEGER NOT NULL DEFAULT 0,
-      created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
-      updated_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
-    )
-  `);
-  
-  await db.run(`
-    CREATE TABLE IF NOT EXISTS sessions (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      user_id INTEGER NOT NULL,
-      token TEXT NOT NULL UNIQUE,
-      expires_at INTEGER NOT NULL,
-      created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
-      FOREIGN KEY (user_id) REFERENCES users(id)
-    )
-  `);
-  
-  await db.run(`
-    CREATE TABLE IF NOT EXISTS magic_links (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      email TEXT NOT NULL,
-      token TEXT NOT NULL UNIQUE,
-      expires_at INTEGER NOT NULL,
-      used INTEGER NOT NULL DEFAULT 0,
-      created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
-    )
-  `);
-  
-  await db.run(`
-    CREATE TABLE IF NOT EXISTS user_favorites (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      user_id INTEGER NOT NULL,
-      statistic_id INTEGER NOT NULL,
-      created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
-      FOREIGN KEY (user_id) REFERENCES users(id),
-      FOREIGN KEY (statistic_id) REFERENCES statistics(id),
-      UNIQUE(user_id, statistic_id)
-    )
-  `);
-  
-  await db.run(`
-    CREATE TABLE IF NOT EXISTS user_suggestions (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      user_id INTEGER NOT NULL,
-      title TEXT NOT NULL,
-      description TEXT NOT NULL,
-      category TEXT,
-      status TEXT NOT NULL DEFAULT 'pending',
-      admin_notes TEXT,
-      created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
-      updated_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
-      FOREIGN KEY (user_id) REFERENCES users(id)
-    )
-  `);
+  // Run SQLite-specific migrations
+  try {
+    await migrate(db, { migrationsFolder: './drizzle-sqlite' });
+    console.log('✅ SQLite migrations applied successfully');
+  } catch (error) {
+    console.log('Migration failed, creating tables manually:', error instanceof Error ? error.message : 'Unknown error');
+    
+    // Fallback: Create tables manually using Drizzle schema
+    await db.run(`
+      CREATE TABLE IF NOT EXISTS states (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL UNIQUE,
+        abbreviation TEXT NOT NULL UNIQUE,
+        is_active INTEGER DEFAULT 1
+      )
+    `);
+    
+    await db.run(`
+      CREATE TABLE IF NOT EXISTS categories (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL UNIQUE,
+        description TEXT,
+        icon TEXT,
+        sort_order INTEGER DEFAULT 0,
+        is_active INTEGER DEFAULT 1
+      )
+    `);
+    
+    await db.run(`
+      CREATE TABLE IF NOT EXISTS data_sources (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL UNIQUE,
+        description TEXT,
+        url TEXT,
+        is_active INTEGER DEFAULT 1
+      )
+    `);
+    
+    await db.run(`
+      CREATE TABLE IF NOT EXISTS statistics (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        ra_number TEXT,
+        category_id INTEGER NOT NULL,
+        data_source_id INTEGER,
+        name TEXT NOT NULL,
+        description TEXT,
+        sub_measure TEXT,
+        calculation TEXT,
+        unit TEXT NOT NULL,
+        available_since TEXT,
+        data_quality TEXT DEFAULT 'mock',
+        provenance TEXT,
+        is_active INTEGER DEFAULT 1,
+        FOREIGN KEY (category_id) REFERENCES categories(id),
+        FOREIGN KEY (data_source_id) REFERENCES data_sources(id)
+      )
+    `);
+    
+    await db.run(`
+      CREATE TABLE IF NOT EXISTS import_sessions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        description TEXT,
+        data_source_id INTEGER,
+        import_date TEXT DEFAULT CURRENT_TIMESTAMP,
+        data_year INTEGER,
+        record_count INTEGER,
+        is_active INTEGER DEFAULT 1,
+        FOREIGN KEY (data_source_id) REFERENCES data_sources(id)
+      )
+    `);
+    
+    await db.run(`
+      CREATE TABLE IF NOT EXISTS data_points (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        import_session_id INTEGER NOT NULL,
+        year INTEGER NOT NULL,
+        state_id INTEGER NOT NULL,
+        statistic_id INTEGER NOT NULL,
+        value REAL NOT NULL,
+        FOREIGN KEY (import_session_id) REFERENCES import_sessions(id),
+        FOREIGN KEY (state_id) REFERENCES states(id),
+        FOREIGN KEY (statistic_id) REFERENCES statistics(id)
+      )
+    `);
+    
+    await db.run(`
+      CREATE TABLE IF NOT EXISTS national_averages (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        statistic_id INTEGER NOT NULL,
+        year INTEGER NOT NULL,
+        value REAL NOT NULL,
+        calculation_method TEXT NOT NULL DEFAULT 'arithmetic_mean',
+        state_count INTEGER NOT NULL,
+        last_calculated INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
+        FOREIGN KEY (statistic_id) REFERENCES statistics(id),
+        UNIQUE(statistic_id, year)
+      )
+    `);
+    
+    await db.run(`
+      CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        email TEXT NOT NULL UNIQUE,
+        name TEXT,
+        role TEXT NOT NULL DEFAULT 'user',
+        is_active INTEGER NOT NULL DEFAULT 1,
+        email_verified INTEGER NOT NULL DEFAULT 0,
+        created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
+        updated_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
+      )
+    `);
+    
+    await db.run(`
+      CREATE TABLE IF NOT EXISTS sessions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        token TEXT NOT NULL UNIQUE,
+        expires_at INTEGER NOT NULL,
+        created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
+        FOREIGN KEY (user_id) REFERENCES users(id)
+      )
+    `);
+    
+    await db.run(`
+      CREATE TABLE IF NOT EXISTS magic_links (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        email TEXT NOT NULL,
+        token TEXT NOT NULL UNIQUE,
+        expires_at INTEGER NOT NULL,
+        used INTEGER NOT NULL DEFAULT 0,
+        created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
+      )
+    `);
+    
+    await db.run(`
+      CREATE TABLE IF NOT EXISTS user_favorites (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        statistic_id INTEGER NOT NULL,
+        created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
+        FOREIGN KEY (user_id) REFERENCES users(id),
+        FOREIGN KEY (statistic_id) REFERENCES statistics(id),
+        UNIQUE(user_id, statistic_id)
+      )
+    `);
+    
+    await db.run(`
+      CREATE TABLE IF NOT EXISTS user_suggestions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        title TEXT NOT NULL,
+        description TEXT NOT NULL,
+        category TEXT,
+        status TEXT NOT NULL DEFAULT 'pending',
+        admin_notes TEXT,
+        created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
+        updated_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
+        FOREIGN KEY (user_id) REFERENCES users(id)
+      )
+    `);
+  }
   
   return db;
 }

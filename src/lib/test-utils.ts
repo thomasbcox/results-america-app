@@ -1,7 +1,7 @@
 // Simple Test Factory Functions
 // Following the ideal pattern from the programming guide - no complex builders
 
-import { db } from './db';
+import { getDb } from './db';
 import { 
   states,
   categories,
@@ -33,6 +33,7 @@ export const createTestStateData = (overrides: Partial<CreateStateInput> = {}): 
 });
 
 export const insertTestState = async (data: CreateStateInput): Promise<StateData> => {
+  const db = getDb();
   const [state] = await db.insert(states).values(data).returning();
   return {
     ...state,
@@ -58,6 +59,7 @@ export const createTestCategoryData = (overrides: Partial<CreateCategoryInput> =
 });
 
 export const insertTestCategory = async (data: CreateCategoryInput): Promise<CategoryData> => {
+  const db = getDb();
   const [category] = await db.insert(categories).values(data).returning();
   return {
     ...category,
@@ -83,6 +85,7 @@ export const createTestDataSourceData = (overrides: Partial<{ name: string; desc
 });
 
 export const insertTestDataSource = async (data: { name: string; description?: string; url?: string }): Promise<any> => {
+  const db = getDb();
   const [dataSource] = await db.insert(dataSources).values(data).returning();
   return dataSource;
 };
@@ -108,6 +111,7 @@ export const createTestStatisticData = (overrides: Partial<CreateStatisticInput>
 });
 
 export const insertTestStatistic = async (data: CreateStatisticInput): Promise<StatisticData> => {
+  const db = getDb();
   const [statistic] = await db.insert(statistics).values(data).returning();
   return {
     ...statistic,
@@ -135,6 +139,7 @@ export const createTestDataPointData = (overrides: Partial<CreateDataPointInput>
 });
 
 export const insertTestDataPoint = async (data: CreateDataPointInput): Promise<DataPointData> => {
+  const db = getDb();
   const [dataPoint] = await db.insert(dataPoints).values(data).returning();
   return dataPoint;
 };
@@ -177,6 +182,7 @@ export const createTestStateWithData = async (overrides: {
 // ============================================================================
 
 export const cleanup = async () => {
+  const db = getDb();
   // Clean up in reverse dependency order
   await db.delete(dataPoints);
   await db.delete(importSessions);
@@ -187,6 +193,7 @@ export const cleanup = async () => {
 };
 
 export const cleanupData = async () => {
+  const db = getDb();
   // Clean up only data, keep foundation data
   await db.delete(dataPoints);
   await db.delete(importSessions);

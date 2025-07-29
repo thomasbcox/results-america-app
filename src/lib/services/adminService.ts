@@ -1,4 +1,4 @@
-import { db } from '../db';
+import { getDb } from '../db';
 import { users, userSuggestions, userFavorites, statistics, categories, dataPoints } from '../db/schema';
 import { eq, and, desc, count, sql } from 'drizzle-orm';
 import { ServiceError, NotFoundError } from '../errors';
@@ -9,6 +9,7 @@ export class AdminService {
    * Get system statistics
    */
   static async getSystemStats() {
+    const db = getDb();
     const [
       userCount,
       activeUserCount,
@@ -51,6 +52,7 @@ export class AdminService {
    * Get all users with pagination
    */
   static async getUsers(page: number = 1, limit: number = 20) {
+    const db = getDb();
     const offset = (page - 1) * limit;
 
     const [usersList, totalCount] = await Promise.all([
@@ -80,6 +82,7 @@ export class AdminService {
    * Get user by ID with additional data
    */
   static async getUserDetails(userId: number) {
+    const db = getDb();
     const user = await db
       .select()
       .from(users)
@@ -115,6 +118,7 @@ export class AdminService {
    * Update user role
    */
   static async updateUserRole(userId: number, role: 'user' | 'admin'): Promise<User> {
+    const db = getDb();
     const [user] = await db
       .update(users)
       .set({
@@ -140,6 +144,7 @@ export class AdminService {
    * Toggle user active status
    */
   static async toggleUserStatus(userId: number): Promise<User> {
+    const db = getDb();
     const user = await db
       .select()
       .from(users)
@@ -171,6 +176,7 @@ export class AdminService {
    * Get all suggestions with pagination
    */
   static async getSuggestions(page: number = 1, limit: number = 20, status?: string) {
+    const db = getDb();
     const offset = (page - 1) * limit;
 
     const suggestions = status 
@@ -202,6 +208,7 @@ export class AdminService {
     status: string,
     adminNotes?: string
   ): Promise<void> {
+    const db = getDb();
     const result = await db
       .update(userSuggestions)
       .set({
@@ -220,6 +227,7 @@ export class AdminService {
    * Get suggestion statistics
    */
   static async getSuggestionStats() {
+    const db = getDb();
     const stats = await db
       .select({
         status: userSuggestions.status,
@@ -238,6 +246,7 @@ export class AdminService {
    * Get recent activity
    */
   static async getRecentActivity(limit: number = 10) {
+    const db = getDb();
     // This would typically combine recent user registrations, suggestions, etc.
     // For now, return recent suggestions
     const recentSuggestions = await db
@@ -253,6 +262,7 @@ export class AdminService {
    * Get import details by ID
    */
   static async getImportDetails(importId: number) {
+    const db = getDb();
     // Import the CSV import tables
     const { csvImports, csvImportStaging, csvImportMetadata } = await import('../db/schema-postgres');
     
@@ -285,8 +295,8 @@ export class AdminService {
       import: import_,
       staging: {
         totalRecords: stagingData.length,
-        validRecords: stagingData.filter(record => record.validationStatus === 'valid').length,
-        invalidRecords: stagingData.filter(record => record.validationStatus === 'invalid').length,
+        validRecords: stagingData.filter((record: any) => record.validationStatus === 'valid').length,
+        invalidRecords: stagingData.filter((record: any) => record.validationStatus === 'invalid').length,
         sampleRecords: stagingData.slice(0, 5), // First 5 records as sample
       },
       metadata: metadata[0] || null,

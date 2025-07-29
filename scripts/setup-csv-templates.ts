@@ -1,11 +1,11 @@
 #!/usr/bin/env tsx
 
-import { db } from '../src/lib/db/index';
+import { getDb } from '../src/lib/db/index';
 import { csvImportTemplates, categories, dataSources } from '../src/lib/db/schema-postgres';
 import { eq } from 'drizzle-orm';
 
 async function setupCSVTemplates() {
-  console.log('📋 Setting up CSV import templates...');
+  const db = getDb();  console.log('📋 Setting up CSV import templates...');
 
   try {
     // Get or create categories and data sources

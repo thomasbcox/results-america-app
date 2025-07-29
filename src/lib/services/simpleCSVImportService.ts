@@ -1,4 +1,4 @@
-import { db } from '../db/index';
+import { getDb } from '../db/index';
 import { 
   csvImports, 
   csvImportMetadata, 
@@ -43,6 +43,7 @@ export class SimpleCSVImportService {
    * Get the two available templates
    */
   static async getTemplates(): Promise<SimpleCSVTemplate[]> {
+    const db = getDb();
     // Create templates if they don't exist
     await this.ensureTemplates();
     
@@ -51,7 +52,7 @@ export class SimpleCSVImportService {
       .where(eq(csvImportTemplates.isActive, 1))
       .orderBy(csvImportTemplates.name);
 
-    return templates.map(t => ({
+    return templates.map((t: any) => ({
       id: t.id,
       name: t.name,
       description: t.description,
@@ -70,6 +71,7 @@ export class SimpleCSVImportService {
     metadata: Record<string, any>,
     uploadedBy: number
   ): Promise<CSVImportResult> {
+    const db = getDb();
     try {
       console.log('SimpleCSVImportService.uploadCSV started');
       
@@ -190,6 +192,7 @@ export class SimpleCSVImportService {
     records: any[],
     template: SimpleCSVTemplate
   ): Promise<{ success: boolean; stats: any }> {
+    const db = getDb();
     const stagedRows = [];
     let validRows = 0;
     let invalidRows = 0;
@@ -197,7 +200,7 @@ export class SimpleCSVImportService {
     // Get all states for matching
     const allStates = await db.select().from(states);
     const stateMap = new Map();
-    allStates.forEach(state => {
+    allStates.forEach((state: any) => {
       stateMap.set(state.name.toLowerCase(), state.id);
       stateMap.set(state.abbreviation.toLowerCase(), state.id);
     });
@@ -266,11 +269,11 @@ export class SimpleCSVImportService {
         }
 
         // Match category and statistic (for multi-category template)
-        let categoryId = null;
-        let statisticId = null;
+        let categoryId: number | null = null;
+        let statisticId: number | null = null;
 
         if (template.type === 'multi-category') {
-          const categoryMatch = allCategories.find(c => 
+          const categoryMatch = allCategories.find((c: any) => 
             c.name.toLowerCase() === mappedData.categoryName.toLowerCase()
           );
           
@@ -287,7 +290,7 @@ export class SimpleCSVImportService {
           }
           categoryId = categoryMatch.id;
 
-          const statisticMatch = allStatistics.find(s => 
+          const statisticMatch = allStatistics.find((s: any) => 
             s.name.toLowerCase() === mappedData.statisticName.toLowerCase() &&
             s.categoryId === categoryId
           );
@@ -316,7 +319,7 @@ export class SimpleCSVImportService {
           .from(dataPoints)
           .where(and(
             eq(dataPoints.stateId, stateId),
-            eq(dataPoints.statisticId, statisticId),
+            statisticId ? eq(dataPoints.statisticId, statisticId) : undefined,
             eq(dataPoints.year, mappedData.year)
           ));
 
@@ -326,7 +329,7 @@ export class SimpleCSVImportService {
             .set({ value: mappedData.value })
             .where(and(
               eq(dataPoints.stateId, stateId),
-              eq(dataPoints.statisticId, statisticId),
+              statisticId ? eq(dataPoints.statisticId, statisticId) : undefined,
               eq(dataPoints.year, mappedData.year)
             ));
         } else {
@@ -406,6 +409,7 @@ export class SimpleCSVImportService {
    * Get template by ID
    */
   static async getTemplate(id: number): Promise<SimpleCSVTemplate | null> {
+    const db = getDb();
     const [template] = await db.select()
       .from(csvImportTemplates)
       .where(eq(csvImportTemplates.id, id));
@@ -426,6 +430,7 @@ export class SimpleCSVImportService {
    * Get import metadata
    */
   static async getImportMetadata(importId: number): Promise<any> {
+    const db = getDb();
     const metadata = await db.select()
       .from(csvImportMetadata)
       .where(eq(csvImportMetadata.csvImportId, importId));
@@ -441,6 +446,7 @@ export class SimpleCSVImportService {
    * Get or create import session
    */
   static async getImportSessionId(importId: number): Promise<number> {
+    const db = getDb();
     const [importRecord] = await db.select()
       .from(csvImports)
       .where(eq(csvImports.id, importId));
@@ -474,13 +480,14 @@ export class SimpleCSVImportService {
    * Ensure templates exist
    */
   static async ensureTemplates(): Promise<void> {
+    const db = getDb();
     const existingTemplates = await db.select()
       .from(csvImportTemplates)
       .where(eq(csvImportTemplates.isActive, 1));
 
     // Check if our specific templates exist
-    const hasMultiCategory = existingTemplates.some(t => t.name === 'Multi-Category Data Import');
-    const hasSingleCategory = existingTemplates.some(t => t.name === 'Single-Category Data Import');
+    const hasMultiCategory = existingTemplates.some((t: any) => t.name === 'Multi-Category Data Import');
+    const hasSingleCategory = existingTemplates.some((t: any) => t.name === 'Single-Category Data Import');
 
     if (hasMultiCategory && hasSingleCategory) {
       return; // Our templates already exist

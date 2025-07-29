@@ -1,8 +1,9 @@
-import { db } from './index';
+import { getDb } from './index';
 import { states, categories, statistics, dataPoints } from './schema';
 import { eq } from 'drizzle-orm';
 
 export async function seedDatabaseComplete() {
+  const db = getDb();
   console.log('🌱 Seeding database with complete data...');
 
   // Insert states (all 50 states in alphabetical order)

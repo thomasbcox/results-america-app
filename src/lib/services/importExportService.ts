@@ -1,4 +1,4 @@
-import { db } from '../db/index';
+import { getDb } from '../db/index';
 import { CategoriesService } from './categoriesService';
 import { StatisticsService } from './statisticsService';
 import { DataPointsService } from './dataPointsService';
@@ -16,6 +16,7 @@ import type {
 
 export class ImportExportService {
   static async exportData(format: 'json' | 'csv', filters?: ExportFilters): Promise<ExportResult> {
+    const db = getDb();
     const exportData: any = {
       metadata: {
         exportedAt: new Date().toISOString(),
@@ -91,6 +92,7 @@ export class ImportExportService {
   }
 
   static async importData(data: ImportDataInput): Promise<ImportResult> {
+    const db = getDb();
     const errors: string[] = [];
     let imported = 0;
 

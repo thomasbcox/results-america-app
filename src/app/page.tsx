@@ -7,6 +7,7 @@ import Link from "next/link"
 
 export default function LandingPage() {
   const { user, signIn, signOut } = useSelection()
+  const [authCheck, setAuthCheck] = useState<any>(null)
 
 
   // Check if user is authenticated on page load (only once)
@@ -40,7 +41,7 @@ export default function LandingPage() {
           console.error('❌ Failed to check authentication:', error)
           setAuthCheck({
             timestamp: new Date().toISOString(),
-            error: error.message,
+            error: error instanceof Error ? error.message : 'Unknown error',
             status: 'error'
           })
         }

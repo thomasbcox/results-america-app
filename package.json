@@ -19,6 +19,8 @@
     "db:setup:test": "NODE_ENV=test npm run db:migrate",
     "db:setup:prod": "NODE_ENV=production npm run db:migrate && npm run db:seed",
     "db:setup:dev": "NODE_ENV=development npm run db:migrate && npm run db:seed",
+    "db:generate:sqlite": "NODE_ENV=test drizzle-kit generate",
+    "db:generate:postgres": "NODE_ENV=development drizzle-kit generate",
     "setup:database": "./scripts/setup-database.sh",
     "deploy:setup": "tsx scripts/deploy-setup.ts",
     "deploy:seed": "tsx scripts/deploy-seed.ts",

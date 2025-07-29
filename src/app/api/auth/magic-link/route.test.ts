@@ -5,7 +5,7 @@ import { getTestDb, clearTestData, setupTestDatabase } from '../../../lib/test-s
 import { magicLinks } from '../../../lib/db/schema';
 
 // Mock the database for tests
-jest.mock('../../../lib/db', () => {
+jest.mock('../../../lib/db/index', () => {
   const { getTestDb } = require('../../../lib/test-setup');
   return { db: getTestDb() };
 });

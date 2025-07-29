@@ -75,6 +75,30 @@ export async function withAdminAuth(
 }
 
 /**
+ * Helper function to get authenticated admin user
+ */
+export async function getAdminUser(request: NextRequest) {
+  try {
+    const sessionToken = request.cookies.get('session_token')?.value;
+
+    if (!sessionToken) {
+      return null;
+    }
+
+    const user = await AuthService.getUserBySession(sessionToken);
+
+    if (!user || !user.isActive || user.role !== 'admin') {
+      return null;
+    }
+
+    return user;
+  } catch (error) {
+    console.error('Get admin user error:', error);
+    return null;
+  }
+}
+
+/**
  * Optional authentication middleware
  */
 export async function withOptionalAuth(

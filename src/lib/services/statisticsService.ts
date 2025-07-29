@@ -1,4 +1,4 @@
-import { db } from '../db/index';
+import { getDb } from '../db/index';
 import { statistics, dataSources, categories } from '../db/schema-normalized';
 import { eq, like, desc, asc } from 'drizzle-orm';
 import type { 
@@ -14,6 +14,7 @@ export class StatisticsService {
   }
 
   static async searchStatistics(searchTerm: string): Promise<StatisticData[]> {
+    const db = getDb();
     const results = await db.select({
       id: statistics.id,
       name: statistics.name,
@@ -59,6 +60,7 @@ export class StatisticsService {
     pagination: { page: number; limit: number },
     sorting?: { sortBy?: string; sortOrder?: 'asc' | 'desc' }
   ): Promise<{ data: StatisticData[]; pagination: any }> {
+    const db = getDb();
     const { page, limit } = pagination;
     const offset = (page - 1) * limit;
 
@@ -67,9 +69,9 @@ export class StatisticsService {
     if (sorting?.sortBy) {
       const sortField = sorting.sortBy as keyof typeof statistics;
       if (sorting.sortOrder === 'asc') {
-        orderBy = asc(statistics[sortField]);
+        orderBy = asc(statistics[sortField] as any);
       } else {
-        orderBy = desc(statistics[sortField]);
+        orderBy = desc(statistics[sortField] as any);
       }
     }
 
@@ -141,6 +143,7 @@ export class StatisticsService {
   }
 
   static async getAllStatisticsWithSources(): Promise<StatisticData[]> {
+    const db = getDb();
     const results = await db.select({
       id: statistics.id,
       name: statistics.name,
@@ -180,6 +183,7 @@ export class StatisticsService {
   }
 
   static async getStatisticById(id: number): Promise<StatisticData | null> {
+    const db = getDb();
     const result = await db.select().from(statistics).where(eq(statistics.id, id)).limit(1);
     if (result.length === 0) return null;
     
@@ -193,6 +197,7 @@ export class StatisticsService {
   }
 
   static async getStatisticsByCategory(categoryId: number): Promise<StatisticData[]> {
+    const db = getDb();
     const results = await db.select({
       id: statistics.id,
       name: statistics.name,
@@ -218,6 +223,7 @@ export class StatisticsService {
   }
 
   static async createStatistic(data: CreateStatisticInput): Promise<StatisticData> {
+    const db = getDb();
     const [statistic] = await db.insert(statistics).values(data).returning();
     return {
       ...statistic,
@@ -228,6 +234,7 @@ export class StatisticsService {
   }
 
   static async updateStatistic(id: number, data: UpdateStatisticInput): Promise<StatisticData> {
+    const db = getDb();
     const [statistic] = await db.update(statistics).set(data).where(eq(statistics.id, id)).returning();
     return {
       ...statistic,
@@ -238,6 +245,7 @@ export class StatisticsService {
   }
 
   static async deleteStatistic(id: number): Promise<boolean> {
+    const db = getDb();
     const result = await db.delete(statistics).where(eq(statistics.id, id));
     return result.changes > 0;
   }
