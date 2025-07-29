@@ -7,7 +7,7 @@
   },
   "scripts": {
     "dev": "next dev --port 3050",
-    "build": "next build --no-lint",
+    "build": "npm run db:migrate:prod && next build --no-lint",
     "start": "next start --port 3050",
     "lint": "next lint",
     "validate": "tsx scripts/validate-build.ts",
@@ -21,6 +21,8 @@
     "db:setup:dev": "NODE_ENV=development npm run db:migrate && npm run db:seed",
     "db:generate:sqlite": "NODE_ENV=test drizzle-kit generate",
     "db:generate:postgres": "NODE_ENV=development drizzle-kit generate",
+    "db:migrate:prod": "NODE_ENV=production drizzle-kit migrate",
+    "db:verify:prod": "NODE_ENV=production node scripts/verify-production-db.js",
     "setup:database": "./scripts/setup-database.sh",
     "deploy:setup": "tsx scripts/deploy-setup.ts",
     "deploy:seed": "tsx scripts/deploy-seed.ts",
