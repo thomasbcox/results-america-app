@@ -1,5 +1,5 @@
 import { getDb } from '../db/index';
-import { dataPoints, statistics, states } from '../db/schema-postgres';
+import { dataPoints, statistics, states } from '../db/schema-normalized';
 import { eq, desc, asc, and, inArray } from 'drizzle-orm';
 import { ValidationError, NotFoundError } from '../errors';
 import type { IAggregationService } from '../types/service-interfaces';

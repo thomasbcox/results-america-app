@@ -1,15 +1,14 @@
-import { createTestDb } from '../db/testDb';
+import { setupTestDatabase, seedTestData, cleanupTestDatabase, setupDatabaseMock } from '../test-setup';
 import { ImportExportService } from './importExportService';
-import { clearAllTestData } from './testUtils';
 import { StatesService } from './statesService';
 import { CategoriesService } from './categoriesService';
 import { StatisticsService } from './statisticsService';
 import { DataPointsService } from './dataPointsService';
 
-let db;
-
 beforeEach(async () => {
-  db = createTestDb();
+  await setupTestDatabase();
+  await seedTestData();
+  setupDatabaseMock();
   
   // Mock all service methods to avoid database calls
   jest.spyOn(StatesService, 'createState').mockResolvedValue({ id: 1, name: 'Test State', abbreviation: 'TS', isActive: 1 });
@@ -19,12 +18,14 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
-  await clearAllTestData(db);
+  await cleanupTestDatabase();
   jest.restoreAllMocks();
 });
 
 describe('importExportService', () => {
   describe('importData', () => {
+
+
     it('should import states from valid data', async () => {
       const importData = {
         data: [
@@ -64,6 +65,8 @@ describe('importExportService', () => {
 
       const result = await ImportExportService.importData(importData);
 
+      process.stdout.write(`Empty data result: ${JSON.stringify(result, null, 2)}\n`);
+      
       expect(result.success).toBe(true);
       expect(result.imported).toBe(0);
       expect(result.errors).toHaveLength(0);

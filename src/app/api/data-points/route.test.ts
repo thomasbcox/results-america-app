@@ -1,7 +1,18 @@
 import { NextRequest } from 'next/server';
 import { GET } from './route';
+import { setupTestDatabase, seedTestData, cleanupTestDatabase } from '@/lib/test-setup';
 
 describe('/api/data-points', () => {
+  beforeAll(async () => {
+    await setupTestDatabase();
+    await seedTestData();
+  });
+
+  afterAll(async () => {
+    await cleanupTestDatabase();
+  });
+
+
   it('should return data points for a state', async () => {
     const request = new NextRequest('http://localhost:3000/api/data-points?stateId=1');
     
@@ -9,12 +20,13 @@ describe('/api/data-points', () => {
     const data = await response.json();
 
     expect(response.status).toBe(200);
-    expect(Array.isArray(data)).toBe(true);
-    if (data.length > 0) {
-      expect(data[0]).toHaveProperty('id');
-      expect(data[0]).toHaveProperty('value');
-      expect(data[0]).toHaveProperty('year');
-      expect(data[0]).toHaveProperty('statisticName');
+    expect(data.success).toBe(true);
+    expect(Array.isArray(data.data)).toBe(true);
+    if (data.data.length > 0) {
+      expect(data.data[0]).toHaveProperty('id');
+      expect(data.data[0]).toHaveProperty('value');
+      expect(data.data[0]).toHaveProperty('year');
+      expect(data.data[0]).toHaveProperty('statisticName');
     }
   });
 
@@ -25,12 +37,13 @@ describe('/api/data-points', () => {
     const data = await response.json();
 
     expect(response.status).toBe(200);
-    expect(Array.isArray(data)).toBe(true);
-    if (data.length > 0) {
-      expect(data[0]).toHaveProperty('id');
-      expect(data[0]).toHaveProperty('value');
-      expect(data[0]).toHaveProperty('year');
-      expect(data[0]).toHaveProperty('stateName');
+    expect(data.success).toBe(true);
+    expect(Array.isArray(data.data)).toBe(true);
+    if (data.data.length > 0) {
+      expect(data.data[0]).toHaveProperty('id');
+      expect(data.data[0]).toHaveProperty('value');
+      expect(data.data[0]).toHaveProperty('year');
+      expect(data.data[0]).toHaveProperty('stateName');
     }
   });
 
@@ -41,7 +54,8 @@ describe('/api/data-points', () => {
     const data = await response.json();
 
     expect(response.status).toBe(200);
-    expect(Array.isArray(data)).toBe(true);
+    expect(data.success).toBe(true);
+    expect(Array.isArray(data.data)).toBe(true);
   });
 
   it('should return 400 for missing parameters', async () => {

@@ -3,9 +3,9 @@ import { drizzle } from 'drizzle-orm/better-sqlite3';
 import Database from 'better-sqlite3';
 import * as sqliteSchema from './db/schema-normalized';
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
-import { join } from 'path';
+import { join, dirname } from 'path';
 import { tmpdir } from 'os';
-import { existsSync, unlinkSync } from 'fs';
+import { existsSync, unlinkSync, mkdirSync } from 'fs';
 
 // Load environment variables for tests
 config({ path: '.env' });
@@ -78,6 +78,13 @@ export function createFreshTestDb() {
   
   // Create a fresh file-based database
   const dbPath = getTestDbPath();
+  
+  // Ensure the directory exists and is writable
+  const dir = dirname(dbPath);
+  if (!existsSync(dir)) {
+    mkdirSync(dir, { recursive: true });
+  }
+  
   const sqlite = new Database(dbPath);
   testDb = drizzle(sqlite, { schema: sqliteSchema });
   return testDb;

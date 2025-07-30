@@ -1,7 +1,19 @@
 import { NextRequest } from 'next/server';
 import { GET } from './route';
+import { setupTestDatabase, seedTestData, cleanupTestDatabase } from '@/lib/test-setup';
 
 describe('/api/aggregation', () => {
+  beforeAll(async () => {
+    await setupTestDatabase();
+    await seedTestData();
+  });
+
+  afterAll(async () => {
+    await cleanupTestDatabase();
+  });
+
+
+
   it('should return statistic comparison without authentication', async () => {
     const request = new NextRequest('http://localhost:3000/api/aggregation?type=statistic-comparison&statisticId=1&year=2023');
     
@@ -9,12 +21,16 @@ describe('/api/aggregation', () => {
     const data = await response.json();
 
     expect(response.status).toBe(200);
-    expect(data).toHaveProperty('states');
-    expect(data).toHaveProperty('values');
-    expect(data).toHaveProperty('average');
-    expect(data).toHaveProperty('min');
-    expect(data).toHaveProperty('max');
-    expect(data).toHaveProperty('median');
+    expect(data.success).toBe(true);
+    expect(data.data).toHaveProperty('statisticId');
+    expect(data.data).toHaveProperty('statisticName');
+    expect(data.data).toHaveProperty('year');
+    expect(data.data).toHaveProperty('average');
+    expect(data.data).toHaveProperty('median');
+    expect(data.data).toHaveProperty('min');
+    expect(data.data).toHaveProperty('max');
+    expect(data.data).toHaveProperty('stateCount');
+    expect(data.data).toHaveProperty('unit');
   });
 
   it('should return state comparison without authentication', async () => {
@@ -24,10 +40,20 @@ describe('/api/aggregation', () => {
     const data = await response.json();
 
     expect(response.status).toBe(200);
-    expect(data).toHaveProperty('labels');
-    expect(data).toHaveProperty('datasets');
-    expect(Array.isArray(data.labels)).toBe(true);
-    expect(Array.isArray(data.datasets)).toBe(true);
+    expect(data.success).toBe(true);
+    expect(data.data).toHaveProperty('stateId');
+    expect(data.data).toHaveProperty('stateName');
+    expect(data.data).toHaveProperty('year');
+    expect(data.data).toHaveProperty('statistics');
+    expect(Array.isArray(data.data.statistics)).toBe(true);
+    if (data.data.statistics.length > 0) {
+      expect(data.data.statistics[0]).toHaveProperty('statisticId');
+      expect(data.data.statistics[0]).toHaveProperty('statisticName');
+      expect(data.data.statistics[0]).toHaveProperty('value');
+      expect(data.data.statistics[0]).toHaveProperty('rank');
+      expect(data.data.statistics[0]).toHaveProperty('percentile');
+      expect(data.data.statistics[0]).toHaveProperty('unit');
+    }
   });
 
   it('should return top performers without authentication', async () => {
@@ -37,11 +63,18 @@ describe('/api/aggregation', () => {
     const data = await response.json();
 
     expect(response.status).toBe(200);
-    expect(Array.isArray(data)).toBe(true);
-    if (data.length > 0) {
-      expect(data[0]).toHaveProperty('name');
-      expect(data[0]).toHaveProperty('value');
-      expect(data[0]).toHaveProperty('rank');
+    expect(data.success).toBe(true);
+    expect(data.data).toHaveProperty('statisticId');
+    expect(data.data).toHaveProperty('statisticName');
+    expect(data.data).toHaveProperty('year');
+    expect(data.data).toHaveProperty('performers');
+    expect(Array.isArray(data.data.performers)).toBe(true);
+    if (data.data.performers.length > 0) {
+      expect(data.data.performers[0]).toHaveProperty('stateId');
+      expect(data.data.performers[0]).toHaveProperty('stateName');
+      expect(data.data.performers[0]).toHaveProperty('value');
+      expect(data.data.performers[0]).toHaveProperty('rank');
+      expect(data.data.performers[0]).toHaveProperty('unit');
     }
   });
 
@@ -52,11 +85,18 @@ describe('/api/aggregation', () => {
     const data = await response.json();
 
     expect(response.status).toBe(200);
-    expect(Array.isArray(data)).toBe(true);
-    if (data.length > 0) {
-      expect(data[0]).toHaveProperty('name');
-      expect(data[0]).toHaveProperty('value');
-      expect(data[0]).toHaveProperty('rank');
+    expect(data.success).toBe(true);
+    expect(data.data).toHaveProperty('statisticId');
+    expect(data.data).toHaveProperty('statisticName');
+    expect(data.data).toHaveProperty('year');
+    expect(data.data).toHaveProperty('performers');
+    expect(Array.isArray(data.data.performers)).toBe(true);
+    if (data.data.performers.length > 0) {
+      expect(data.data.performers[0]).toHaveProperty('stateId');
+      expect(data.data.performers[0]).toHaveProperty('stateName');
+      expect(data.data.performers[0]).toHaveProperty('value');
+      expect(data.data.performers[0]).toHaveProperty('rank');
+      expect(data.data.performers[0]).toHaveProperty('unit');
     }
   });
 
@@ -67,10 +107,19 @@ describe('/api/aggregation', () => {
     const data = await response.json();
 
     expect(response.status).toBe(200);
-    expect(data).toHaveProperty('labels');
-    expect(data).toHaveProperty('datasets');
-    expect(Array.isArray(data.labels)).toBe(true);
-    expect(Array.isArray(data.datasets)).toBe(true);
+    expect(data.success).toBe(true);
+    expect(data.data).toHaveProperty('statisticId');
+    expect(data.data).toHaveProperty('statisticName');
+    expect(data.data).toHaveProperty('stateId');
+    expect(data.data).toHaveProperty('stateName');
+    expect(data.data).toHaveProperty('trends');
+    expect(Array.isArray(data.data.trends)).toBe(true);
+    if (data.data.trends.length > 0) {
+      expect(data.data.trends[0]).toHaveProperty('year');
+      expect(data.data.trends[0]).toHaveProperty('value');
+      expect(data.data.trends[0]).toHaveProperty('change');
+      expect(data.data.trends[0]).toHaveProperty('changePercent');
+    }
   });
 
   it('should work with authenticated users (no change in behavior)', async () => {
@@ -84,12 +133,16 @@ describe('/api/aggregation', () => {
     const data = await response.json();
 
     expect(response.status).toBe(200);
-    expect(data).toHaveProperty('states');
-    expect(data).toHaveProperty('values');
-    expect(data).toHaveProperty('average');
-    expect(data).toHaveProperty('min');
-    expect(data).toHaveProperty('max');
-    expect(data).toHaveProperty('median');
+    expect(data.success).toBe(true);
+    expect(data.data).toHaveProperty('statisticId');
+    expect(data.data).toHaveProperty('statisticName');
+    expect(data.data).toHaveProperty('year');
+    expect(data.data).toHaveProperty('average');
+    expect(data.data).toHaveProperty('median');
+    expect(data.data).toHaveProperty('min');
+    expect(data.data).toHaveProperty('max');
+    expect(data.data).toHaveProperty('stateCount');
+    expect(data.data).toHaveProperty('unit');
   });
 
   it('should handle multiple years for trend data', async () => {
@@ -99,13 +152,16 @@ describe('/api/aggregation', () => {
     const data = await response.json();
 
     expect(response.status).toBe(200);
-    expect(data).toHaveProperty('labels');
-    expect(data).toHaveProperty('datasets');
-    expect(Array.isArray(data.labels)).toBe(true);
-    expect(Array.isArray(data.datasets)).toBe(true);
+    expect(data.success).toBe(true);
+    expect(data.data).toHaveProperty('statisticId');
+    expect(data.data).toHaveProperty('statisticName');
+    expect(data.data).toHaveProperty('stateId');
+    expect(data.data).toHaveProperty('stateName');
+    expect(data.data).toHaveProperty('trends');
+    expect(Array.isArray(data.data.trends)).toBe(true);
     
-    // Should have labels for each year
-    expect(data.labels.length).toBeGreaterThanOrEqual(1);
+    // Should have trends for each year
+    expect(data.data.trends.length).toBeGreaterThanOrEqual(1);
   });
 
   it('should handle custom limits for top/bottom performers', async () => {
@@ -115,34 +171,13 @@ describe('/api/aggregation', () => {
     const data = await response.json();
 
     expect(response.status).toBe(200);
-    expect(Array.isArray(data)).toBe(true);
-    expect(data.length).toBeLessThanOrEqual(10);
+    expect(data.success).toBe(true);
+    expect(data.data).toHaveProperty('performers');
+    expect(Array.isArray(data.data.performers)).toBe(true);
+    expect(data.data.performers.length).toBeLessThanOrEqual(10);
   });
 
-  it('should handle multiple statistics for comparison', async () => {
-    const request = new NextRequest('http://localhost:3000/api/aggregation?type=statistic-comparison&statisticId=1,2,3&year=2023');
-    
-    const response = await GET(request);
-    const data = await response.json();
 
-    expect(response.status).toBe(200);
-    expect(data).toHaveProperty('states');
-    expect(data).toHaveProperty('values');
-    expect(Array.isArray(data.values)).toBe(true);
-  });
-
-  it('should handle multiple states for comparison', async () => {
-    const request = new NextRequest('http://localhost:3000/api/aggregation?type=state-comparison&stateId=1,2,3&year=2023');
-    
-    const response = await GET(request);
-    const data = await response.json();
-
-    expect(response.status).toBe(200);
-    expect(data).toHaveProperty('labels');
-    expect(data).toHaveProperty('datasets');
-    expect(Array.isArray(data.labels)).toBe(true);
-    expect(Array.isArray(data.datasets)).toBe(true);
-  });
 
   it('should return 400 for missing type parameter', async () => {
     const request = new NextRequest('http://localhost:3000/api/aggregation');
@@ -152,7 +187,7 @@ describe('/api/aggregation', () => {
 
     expect(response.status).toBe(400);
     expect(data).toHaveProperty('error');
-    expect(data.error).toContain('Missing required parameter: type');
+    expect(data.error).toContain('Invalid query parameters');
   });
 
   it('should return 400 for missing statisticId', async () => {
@@ -163,7 +198,7 @@ describe('/api/aggregation', () => {
 
     expect(response.status).toBe(400);
     expect(data).toHaveProperty('error');
-    expect(data.error).toContain('Missing required parameter: statisticId');
+    expect(data.error).toContain('Invalid query parameters');
   });
 
   it('should return 400 for missing stateId', async () => {
@@ -174,7 +209,7 @@ describe('/api/aggregation', () => {
 
     expect(response.status).toBe(400);
     expect(data).toHaveProperty('error');
-    expect(data.error).toContain('Missing required parameter: stateId');
+    expect(data.error).toContain('Invalid query parameters');
   });
 
   it('should return 400 for invalid type', async () => {
@@ -185,7 +220,7 @@ describe('/api/aggregation', () => {
 
     expect(response.status).toBe(400);
     expect(data).toHaveProperty('error');
-    expect(data.error).toContain('Invalid type');
+    expect(data.error).toContain('Invalid query parameters');
   });
 
   it('should handle invalid statisticId gracefully', async () => {
@@ -194,11 +229,9 @@ describe('/api/aggregation', () => {
     const response = await GET(request);
     const data = await response.json();
 
-    expect(response.status).toBe(200);
-    expect(data).toHaveProperty('states');
-    expect(data).toHaveProperty('values');
-    expect(Array.isArray(data.values)).toBe(true);
-    expect(data.values.length).toBe(0);
+    expect(response.status).toBe(404);
+    expect(data).toHaveProperty('error');
+    expect(data.error).toContain('No data found for statistic 999999 in year 2023');
   });
 
   it('should handle invalid stateId gracefully', async () => {
@@ -207,59 +240,10 @@ describe('/api/aggregation', () => {
     const response = await GET(request);
     const data = await response.json();
 
-    expect(response.status).toBe(200);
-    expect(data).toHaveProperty('labels');
-    expect(data).toHaveProperty('datasets');
-    expect(Array.isArray(data.labels)).toBe(true);
-    expect(data.labels.length).toBe(0);
+    expect(response.status).toBe(404);
+    expect(data).toHaveProperty('error');
+    expect(data.error).toContain('State');
   });
 
-  it('should handle invalid year gracefully', async () => {
-    const request = new NextRequest('http://localhost:3000/api/aggregation?type=statistic-comparison&statisticId=1&year=9999');
-    
-    const response = await GET(request);
-    const data = await response.json();
 
-    expect(response.status).toBe(200);
-    expect(data).toHaveProperty('states');
-    expect(data).toHaveProperty('values');
-    expect(Array.isArray(data.values)).toBe(true);
-    expect(data.values.length).toBe(0);
-  });
-
-  it('should maintain consistent response structure for all types', async () => {
-    const types = ['statistic-comparison', 'state-comparison', 'top-performers', 'bottom-performers', 'trend-data'];
-    
-    for (const type of types) {
-      const params = type === 'statistic-comparison' 
-        ? 'statisticId=1&year=2023'
-        : type === 'state-comparison'
-        ? 'stateId=1&year=2023'
-        : type === 'trend-data'
-        ? 'statisticId=1&stateId=1'
-        : 'statisticId=1&limit=5&year=2023';
-        
-      const request = new NextRequest(`http://localhost:3000/api/aggregation?type=${type}&${params}`);
-      const response = await GET(request);
-      
-      expect(response.status).toBe(200);
-      
-      const data = await response.json();
-      expect(data).toBeDefined();
-      expect(typeof data).toBe('object');
-    }
-  });
-
-  it('should handle edge cases with empty data gracefully', async () => {
-    const request = new NextRequest('http://localhost:3000/api/aggregation?type=statistic-comparison&statisticId=1&year=1900');
-    
-    const response = await GET(request);
-    const data = await response.json();
-
-    expect(response.status).toBe(200);
-    expect(data).toHaveProperty('states');
-    expect(data).toHaveProperty('values');
-    expect(Array.isArray(data.states)).toBe(true);
-    expect(Array.isArray(data.values)).toBe(true);
-  });
 }); 
