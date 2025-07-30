@@ -1,10 +1,16 @@
 // API response types to replace 'any' usage
 
 export interface ApiResponse<T> {
-  data?: T;
-  error?: string;
-  status: 'success' | 'error';
+  success: boolean;
+  data: T;
   message?: string;
+}
+
+export interface ErrorApiResponse {
+  success: false;
+  error: string;
+  code?: string;
+  details?: Record<string, unknown>;
 }
 
 export interface PaginatedResponse<T> extends ApiResponse<T[]> {

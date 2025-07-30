@@ -3,18 +3,19 @@ import { ImportExportService } from './importExportService';
 import { clearAllTestData } from './testUtils';
 import { StatesService } from './statesService';
 import { CategoriesService } from './categoriesService';
+import { StatisticsService } from './statisticsService';
+import { DataPointsService } from './dataPointsService';
 
 let db;
 
 beforeEach(async () => {
   db = createTestDb();
-  // Mock the service class static methods to use the test database
-  jest.spyOn(StatesService, 'createState').mockImplementation(async (data) => {
-    return { id: 1, ...data, isActive: 1 };
-  });
-  jest.spyOn(CategoriesService, 'createCategory').mockImplementation(async (data) => {
-    return { id: 1, ...data, sortOrder: data.sortOrder || 0, isActive: 1 };
-  });
+  
+  // Mock all service methods to avoid database calls
+  jest.spyOn(StatesService, 'createState').mockResolvedValue({ id: 1, name: 'Test State', abbreviation: 'TS', isActive: 1 });
+  jest.spyOn(CategoriesService, 'createCategory').mockResolvedValue({ id: 1, name: 'Test Category', description: 'Test', sortOrder: 1, isActive: 1 });
+  jest.spyOn(StatisticsService, 'createStatistic').mockResolvedValue({ id: 1, name: 'Test Statistic', unit: 'test', categoryId: 1, isActive: 1 });
+  jest.spyOn(DataPointsService, 'createDataPoint').mockResolvedValue({ id: 1, stateId: 1, statisticId: 1, year: 2023, value: 100 });
 });
 
 afterEach(async () => {

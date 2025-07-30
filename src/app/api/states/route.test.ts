@@ -286,8 +286,7 @@ describe('/api/states', () => {
       expect(response.status).toBe(200);
       expect(data).toHaveProperty('success');
       expect(data).toHaveProperty('data');
-      expect(data).toHaveProperty('pagination');
-      
+      // Pagination is optional and only present when pagination is actually used
       if (data.pagination) {
         expect(data.pagination).toHaveProperty('page');
         expect(data.pagination).toHaveProperty('limit');

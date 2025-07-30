@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
-import { withValidation, withQueryValidation } from './validation';
+import { withBodyValidation, withQueryValidation } from './validation';
 import { ServiceError } from '../errors';
 
 // Mock response functions
@@ -25,9 +25,9 @@ describe('Validation Middleware', () => {
 
   const mockHandler = jest.fn();
 
-  describe('withValidation', () => {
+  describe('withBodyValidation', () => {
     it('should pass validated data to handler when validation succeeds', async () => {
-      const middleware = withValidation(TestSchema);
+      const middleware = withBodyValidation(TestSchema);
       const wrappedHandler = middleware(mockHandler);
 
       const request = new NextRequest('http://localhost:3000/test', {
@@ -52,7 +52,7 @@ describe('Validation Middleware', () => {
     });
 
     it('should throw ServiceError for invalid JSON', async () => {
-      const middleware = withValidation(TestSchema);
+      const middleware = withBodyValidation(TestSchema);
       const wrappedHandler = middleware(mockHandler);
 
       const request = new NextRequest('http://localhost:3000/test', {
@@ -61,17 +61,13 @@ describe('Validation Middleware', () => {
         body: 'invalid json',
       });
 
-      // Mock the error response
-      mockCreateErrorResponse.mockReturnValue(new Response('Invalid JSON', { status: 400 }));
-
-      const result = await wrappedHandler(request);
-      
-      expect(result.status).toBe(400);
+      // The middleware throws ServiceError, so we expect it to throw
+      await expect(wrappedHandler(request)).rejects.toThrow(ServiceError);
       expect(mockHandler).not.toHaveBeenCalled();
     });
 
     it('should throw ServiceError for validation failures', async () => {
-      const middleware = withValidation(TestSchema);
+      const middleware = withBodyValidation(TestSchema);
       const wrappedHandler = middleware(mockHandler);
 
       const request = new NextRequest('http://localhost:3000/test', {
@@ -84,17 +80,13 @@ describe('Validation Middleware', () => {
         }),
       });
 
-      // Mock the error response
-      mockCreateErrorResponse.mockReturnValue(new Response('Validation failed', { status: 400 }));
-
-      const result = await wrappedHandler(request);
-      
-      expect(result.status).toBe(400);
+      // The middleware throws ServiceError, so we expect it to throw
+      await expect(wrappedHandler(request)).rejects.toThrow(ServiceError);
       expect(mockHandler).not.toHaveBeenCalled();
     });
 
     it('should handle missing required fields correctly', async () => {
-      const middleware = withValidation(TestSchema);
+      const middleware = withBodyValidation(TestSchema);
       const wrappedHandler = middleware(mockHandler);
 
       const request = new NextRequest('http://localhost:3000/test', {
@@ -106,12 +98,8 @@ describe('Validation Middleware', () => {
         }),
       });
 
-      // Mock the error response
-      mockCreateErrorResponse.mockReturnValue(new Response('Validation failed', { status: 400 }));
-
-      const result = await wrappedHandler(request);
-      
-      expect(result.status).toBe(400);
+      // The middleware throws ServiceError, so we expect it to throw
+      await expect(wrappedHandler(request)).rejects.toThrow(ServiceError);
       expect(mockHandler).not.toHaveBeenCalled();
     });
   });
@@ -144,12 +132,8 @@ describe('Validation Middleware', () => {
 
       const request = new NextRequest('http://localhost:3000/test?page=0&limit=1000');
 
-      // Mock the error response
-      mockCreateErrorResponse.mockReturnValue(new Response('Invalid query params', { status: 400 }));
-
-      const result = await wrappedHandler(request);
-      
-      expect(result.status).toBe(400);
+      // The middleware throws ServiceError, so we expect it to throw
+      await expect(wrappedHandler(request)).rejects.toThrow(ServiceError);
       expect(mockHandler).not.toHaveBeenCalled();
     });
   });

@@ -66,6 +66,35 @@ export const dataPoints = sqliteTable('data_points', {
   // ✅ REMOVED: lastUpdated (now comes from import_sessions.import_date)
 });
 
+// User Authentication Tables
+export const users = sqliteTable('users', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  email: text('email').notNull().unique(),
+  name: text('name'),
+  role: text('role', { enum: ['user', 'admin'] }).notNull().default('user'),
+  isActive: integer('is_active').notNull().default(1),
+  emailVerified: integer('email_verified').notNull().default(0),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`),
+});
+
+export const sessions = sqliteTable('sessions', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  token: text('token').notNull().unique(),
+  expiresAt: integer('expires_at', { mode: 'timestamp' }).notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`),
+});
+
+export const magicLinks = sqliteTable('magic_links', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  email: text('email').notNull(),
+  token: text('token').notNull().unique(),
+  expiresAt: integer('expires_at', { mode: 'timestamp' }).notNull(),
+  used: integer('used').notNull().default(0),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`),
+});
+
 // Indexes for performance
 export const indexes = {
   dataPointsLookup: 'idx_data_points_lookup',
@@ -74,4 +103,7 @@ export const indexes = {
   statisticsByCategory: 'idx_statistics_category',
   statisticsBySource: 'idx_statistics_source',
   dataPointsByImport: 'idx_data_points_import',
+  usersByEmail: 'idx_users_email',
+  sessionsByToken: 'idx_sessions_token',
+  magicLinksByToken: 'idx_magic_links_token',
 }; 

@@ -68,7 +68,7 @@ async function handleGetStatistics(request: NextRequest) {
   if (sortBy) {
     const paginated = await StatisticsService.getStatisticsWithPagination(
       { page: 1, limit: 50 },
-      { sortBy, sortOrder }
+      { sortOrder }
     );
     return createSuccessResponse(paginated.data);
   }

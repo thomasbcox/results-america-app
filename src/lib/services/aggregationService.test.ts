@@ -1,8 +1,8 @@
 import { createTestDb } from '../db/testDb';
 import * as aggregationService from './aggregationService';
 import { createDataSource, createCategory, createState, createStatistic, clearAllTestData } from './testUtils';
-import * as dataPointsService from './dataPointsService';
-import * as statisticsService from './statisticsService';
+import { DataPointsService } from './dataPointsService';
+import { StatisticsService } from './statisticsService';
 
 let db;
 let categoryId;
@@ -42,7 +42,7 @@ describe('aggregationService', () => {
     ];
     
     // Mock data points service to return test data
-    jest.spyOn(dataPointsService, 'getDataPointsForStatistic').mockResolvedValue(mockDataPoints);
+    jest.spyOn(DataPointsService, 'getDataPointsForStatistic').mockResolvedValue(mockDataPoints);
     
     // Mock the NationalAverageService to return the expected average
     jest.spyOn(aggregationService.NationalAverageService, 'getNationalAverage').mockResolvedValue(150);
@@ -58,7 +58,7 @@ describe('aggregationService', () => {
   });
 
   it('should get top performers', async () => {
-    jest.spyOn(dataPointsService, 'getDataPointsForStatistic').mockResolvedValue([
+    jest.spyOn(DataPointsService, 'getDataPointsForStatistic').mockResolvedValue([
       { id: 1, value: 100, year: 2023, stateName: 'State A', statisticId },
       { id: 2, value: 200, year: 2023, stateName: 'State B', statisticId },
       { id: 3, value: 150, year: 2023, stateName: 'State C', statisticId }
@@ -74,7 +74,7 @@ describe('aggregationService', () => {
   });
 
   it('should get bottom performers', async () => {
-    jest.spyOn(dataPointsService, 'getDataPointsForStatistic').mockResolvedValue([
+    jest.spyOn(DataPointsService, 'getDataPointsForStatistic').mockResolvedValue([
       { id: 1, value: 100, year: 2023, stateName: 'State A', statisticId },
       { id: 2, value: 200, year: 2023, stateName: 'State B', statisticId },
       { id: 3, value: 150, year: 2023, stateName: 'State C', statisticId }
@@ -90,7 +90,7 @@ describe('aggregationService', () => {
   });
 
   it('should get state comparison', async () => {
-    jest.spyOn(dataPointsService, 'getDataPointsForState').mockResolvedValue([
+    jest.spyOn(DataPointsService, 'getDataPointsForState').mockResolvedValue([
       { 
         id: 1, 
         value: 100, 
@@ -113,7 +113,7 @@ describe('aggregationService', () => {
 
   it('should get trend data', async () => {
     // Mock the data points service to return data for the specific state
-    jest.spyOn(dataPointsService, 'getDataPointsForStatistic').mockImplementation(async (statId, year) => {
+    jest.spyOn(DataPointsService, 'getDataPointsForStatistic').mockImplementation(async (statId, year) => {
       if (year === 2020) {
         return [{ id: 1, value: 100, year: 2020, stateName: 'State A', stateAbbreviation: 'SA' }];
       } else if (year === 2021) {

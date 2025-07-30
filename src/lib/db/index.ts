@@ -72,8 +72,10 @@ const initializeDatabase = () => {
       }
       
       const client = postgres(dbConfig.url, {
-        max: 1, // Use connection pooling
+        max: 10, // Use connection pooling
         ssl: 'require', // Neon requires SSL
+        idle_timeout: 20, // Close idle connections
+        connect_timeout: 10, // Connection timeout
       });
       
       databaseInstance = drizzlePostgres(client, { schema: postgresSchema });
@@ -97,6 +99,12 @@ const initializeDatabase = () => {
 
 // Export a function that gets the database instance
 export const getDb = () => {
+  // During build time, return null to prevent build failures
+  if (process.env.NODE_ENV === 'production' && !process.env.DATABASE_URL) {
+    console.warn('⚠️ Database not available during build - returning null');
+    return null;
+  }
+  
   if (!dbInitialized) {
     return initializeDatabase();
   }

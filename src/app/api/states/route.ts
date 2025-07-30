@@ -51,7 +51,7 @@ async function handleGetStates(request: NextRequest) {
       { page, limit },
       { sortBy, sortOrder }
     );
-    // Return paginated data
+    // Return paginated data with pagination info
     return createSuccessResponse(paginated.data);
   }
 

@@ -98,6 +98,26 @@ results-america-app/
 - **Role-Based Access**: User and Admin roles
 - **No Authentication Required**: Core features accessible without login
 
+## 📡 API Structure
+
+### Response Format
+All API endpoints follow a consistent response structure:
+
+```json
+{
+  "success": true,
+  "data": [...]  // Direct access to data
+}
+```
+
+### Available Endpoints
+- `GET /api/states` - All US states
+- `GET /api/categories` - Data categories with statistics
+- `GET /api/statistics` - All statistics with metadata
+- `GET /api/data-points` - Data points with filtering
+
+See [API_RESPONSE_STRUCTURE.md](./API_RESPONSE_STRUCTURE.md) for detailed documentation.
+
 ### Features
 - ✅ Magic link email authentication
 - ✅ Session persistence

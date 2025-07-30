@@ -1,5 +1,5 @@
 import { getDb } from '../db/index';
-import { categories, statistics } from '../db/schema-normalized';
+import { categories, statistics } from '../db/schema-postgres';
 import { eq, like, desc, asc } from 'drizzle-orm';
 import type { 
   ICategoriesService, 

@@ -29,50 +29,85 @@ export class ImportExportService {
     try {
       // Export states
       if (!filters?.states || filters.states.length === 0) {
-        const rawStates = await StatesService.getAllStates(false); // Don't use cache for export
-        exportData.data.states = rawStates;
+        try {
+          const rawStates = await StatesService.getAllStates(false); // Don't use cache for export
+          exportData.data.states = rawStates;
+        } catch (error) {
+          console.warn('Failed to export states:', error);
+          exportData.data.states = [];
+        }
       } else {
-        const filteredStates = await Promise.all(
-          filters.states.map(id => StatesService.getStateById(id))
-        );
-        exportData.data.states = filteredStates.filter(Boolean);
+        try {
+          const filteredStates = await Promise.all(
+            filters.states.map(id => StatesService.getStateById(id))
+          );
+          exportData.data.states = filteredStates.filter(Boolean);
+        } catch (error) {
+          console.warn('Failed to export filtered states:', error);
+          exportData.data.states = [];
+        }
       }
 
       // Export categories
       if (!filters?.categories || filters.categories.length === 0) {
-        const rawCategories = await CategoriesService.getAllCategories(); // This doesn't use cache
-        exportData.data.categories = rawCategories;
+        try {
+          const rawCategories = await CategoriesService.getAllCategories(); // This doesn't use cache
+          exportData.data.categories = rawCategories;
+        } catch (error) {
+          console.warn('Failed to export categories:', error);
+          exportData.data.categories = [];
+        }
       } else {
-        const filteredCategories = await Promise.all(
-          filters.categories.map(id => CategoriesService.getCategoryById(id))
-        );
-        exportData.data.categories = filteredCategories.filter(Boolean);
+        try {
+          const filteredCategories = await Promise.all(
+            filters.categories.map(id => CategoriesService.getCategoryById(id))
+          );
+          exportData.data.categories = filteredCategories.filter(Boolean);
+        } catch (error) {
+          console.warn('Failed to export filtered categories:', error);
+          exportData.data.categories = [];
+        }
       }
 
       // Export statistics
       if (!filters?.statistics || filters.statistics.length === 0) {
-        const rawStatistics = await StatisticsService.getAllStatisticsWithSources();
-        exportData.data.statistics = rawStatistics;
+        try {
+          const rawStatistics = await StatisticsService.getAllStatisticsWithSources();
+          exportData.data.statistics = rawStatistics;
+        } catch (error) {
+          console.warn('Failed to export statistics:', error);
+          exportData.data.statistics = [];
+        }
       } else {
-        const filteredStatistics = await Promise.all(
-          filters.statistics.map(id => StatisticsService.getStatisticById(id))
-        );
-        exportData.data.statistics = filteredStatistics.filter(Boolean);
+        try {
+          const filteredStatistics = await Promise.all(
+            filters.statistics.map(id => StatisticsService.getStatisticById(id))
+          );
+          exportData.data.statistics = filteredStatistics.filter(Boolean);
+        } catch (error) {
+          console.warn('Failed to export filtered statistics:', error);
+          exportData.data.statistics = [];
+        }
       }
 
       // Export data points
       if (filters?.years && filters.years.length > 0) {
-        const allStatistics = await StatisticsService.getAllStatisticsWithSources();
-        const allDataPoints = [];
-        
-        for (const stat of allStatistics) {
-          for (const year of filters.years!) {
-            const rawPoints = await DataPointsService.getDataPointsForStatistic(stat.id, year);
-            allDataPoints.push(...rawPoints);
+        try {
+          const allStatistics = await StatisticsService.getAllStatisticsWithSources();
+          const allDataPoints = [];
+          
+          for (const stat of allStatistics) {
+            for (const year of filters.years!) {
+              const rawPoints = await DataPointsService.getDataPointsForStatistic(stat.id, year);
+              allDataPoints.push(...rawPoints);
+            }
           }
+          
+          exportData.dataPoints = allDataPoints;
+        } catch (error) {
+          console.warn('Failed to export data points:', error);
+          exportData.dataPoints = [];
         }
-        
-        exportData.data.dataPoints = allDataPoints;
       }
 
       // Create filename

@@ -280,6 +280,137 @@ export async function setupTestDatabase() {
         FOREIGN KEY (user_id) REFERENCES users(id)
       )
     `);
+    
+    // User Authentication Tables
+    await db.run(`
+      CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        email TEXT NOT NULL UNIQUE,
+        name TEXT,
+        role TEXT NOT NULL DEFAULT 'user',
+        is_active INTEGER NOT NULL DEFAULT 1,
+        email_verified INTEGER NOT NULL DEFAULT 0,
+        created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
+        updated_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
+      )
+    `);
+    
+    await db.run(`
+      CREATE TABLE IF NOT EXISTS sessions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        token TEXT NOT NULL UNIQUE,
+        expires_at INTEGER NOT NULL,
+        created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      )
+    `);
+    
+    await db.run(`
+      CREATE TABLE IF NOT EXISTS magic_links (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        email TEXT NOT NULL,
+        token TEXT NOT NULL UNIQUE,
+        expires_at INTEGER NOT NULL,
+        used INTEGER NOT NULL DEFAULT 0,
+        created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
+      )
+    `);
+    
+    // CSV Import Tables
+    await db.run(`
+      CREATE TABLE IF NOT EXISTS csv_imports (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        filename TEXT NOT NULL,
+        uploaded_by INTEGER NOT NULL,
+        uploaded_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
+        status TEXT NOT NULL DEFAULT 'uploaded',
+        validated_at INTEGER,
+        published_at INTEGER,
+        error_message TEXT,
+        metadata TEXT,
+        is_active INTEGER DEFAULT 1,
+        duplicate_of INTEGER,
+        total_rows INTEGER,
+        valid_rows INTEGER,
+        error_rows INTEGER,
+        processing_time_ms INTEGER,
+        FOREIGN KEY (uploaded_by) REFERENCES users(id)
+      )
+    `);
+    
+    await db.run(`
+      CREATE TABLE IF NOT EXISTS csv_import_staging (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        csv_import_id INTEGER NOT NULL,
+        row_number INTEGER NOT NULL,
+        state_name TEXT,
+        state_id INTEGER,
+        year INTEGER,
+        statistic_name TEXT,
+        statistic_id INTEGER,
+        value REAL,
+        raw_data TEXT NOT NULL,
+        validation_status TEXT NOT NULL DEFAULT 'pending',
+        validation_errors TEXT,
+        is_processed INTEGER NOT NULL DEFAULT 0,
+        processed_at INTEGER,
+        FOREIGN KEY (csv_import_id) REFERENCES csv_imports(id),
+        FOREIGN KEY (state_id) REFERENCES states(id),
+        FOREIGN KEY (statistic_id) REFERENCES statistics(id)
+      )
+    `);
+    
+    await db.run(`
+      CREATE TABLE IF NOT EXISTS csv_import_templates (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL UNIQUE,
+        description TEXT,
+        category_id INTEGER,
+        data_source_id INTEGER,
+        template_schema TEXT NOT NULL,
+        validation_rules TEXT,
+        sample_data TEXT,
+        is_active INTEGER DEFAULT 1,
+        created_by INTEGER NOT NULL,
+        created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
+        updated_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
+        FOREIGN KEY (category_id) REFERENCES categories(id),
+        FOREIGN KEY (data_source_id) REFERENCES data_sources(id),
+        FOREIGN KEY (created_by) REFERENCES users(id)
+      )
+    `);
+    
+    await db.run(`
+      CREATE TABLE IF NOT EXISTS csv_import_metadata (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        csv_import_id INTEGER NOT NULL,
+        key TEXT NOT NULL,
+        value TEXT NOT NULL,
+        data_type TEXT NOT NULL DEFAULT 'string',
+        is_required INTEGER NOT NULL DEFAULT 0,
+        validation_rule TEXT,
+        FOREIGN KEY (csv_import_id) REFERENCES csv_imports(id),
+        UNIQUE(csv_import_id, key)
+      )
+    `);
+    
+    await db.run(`
+      CREATE TABLE IF NOT EXISTS csv_import_validation (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        csv_import_id INTEGER NOT NULL,
+        validation_type TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'pending',
+        message TEXT,
+        details TEXT,
+        started_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
+        completed_at INTEGER,
+        error_count INTEGER DEFAULT 0,
+        warning_count INTEGER DEFAULT 0,
+        FOREIGN KEY (csv_import_id) REFERENCES csv_imports(id)
+      )
+    `);
   }
   
   return db;
@@ -353,6 +484,15 @@ export async function seedTestData() {
     { importSessionId: 3, year: 2023, stateId: 4, statisticId: 5, value: 3.5 },
     { importSessionId: 3, year: 2023, stateId: 5, statisticId: 5, value: 2.9 }
   ]);
+  
+  // Insert sample users for testing
+  await db.insert(sqliteSchema.users).values([
+    { email: 'test@example.com', name: 'Test User', role: 'user', isActive: 1, emailVerified: 1 },
+    { email: 'admin@example.com', name: 'Admin User', role: 'admin', isActive: 1, emailVerified: 1 }
+  ]);
+  
+  // Note: CSV import data is not seeded by default to avoid complexity
+  // Tests that need CSV import data should seed it specifically
 }
 
 // Create a test database instance that will be shared
@@ -369,14 +509,16 @@ export function setupDatabaseMock() {
   });
 }
 
-// Mock the cache module for API tests
-jest.mock('@/lib/services/cache', () => ({
-  cache: {
-    get: jest.fn(),
-    set: jest.fn(),
-    delete: jest.fn(),
-  },
-}));
+// Mock the cache module for API tests (but not for cache tests)
+if (!process.env.SKIP_CACHE_MOCK) {
+  jest.mock('@/lib/services/cache', () => ({
+    cache: {
+      get: jest.fn(),
+      set: jest.fn(),
+      delete: jest.fn(),
+    },
+  }));
+}
 
 // Clean up test database after all tests
 afterAll(() => {

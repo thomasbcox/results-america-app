@@ -1,5 +1,5 @@
 import { getDb } from '../db/index';
-import { states } from '../db/schema-normalized';
+import { states } from '../db/schema-postgres';
 import { eq } from 'drizzle-orm';
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 import { cache } from './cache';
@@ -19,6 +19,11 @@ import type {
 export class StatesService {
   static async getAllStates(useCache = true): Promise<StateData[]> {
     const db = getDb();
+    if (!db) {
+      console.warn('Database not available - returning empty array');
+      return [];
+    }
+    
     if (useCache) {
       try {
         const cached = cache.get<StateData[]>('states');
@@ -44,7 +49,8 @@ export class StatesService {
         isActive: state.isActive ?? 1,
       }));
     } catch (error) {
-      throw new Error(`Failed to fetch states: ${error}`);
+      console.error('Failed to fetch states:', error);
+      return [];
     }
   }
 

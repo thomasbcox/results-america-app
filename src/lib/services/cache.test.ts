@@ -1,4 +1,8 @@
+// Skip cache mock for this test
+process.env.SKIP_CACHE_MOCK = 'true';
+
 import { cache } from './cache';
+import { CacheMissError } from '../errors';
 
 describe('cache', () => {
   beforeEach(() => {
