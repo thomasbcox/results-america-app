@@ -73,37 +73,33 @@ export default function ResultsPage() {
   const [measureDetails, setMeasureDetails] = useState<StatisticData | null>(null)
   const [sessionValid, setSessionValid] = useState(false)
 
-  const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ value: number; dataKey: string; name: string }>; label?: string }) => {
+  const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ value: number; dataKey: string; name: string; color: string }>; label?: string }) => {
     if (active && payload && payload.length) {
-      console.log('Tooltip payload:', payload)
-      
       // Find state value and national value from payload
       let stateValue: number | undefined
       let nationalValue: number | undefined
       
       payload.forEach((item) => {
-        if (item.dataKey === 'value' && item.name === 'State Value') {
+        if (item.dataKey === 'value') {
           stateValue = item.value
-        } else if (item.dataKey === 'national' && item.name === 'National Average') {
+        } else if (item.dataKey === 'national') {
           nationalValue = item.value
         }
       })
       
-      // Fallback: if we can't identify by name, use first two values
-      if (stateValue === undefined && nationalValue === undefined && payload.length >= 2) {
-        stateValue = payload[0]?.value
-        nationalValue = payload[1]?.value
-      }
-      
       const difference = (stateValue || 0) - (nationalValue || 0)
-      const unit = measureDetails?.unit || '%'
+      const unit = measureDetails?.unit || ''
       
       return (
         <div className="bg-white p-3 border border-gray-300 rounded-md shadow-lg">
           <p className="font-medium text-black">Year: {label}</p>
-          <p className="text-black">State: {stateValue?.toFixed(2) || 'N/A'}{unit}</p>
-          <p className="text-black">National: {nationalValue?.toFixed(2) || 'N/A'}{unit}</p>
-          <p className="text-black">Difference: {difference?.toFixed(2)}{unit}</p>
+          <p className="text-blue-600">State: {stateValue?.toFixed(2) || 'N/A'}{unit}</p>
+          {nationalValue && nationalValue > 0 && (
+            <>
+              <p className="text-red-600">Average: {nationalValue?.toFixed(2)}{unit}</p>
+              <p className="text-gray-600">Difference: {difference > 0 ? '+' : ''}{difference?.toFixed(2)}{unit}</p>
+            </>
+          )}
         </div>
       )
     }
