@@ -12,7 +12,7 @@ export async function GET(request: AuthenticatedRequest) {
   return withAuth(request, async (req) => {
     try {
       const favorites = await UserPreferencesService.getFavorites(req.user.id);
-      return createSuccessResponse(favorites);
+      return createSuccessResponse({ data: favorites });
     } catch (error) {
       console.error('Get favorites error:', error);
       return createBadRequestResponse('Failed to get favorites');

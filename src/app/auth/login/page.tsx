@@ -34,10 +34,10 @@ export default function LoginPage() {
       if (response.ok) {
         // For demo purposes, redirect to the verification page
         // In a real app, the user would click the link in their email
-        if (data.success && data.token) {
-          // Redirect to the verification page with the token
-          window.location.href = `/auth/verify?token=${data.token}`
-        } else {
+        if (data.success && data.magicLink) {
+          // In development mode, redirect directly to the magic link
+          window.location.href = data.magicLink;
+        } else if (data.success) {
           setMessage({
             type: 'success',
             text: 'Magic link sent! Check your email and click the link to sign in.',
@@ -48,8 +48,10 @@ export default function LoginPage() {
           type: 'error',
           text: data.error || 'Failed to send magic link',
         });
+        console.error('Magic link error:', data);
       }
     } catch (error) {
+      console.error('Magic link request failed:', error);
       setMessage({
         type: 'error',
         text: 'An error occurred. Please try again.',
@@ -71,10 +73,10 @@ export default function LoginPage() {
             Back to Home
           </Link>
           <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
-            Sign in to your account
+            Sign in to Results America
           </h2>
           <p className="mt-2 text-sm text-gray-600">
-            Enter your email to receive a magic link
+            Enter your email address and we'll send you a secure link to sign in
           </p>
         </div>
 
@@ -82,10 +84,10 @@ export default function LoginPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Mail className="h-5 w-5" />
-              Magic Link Sign In
+              Sign in with Email
             </CardTitle>
             <CardDescription>
-              No passwords needed! We'll send you a secure link to sign in.
+              No password required. New users will be automatically created.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -99,7 +101,7 @@ export default function LoginPage() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Enter your email"
+                  placeholder="your@email.com"
                   required
                   className="mt-1"
                 />
@@ -134,10 +136,7 @@ export default function LoginPage() {
 
             <div className="mt-6 text-center">
               <p className="text-sm text-gray-600">
-                Don't have an account?{" "}
-                <span className="text-blue-600 hover:text-blue-500 cursor-pointer">
-                  Sign up with your email
-                </span>
+                First time here? No account needed - just enter your email above.
               </p>
             </div>
           </CardContent>

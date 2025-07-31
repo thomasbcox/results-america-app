@@ -13,7 +13,7 @@ export async function GET(request: AuthenticatedRequest) {
       const status = searchParams.get('status');
       
       const result = await AdminService.getSuggestions(page, limit, status || undefined);
-      return createSuccessResponse(result.suggestions);
+      return createSuccessResponse({ data: result.suggestions });
     } catch (error) {
       console.error('Get suggestions error:', error);
       return createBadRequestResponse('Failed to get suggestions');

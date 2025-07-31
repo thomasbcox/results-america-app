@@ -11,7 +11,7 @@ export async function GET(request: AuthenticatedRequest) {
       const templates = await SimpleCSVImportService.getTemplates();
       
       console.log(`Found ${templates.length} templates`);
-      return createSuccessResponse(templates, 'Templates retrieved successfully');
+      return createSuccessResponse({ data: templates }, 'Templates retrieved successfully');
     } catch (error) {
       console.error('Error getting templates:', error);
       return createErrorResponse(new ServiceError('Failed to get templates', 'FETCH_ERROR', 500));

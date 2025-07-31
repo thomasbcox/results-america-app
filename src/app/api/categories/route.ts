@@ -40,7 +40,7 @@ async function handleGetCategories(request: NextRequest) {
   // Handle search
   if (search) {
     const results = await CategoriesService.searchCategories(search);
-    return createSuccessResponse(results);
+    return createSuccessResponse({ data: results });
   }
 
   // Handle pagination
@@ -49,7 +49,7 @@ async function handleGetCategories(request: NextRequest) {
       { page, limit },
       { sortBy, sortOrder }
     );
-    return createSuccessResponse(paginated.data);
+    return createSuccessResponse({ data: paginated.data });
   }
 
   // Handle sorting without pagination
@@ -58,19 +58,19 @@ async function handleGetCategories(request: NextRequest) {
       { page: 1, limit: 50 },
       { sortBy, sortOrder }
     );
-    return createSuccessResponse(paginated.data);
+    return createSuccessResponse({ data: paginated.data });
   }
 
   // Handle withStats parameter
   if (withStats) {
     const categories = await CategoriesService.getCategoriesWithStatistics();
-    return createSuccessResponse(categories);
+    return createSuccessResponse({ data: categories });
   }
 
   // Default: return all categories
   const categories = await CategoriesService.getAllCategories();
   console.log('API /api/categories returning categories:', JSON.stringify(categories, null, 2));
-  return createSuccessResponse(categories);
+  return createSuccessResponse({ data: categories });
 }
 
 export const GET = withErrorHandling(handleGetCategories); 

@@ -7,7 +7,7 @@
   },
   "scripts": {
     "dev": "next dev --port 3050",
-    "build": "npm run db:migrate:prod && next build --no-lint",
+    "build": "next build --no-lint",
     "start": "next start --port 3050",
     "lint": "next lint",
     "validate": "tsx scripts/validate-build.ts",
@@ -53,8 +53,7 @@
     "@radix-ui/react-slot": "^1.0.2",
     "@radix-ui/react-switch": "^1.2.5",
     "@radix-ui/react-tabs": "^1.1.12",
-    "@types/bcryptjs": "^2.4.6",
-    "bcryptjs": "^3.0.2",
+
     "better-sqlite3": "^12.2.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.0",

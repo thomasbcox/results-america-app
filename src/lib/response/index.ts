@@ -10,13 +10,67 @@ export type ApiHandler<T extends unknown[] = []> = (
   ...args: T
 ) => Promise<NextResponse>;
 
+// Type-safe response interfaces
+export interface ApiSuccessResponse<T = any> {
+  success: true;
+  message?: string;
+  [key: string]: any; // Allow additional properties
+}
+
+export interface ApiErrorResponse {
+  success: false;
+  error: string;
+  code: string;
+  statusCode: number;
+  details?: any;
+  timestamp: string;
+}
+
+export type ApiResponse<T = any> = ApiSuccessResponse<T> | ApiErrorResponse;
+
+// Prevent data.data patterns with type constraints
+export type FlattenedResponse<T> = {
+  success: true;
+  message?: string;
+} & T;
+
 // Success response helpers
-export const createSuccessResponse = (
-  data: any,
+export const createSuccessResponse = <T extends Record<string, any>>(
+  data: T,
   message?: string,
   statusCode: number = 200
 ): NextResponse => {
-  const response: any = { success: true, data };
+  const response: FlattenedResponse<T> = { success: true, ...data };
+  
+  if (message) {
+    response.message = message;
+  }
+
+  return NextResponse.json(response, { status: statusCode });
+};
+
+// For APIs that return a single object/entity
+export const createEntityResponse = (
+  entity: any,
+  message?: string,
+  statusCode: number = 200
+): NextResponse => {
+  const response: any = { success: true, ...entity };
+  
+  if (message) {
+    response.message = message;
+  }
+
+  return NextResponse.json(response, { status: statusCode });
+};
+
+// For APIs that return a list of items
+export const createListResponse = (
+  items: any[],
+  message?: string,
+  statusCode: number = 200
+): NextResponse => {
+  const response: any = { success: true, items };
   
   if (message) {
     response.message = message;

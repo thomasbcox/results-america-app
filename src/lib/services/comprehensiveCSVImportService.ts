@@ -1,5 +1,5 @@
 import { getDb } from '@/lib/db';
-import { csvImports, states, categories, statistics, dataPoints, importSessions, dataSources } from '@/lib/db/schema-postgres';
+import { csvImports, states, categories, statistics, dataPoints, importSessions, dataSources } from '@/lib/db/schema';
 import { eq, and, inArray } from 'drizzle-orm';
 import { parse } from 'csv-parse/sync';
 import { createHash } from 'crypto';

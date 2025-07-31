@@ -1,3 +1,11 @@
+// Mock the database before importing the route
+jest.mock('@/lib/db/index', () => ({
+  getDb: () => {
+    const { getTestDb } = require('@/lib/test-setup');
+    return getTestDb();
+  }
+}));
+
 import { NextRequest } from 'next/server';
 import { GET } from './route';
 import { setupTestDatabase, seedTestData, cleanupTestDatabase } from '@/lib/test-setup';

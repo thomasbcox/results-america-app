@@ -1,186 +1,104 @@
-# API Response Structure
+# API Response Structure Guidelines
 
-## Overview
+## ✅ Correct Response Structure
 
-All API endpoints in Results America follow a consistent response structure for both success and error cases.
-
-## Success Response Format
-
+### Success Responses
 ```typescript
+// ✅ Good - Flattened structure
 {
   "success": true,
-  "data": T,  // The actual data (array, object, or primitive)
-  "message"?: string  // Optional success message
+  "message": "Operation completed successfully",
+  "users": [...],
+  "pagination": {...}
+}
+
+// ✅ Good - Single entity
+{
+  "success": true,
+  "user": {
+    "id": 1,
+    "email": "user@example.com"
+  }
 }
 ```
 
-### Examples
-
-#### States API
-```json
-{
-  "success": true,
-  "data": [
-    {
-      "id": 1,
-      "name": "Alabama",
-      "abbreviation": "AL",
-      "isActive": 1
-    },
-    {
-      "id": 2,
-      "name": "Alaska", 
-      "abbreviation": "AK",
-      "isActive": 1
-    }
-  ]
-}
-```
-
-#### Categories API
-```json
-{
-  "success": true,
-  "data": [
-    {
-      "id": 1,
-      "name": "Education",
-      "description": "Education statistics and metrics",
-      "icon": "graduation-cap",
-      "sortOrder": 1,
-      "isActive": 1
-    }
-  ]
-}
-```
-
-#### Statistics API
-```json
-{
-  "success": true,
-  "data": [
-    {
-      "id": 1,
-      "name": "High School Graduation Rate",
-      "description": "Percentage of students who graduate high school",
-      "unit": "percentage",
-      "categoryId": 1,
-      "categoryName": "Education",
-      "isActive": 1
-    }
-  ]
-}
-```
-
-## Error Response Format
-
+### Error Responses
 ```typescript
+// ✅ Good - Consistent error structure
 {
   "success": false,
-  "error": string,
-  "code"?: string,
-  "details"?: Record<string, unknown>
-}
-```
-
-### Examples
-
-#### Validation Error
-```json
-{
-  "success": false,
-  "error": "Invalid request parameters",
+  "error": "Error message",
   "code": "VALIDATION_ERROR",
-  "details": {
-    "field": "page",
-    "value": -1,
-    "constraint": "must be >= 1"
-  }
+  "statusCode": 400
 }
 ```
 
-#### Not Found Error
-```json
-{
-  "success": false,
-  "error": "Resource not found",
-  "code": "NOT_FOUND"
-}
-```
+## ❌ Incorrect Response Structure
 
-## Pagination (Optional)
-
-When pagination is used, the response includes pagination metadata:
-
-```json
-{
-  "success": true,
-  "data": [...],
-  "pagination": {
-    "page": 1,
-    "limit": 10,
-    "total": 50,
-    "totalPages": 5,
-    "hasNext": true,
-    "hasPrev": false
-  }
-}
-```
-
-## Frontend Usage
-
-### TypeScript Types
+### Avoid Double Nesting
 ```typescript
-import { ApiResponse } from '@/types/api';
-
-// For states endpoint
-const response: ApiResponse<StateData[]> = await fetch('/api/states');
-const states = response.data; // Direct access to array
-
-// For single state endpoint  
-const response: ApiResponse<StateData> = await fetch('/api/states/1');
-const state = response.data; // Direct access to object
-```
-
-### JavaScript Usage
-```javascript
-const response = await fetch('/api/states');
-const result = await response.json();
-
-if (result.success) {
-  const states = result.data; // Direct access
-  console.log(`Found ${states.length} states`);
-} else {
-  console.error('API Error:', result.error);
-}
-```
-
-## Migration Notes
-
-### Before (Old Structure)
-```json
+// ❌ Bad - Double nesting with data.data
 {
   "success": true,
   "data": {
-    "data": [...],  // ❌ Confusing nested structure
+    "users": [...],
     "pagination": {...}
   }
 }
 ```
 
-### After (New Structure)
-```json
-{
-  "success": true,
-  "data": [...],  // ✅ Clean, flat structure
-  "pagination": {...}  // ✅ Optional, only when needed
-}
+## Implementation Guidelines
+
+### 1. Use `createSuccessResponse` with explicit properties
+```typescript
+// ✅ Good
+return createSuccessResponse({
+  users: result.users,
+  pagination: result.pagination,
+});
+
+// ❌ Bad - Don't pass raw objects
+return createSuccessResponse(result);
 ```
 
-## Benefits
+### 2. Frontend Access Pattern
+```typescript
+// ✅ Good - Direct access
+const users = data.users;
+const pagination = data.pagination;
 
-1. **Consistent**: All endpoints follow the same pattern
-2. **Simple**: Direct access to data without nesting
-3. **Type-safe**: Clear TypeScript interfaces
-4. **RESTful**: Follows REST API best practices
-5. **Flexible**: Optional pagination and metadata 
+// ❌ Bad - Double access
+const users = data.data.users;
+const pagination = data.data.pagination;
+```
+
+### 3. TypeScript Types
+```typescript
+// ✅ Good - Use FlattenedResponse type
+const response: FlattenedResponse<UserData> = {
+  success: true,
+  user: userData
+};
+
+// ❌ Bad - Avoid nested data structures
+const response = {
+  success: true,
+  data: { user: userData }
+};
+```
+
+## ESLint Rules
+
+The project includes ESLint rules to prevent `data.data` patterns:
+- `no-restricted-properties` rule prevents `data.data` access
+- Pre-commit hooks check for `data.data` patterns
+- TypeScript types enforce flattened structures
+
+## Migration Checklist
+
+When updating APIs:
+1. ✅ Use explicit property spreading in `createSuccessResponse`
+2. ✅ Update frontend to access properties directly
+3. ✅ Add TypeScript types for response structure
+4. ✅ Test with curl to verify structure
+5. ✅ Update tests to expect flattened structure 

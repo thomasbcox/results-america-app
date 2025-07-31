@@ -11,7 +11,7 @@ import {
   categories,
   dataSources,
   users
-} from '../db/schema-postgres';
+} from '../db/schema';
 import { eq, and, desc } from 'drizzle-orm';
 import { createHash } from 'crypto';
 import { parse } from 'csv-parse/sync';

@@ -46,13 +46,13 @@ async function handleGetStatistics(request: NextRequest) {
   // Handle search
   if (search) {
     const results = await StatisticsService.searchStatistics(search);
-    return createSuccessResponse(results);
+    return createSuccessResponse({ data: results });
   }
 
   // Handle category filtering
   if (categoryId) {
     const results = await StatisticsService.getStatisticsByCategory(parseInt(categoryId));
-    return createSuccessResponse(results);
+    return createSuccessResponse({ data: results });
   }
 
   // Handle pagination
@@ -61,7 +61,7 @@ async function handleGetStatistics(request: NextRequest) {
       { page, limit },
       { sortBy, sortOrder }
     );
-    return createSuccessResponse(paginated.data);
+    return createSuccessResponse({ data: paginated.data });
   }
 
   // Handle sorting without pagination
@@ -70,19 +70,19 @@ async function handleGetStatistics(request: NextRequest) {
       { page: 1, limit: 50 },
       { sortOrder }
     );
-    return createSuccessResponse(paginated.data);
+    return createSuccessResponse({ data: paginated.data });
   }
 
   // Handle withAvailability parameter
   if (withAvailability) {
     const statistics = await StatisticsService.getStatisticsWithAvailability();
-    return createSuccessResponse(statistics);
+    return createSuccessResponse({ data: statistics });
   }
 
   // Default: return all statistics
   const statistics = await StatisticsService.getAllStatistics();
   console.log('API /api/statistics returning statistics:', JSON.stringify(statistics, null, 2));
-  return createSuccessResponse(statistics);
+  return createSuccessResponse({ data: statistics });
 }
 
 export const GET = withErrorHandling(handleGetStatistics); 

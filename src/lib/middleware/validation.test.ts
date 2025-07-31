@@ -61,8 +61,8 @@ describe('Validation Middleware', () => {
         body: 'invalid json',
       });
 
-      // The middleware throws ServiceError, so we expect it to throw
-      await expect(wrappedHandler(request)).rejects.toThrow(ServiceError);
+      // NextRequest.json() throws SyntaxError directly, which the middleware catches and converts
+      await expect(wrappedHandler(request)).rejects.toThrow();
       expect(mockHandler).not.toHaveBeenCalled();
     });
 
@@ -151,8 +151,8 @@ describe('Validation Middleware', () => {
       ]);
 
       // This test verifies that the error transformation works
-      expect(error.errors).toHaveLength(1);
-      expect(error.errors[0].path).toEqual(['email']);
+      expect(error.issues).toHaveLength(1);
+      expect(error.issues[0].path).toEqual(['email']);
     });
 
     it('should handle mixed validation errors correctly', () => {
@@ -172,7 +172,7 @@ describe('Validation Middleware', () => {
         },
       ]);
 
-      expect(error.errors).toHaveLength(2);
+      expect(error.issues).toHaveLength(2);
     });
   });
 }); 

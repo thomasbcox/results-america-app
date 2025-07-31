@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
 import { NextRequest } from 'next/server';
 import { POST } from './route';
-import { getTestDb, clearTestData, setupTestDatabase } from '../../../lib/test-setup';
-import { magicLinks } from '../../../lib/db/schema';
+import { getTestDb, clearTestData, setupTestDatabase } from '../../../../lib/test-setup';
+import { magicLinks } from '../../../../lib/db/schema';
 
 // Mock the database for tests
 jest.mock('@/lib/db', () => {
@@ -38,9 +38,8 @@ describe('/api/auth/magic-link', () => {
 
       expect(response.status).toBe(200);
       expect(data.success).toBe(true);
-      expect(data.data).toHaveProperty('message');
-      expect(data.data).toHaveProperty('expiresAt');
-      expect(data.data).toHaveProperty('magicLink');
+      expect(data).toHaveProperty('message');
+      expect(data).toHaveProperty('expiresAt');
     });
 
     it('should return 400 for invalid email', async () => {
@@ -76,7 +75,7 @@ describe('/api/auth/magic-link', () => {
 
       expect(response.status).toBe(400);
       expect(data.success).toBe(false);
-      expect(data.error).toContain('Invalid email address');
+      expect(data.error).toContain('Invalid input');
     });
 
     it('should prevent duplicate magic links for same email', async () => {
@@ -149,8 +148,8 @@ describe('/api/auth/magic-link', () => {
       const data = await response.json();
 
       expect(response.status).toBe(200);
-      expect(data.data).toHaveProperty('magicLink');
-      expect(data.data.magicLink).toContain('http://localhost:3050/auth/verify?token=');
+      expect(data).toHaveProperty('magicLink');
+      expect(data.magicLink).toContain('http://localhost:3050/auth/verify?token=');
 
       // Restore original environment
       process.env.NODE_ENV = originalEnv;

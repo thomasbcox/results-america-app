@@ -4,7 +4,7 @@ import { withErrorHandling, createSuccessResponse } from '@/lib/response';
 
 async function handleStatisticsAvailabilityRequest(request: NextRequest) {
   const statisticsWithData = await getStatisticsWithData();
-  return createSuccessResponse(statisticsWithData);
+  return createSuccessResponse({ data: statisticsWithData });
 }
 
 export const GET = withErrorHandling(handleStatisticsAvailabilityRequest); 

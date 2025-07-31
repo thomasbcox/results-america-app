@@ -10,7 +10,10 @@ export async function GET(request: AuthenticatedRequest) {
     try {
       const { page = 1, limit = 20 } = await validateQueryParams(req, PaginationSchema);
       const result = await AdminService.getUsers(page, limit);
-      return createSuccessResponse(result);
+      return createSuccessResponse({
+        users: result.users,
+        pagination: result.pagination,
+      });
     } catch (error) {
       console.error('Get users error:', error);
       return createBadRequestResponse('Failed to get users');

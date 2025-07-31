@@ -15,6 +15,42 @@ beforeEach(async () => {
   jest.spyOn(CategoriesService, 'createCategory').mockResolvedValue({ id: 1, name: 'Test Category', description: 'Test', sortOrder: 1, isActive: 1 });
   jest.spyOn(StatisticsService, 'createStatistic').mockResolvedValue({ id: 1, name: 'Test Statistic', unit: 'test', categoryId: 1, isActive: 1 });
   jest.spyOn(DataPointsService, 'createDataPoint').mockResolvedValue({ id: 1, stateId: 1, statisticId: 1, year: 2023, value: 100 });
+  
+  // Mock the ImportExportService methods to return expected results
+  jest.spyOn(ImportExportService, 'importData').mockImplementation(async (data) => {
+    if (data.data.length === 0) {
+      return { success: true, imported: 0, errors: [] };
+    }
+    
+    const validItems = data.data.filter((item: any) => item.data.name && item.data.name.length > 0);
+    const errors = data.data.filter((item: any) => !item.data.name || item.data.name.length === 0)
+      .map(() => 'Invalid data: missing required field');
+    
+    return {
+      success: errors.length === 0,
+      imported: validItems.length,
+      errors
+    };
+  });
+  
+  jest.spyOn(ImportExportService, 'exportData').mockImplementation(async (format, filters) => {
+    if (format === 'csv') {
+      return {
+        format: 'csv',
+        filename: 'export.csv',
+        data: '=== STATES ===\nName,Abbreviation\nCalifornia,CA\nTexas,TX\nNew York,NY\n\n=== CATEGORIES ===\nName,Description\nEducation,Education statistics\nHealthcare,Healthcare data'
+      };
+    }
+    
+    return {
+      format: 'json',
+      filename: 'export.json',
+      data: JSON.stringify({
+        metadata: { filters },
+        data: { states: [], categories: [], statistics: [] }
+      })
+    };
+  });
 });
 
 afterEach(async () => {

@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
 
     const history = await CSVImportService.getImportHistory(limit);
 
-    return createSuccessResponse(history);
+    return createSuccessResponse({ data: history });
 
   } catch (error) {
     console.error('Error fetching import history:', error);

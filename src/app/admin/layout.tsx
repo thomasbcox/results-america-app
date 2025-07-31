@@ -47,9 +47,9 @@ export default function AdminLayout({
         const data = await response.json();
         console.log('📡 Admin layout: /api/auth/me response data:', data)
         
-        if (data.success && data.data) {
-          // The API response structure is: { success: true, data: { user: {...} } }
-          const userData = data.data.user || data.data
+        if (data.success && data.user) {
+          // The API response structure is: { success: true, user: {...} }
+          const userData = data.user
           console.log('📡 Admin layout: User data:', userData)
           
           if (userData.role === 'admin') {

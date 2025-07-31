@@ -145,9 +145,9 @@ export function SelectionProvider({ children }: { children: ReactNode }) {
         const data = await response.json()
         console.log('📡 /api/auth/me response data:', data)
         
-        if (data.success && data.data) {
-          // The API response structure is: { success: true, data: { user: {...} } }
-          const userData = data.data.user || data.data
+        if (data.success && data.user) {
+          // The API response structure is: { success: true, user: {...} }
+          const userData = data.user
           console.log('✅ Server user data:', userData)
           
           const newUser = { 

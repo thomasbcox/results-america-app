@@ -1,0 +1,20 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Check for data.data patterns in API responses
+echo "🔍 Checking for data.data patterns..."
+if grep -r "data\.data" src/app/api/ --include="*.ts" --include="*.tsx"; then
+  echo "❌ Found data.data patterns in API files. Please fix these before committing."
+  echo "💡 Use flattened response structure instead."
+  exit 1
+fi
+
+# Check for data.data patterns in frontend code
+echo "🔍 Checking for data.data patterns in frontend..."
+if grep -r "data\.data" src/app/ --include="*.ts" --include="*.tsx" --exclude-dir=api; then
+  echo "❌ Found data.data patterns in frontend files. Please fix these before committing."
+  echo "💡 Use flattened response structure instead."
+  exit 1
+fi
+
+echo "✅ No data.data patterns found!" 

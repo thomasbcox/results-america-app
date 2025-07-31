@@ -1,10 +1,6 @@
-import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { drizzle as drizzlePostgres } from 'drizzle-orm/postgres-js';
-import Database from 'better-sqlite3';
 import postgres from 'postgres';
-import * as sqliteSchema from './schema';
 import * as postgresSchema from './schema-postgres';
-import path from 'path';
 import dotenv from 'dotenv';
 
 // Load environment variables
@@ -16,12 +12,10 @@ const getDatabaseConfig = () => {
   
   switch (env) {
     case 'test':
-      // Use file-based SQLite for tests (shared across processes)
-      const testDbPath = process.env.TEST_DB_PATH || ':memory:';
+      // For tests, we'll use a mock database or skip if not available
       return {
-        type: 'sqlite' as const,
-        path: testDbPath,
-        description: 'TEST (file-based SQLite)'
+        type: 'mock' as const,
+        description: 'TEST (Mock Database)'
       };
     case 'production':
       // Use PostgreSQL for production (cloud database)
@@ -53,11 +47,12 @@ const initializeDatabase = () => {
   try {
     const dbConfig = getDatabaseConfig();
     
-    if (dbConfig.type === 'sqlite') {
-      // SQLite for tests
-      const sqlite = new Database(dbConfig.path);
-      databaseInstance = drizzle(sqlite, { schema: sqliteSchema });
-      console.log(`✅ SQLite database connected: ${dbConfig.description}`);
+    if (dbConfig.type === 'mock') {
+      // Return null for tests - they should use testDb.ts
+      console.log(`✅ Mock database for tests: ${dbConfig.description}`);
+      databaseInstance = null;
+      dbInitialized = true;
+      return databaseInstance;
     } else {
       // PostgreSQL for dev/prod
       if (!dbConfig.url) {
@@ -115,4 +110,4 @@ export const getDb = () => {
 export const db = getDb;
 
 // Export schemas for migrations
-export { sqliteSchema, postgresSchema }; 
+export { postgresSchema }; 

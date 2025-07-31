@@ -60,7 +60,7 @@ async function handleGetDataPoints(request: NextRequest) {
       return createBadRequestResponse('Missing required parameters. Use stateId, statisticId, or both stateIds and statisticIds with year');
     }
 
-    return createSuccessResponse(dataPoints);
+    return createSuccessResponse({ data: dataPoints });
   } catch (error) {
     console.error('Data points API error:', error);
     return createBadRequestResponse('Failed to retrieve data points');

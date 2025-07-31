@@ -4,7 +4,7 @@ import { withErrorHandling, createSuccessResponse } from '@/lib/response';
 
 async function handleCategoriesAvailabilityRequest(request: NextRequest) {
   const categoriesWithData = await getCategoriesWithData();
-  return createSuccessResponse(categoriesWithData);
+  return createSuccessResponse({ data: categoriesWithData });
 }
 
 export const GET = withErrorHandling(handleCategoriesAvailabilityRequest); 

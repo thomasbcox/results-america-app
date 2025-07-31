@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, real, blob, uniqueIndex } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, real, blob, uniqueIndex, index } from 'drizzle-orm/sqlite-core';
 import { sql } from 'drizzle-orm';
 
 // Phase 1: Core Data Display Schema (Normalized)
@@ -100,14 +100,11 @@ export const users = sqliteTable('users', {
 
 export const sessions = sqliteTable('sessions', {
   id: integer('id').primaryKey({ autoIncrement: true }),
-  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  userId: integer('user_id').notNull().references(() => users.id),
   token: text('token').notNull().unique(),
   expiresAt: integer('expires_at', { mode: 'timestamp' }).notNull(),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`),
-}, (table) => ({
-  tokenIndex: uniqueIndex('idx_sessions_token').on(table.token),
-  userIndex: uniqueIndex('idx_sessions_user').on(table.userId),
-}));
+});
 
 export const magicLinks = sqliteTable('magic_links', {
   id: integer('id').primaryKey({ autoIncrement: true }),
@@ -116,29 +113,143 @@ export const magicLinks = sqliteTable('magic_links', {
   expiresAt: integer('expires_at', { mode: 'timestamp' }).notNull(),
   used: integer('used').notNull().default(0),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`),
-}, (table) => ({
-  tokenIndex: uniqueIndex('idx_magic_links_token').on(table.token),
-  emailIndex: uniqueIndex('idx_magic_links_email').on(table.email),
-}));
+});
 
-// Phase 3: User Preferences and Suggestions
+// Phase 3: User Preferences Schema
+// User favorites and suggestions
+
 export const userFavorites = sqliteTable('user_favorites', {
   id: integer('id').primaryKey({ autoIncrement: true }),
-  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-  statisticId: integer('statistic_id').notNull().references(() => statistics.id, { onDelete: 'cascade' }),
+  userId: integer('user_id').notNull().references(() => users.id),
+  statisticId: integer('statistic_id').notNull().references(() => statistics.id),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`),
 }, (table) => ({
-  userStatisticIndex: uniqueIndex('idx_user_favorites_unique').on(table.userId, table.statisticId),
+  // Ensure a user can only favorite a statistic once
+  uniqueUserStatistic: uniqueIndex('idx_user_favorites_unique').on(table.userId, table.statisticId),
 }));
 
 export const userSuggestions = sqliteTable('user_suggestions', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   userId: integer('user_id').notNull().references(() => users.id),
+  email: text('email').notNull(), // User's email for contact
   title: text('title').notNull(),
   description: text('description').notNull(),
   category: text('category'), // Suggested category
-  status: text('status', { enum: ['pending', 'approved', 'rejected'] }).notNull().default('pending'),
+  status: text('status', { enum: ['pending', 'approved', 'rejected', 'implemented'] }).notNull().default('pending'),
   adminNotes: text('admin_notes'),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`),
+});
+
+// Phase 3: CSV Import System Schema
+// Comprehensive data import workflow with staging, validation, and publishing
+
+export const csvImports = sqliteTable('csv_imports', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  name: text('name').notNull(), // e.g., "2023 GDP Data Import"
+  description: text('description'),
+  filename: text('filename').notNull(), // Original uploaded filename
+  fileSize: integer('file_size').notNull(), // File size in bytes
+  fileHash: text('file_hash').notNull(), // SHA256 hash for deduplication
+  status: text('status', { enum: ['uploaded', 'validating', 'validation_failed', 'importing', 'imported', 'failed'] }).notNull().default('uploaded'),
+  uploadedBy: integer('uploaded_by').notNull().references(() => users.id),
+  uploadedAt: integer('uploaded_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`),
+  validatedAt: integer('validated_at', { mode: 'timestamp' }),
+  publishedAt: integer('published_at', { mode: 'timestamp' }),
+  errorMessage: text('error_message'), // Error details if import failed
+  metadata: text('metadata'), // JSON string with import metadata
+  isActive: integer('is_active').default(1),
+  duplicateOf: integer('duplicate_of'), // Points to original import if this is a duplicate
+  totalRows: integer('total_rows'),
+  validRows: integer('valid_rows'),
+  errorRows: integer('error_rows'),
+  processingTimeMs: integer('processing_time_ms'),
+});
+
+export const importLogs = sqliteTable('import_logs', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  csvImportId: integer('csv_import_id').notNull().references(() => csvImports.id),
+  logLevel: text('log_level', { enum: ['info', 'validation_error', 'system_error'] }).notNull(),
+  rowNumber: integer('row_number'), // CSV row number (1-based)
+  fieldName: text('field_name'), // Which field had the problem
+  fieldValue: text('field_value'), // The problematic value
+  expectedValue: text('expected_value'), // What it should have been
+  failureCategory: text('failure_category', { 
+    enum: ['missing_required', 'invalid_reference', 'data_type', 'business_rule', 'database_error', 'csv_parsing']
+  }).notNull(),
+  message: text('message').notNull(),
+  details: text('details'), // JSON string with additional context
+  timestamp: integer('timestamp', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`),
+});
+
+export const importValidationSummary = sqliteTable('import_validation_summary', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  csvImportId: integer('csv_import_id').notNull().references(() => csvImports.id),
+  totalRows: integer('total_rows').notNull(),
+  validRows: integer('valid_rows').notNull(),
+  errorRows: integer('error_rows').notNull(),
+  failureBreakdown: text('failure_breakdown'), // JSON: { "missing_required": 15, "invalid_reference": 8, ... }
+  validationTimeMs: integer('validation_time_ms'),
+  status: text('status', { enum: ['validated_failed', 'validated_passed', 'imported_success', 'imported_failed'] }).notNull(),
+  completedAt: integer('completed_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`),
+});
+
+export const csvImportMetadata = sqliteTable('csv_import_metadata', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  csvImportId: integer('csv_import_id').notNull().references(() => csvImports.id),
+  key: text('key').notNull(), // e.g., "data_source", "data_year", "statistic_name"
+  value: text('value').notNull(), // e.g., "BEA", "2023", "Real GDP"
+  dataType: text('data_type', { enum: ['string', 'number', 'date', 'boolean'] }).notNull().default('string'),
+  isRequired: integer('is_required').notNull().default(0),
+  validationRule: text('validation_rule'), // JSON string with validation rules
+}, (table) => ({
+  uniqueConstraint: uniqueIndex('idx_csv_import_metadata_unique').on(table.csvImportId, table.key),
+}));
+
+export const csvImportValidation = sqliteTable('csv_import_validation', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  csvImportId: integer('csv_import_id').notNull().references(() => csvImports.id),
+  validationType: text('validation_type', { enum: ['schema', 'data_quality', 'business_rules', 'duplicate_check'] }).notNull(),
+  status: text('status', { enum: ['pending', 'running', 'passed', 'failed', 'warning'] }).notNull().default('pending'),
+  message: text('message'), // Validation result message
+  details: text('details'), // JSON string with detailed validation results
+  startedAt: integer('started_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`),
+  completedAt: integer('completed_at', { mode: 'timestamp' }),
+  errorCount: integer('error_count').default(0),
+  warningCount: integer('warning_count').default(0),
+});
+
+export const csvImportStaging = sqliteTable('csv_import_staging', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  csvImportId: integer('csv_import_id').notNull().references(() => csvImports.id),
+  rowNumber: integer('row_number').notNull(), // Original CSV row number (1-based)
+  stateName: text('state_name'), // Extracted state name
+  stateId: integer('state_id').references(() => states.id), // Resolved state ID
+  year: integer('year'), // Extracted year
+  statisticName: text('statistic_name'), // Extracted statistic name
+  statisticId: integer('statistic_id').references(() => statistics.id), // Resolved statistic ID
+  value: real('value'), // Extracted numeric value
+  rawData: text('raw_data').notNull(), // JSON string with all original row data
+  validationStatus: text('validation_status', { enum: ['pending', 'valid', 'invalid', 'warning'] }).notNull().default('pending'),
+  validationErrors: text('validation_errors'), // JSON string with validation errors
+  isProcessed: integer('is_processed').notNull().default(0), // Whether this row was processed into dataPoints
+  processedAt: integer('processed_at', { mode: 'timestamp' }),
+}, (table) => ({
+  csvImportIndex: index('idx_csv_import_staging_import').on(table.csvImportId),
+  rowNumberIndex: index('idx_csv_import_staging_row').on(table.csvImportId, table.rowNumber),
+}));
+
+export const csvImportTemplates = sqliteTable('csv_import_templates', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  name: text('name').notNull().unique(), // e.g., "BEA GDP Template"
+  description: text('description'),
+  categoryId: integer('category_id').references(() => categories.id),
+  dataSourceId: integer('data_source_id').references(() => dataSources.id),
+  templateSchema: text('template_schema').notNull(), // JSON string defining expected CSV structure
+  validationRules: text('validation_rules'), // JSON string with validation rules
+  sampleData: text('sample_data'), // JSON string with sample CSV data
+  isActive: integer('is_active').default(1),
+  createdBy: integer('created_by').notNull().references(() => users.id),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`),
 });

@@ -174,11 +174,14 @@ export default function AdminDataPage() {
     try {
       const response = await fetch('/api/admin/csv-templates');
       const result = await response.json();
-      if (result.success) {
+      if (result.success && result.data) {
         setTemplates(result.data);
+      } else {
+        setTemplates([]);
       }
     } catch (error) {
       console.error('Failed to fetch templates:', error);
+      setTemplates([]);
     }
   };
 
@@ -189,7 +192,7 @@ export default function AdminDataPage() {
       const result = await response.json();
       console.log('Import history response:', result);
       
-      if (result.success) {
+      if (result.success && result.data) {
         console.log('Import history set:', result.data.length, 'items');
         // Add debugging for status values
         result.data.forEach((import_: ImportHistory) => {
@@ -198,6 +201,7 @@ export default function AdminDataPage() {
         setImportHistory(result.data);
       } else {
         console.error('Failed to fetch import history:', result.error);
+        setImportHistory([]); // Ensure we always have an array
         addToast({
           type: 'error',
           title: 'Error',
@@ -206,6 +210,7 @@ export default function AdminDataPage() {
       }
     } catch (error) {
       console.error('Error fetching import history:', error);
+      setImportHistory([]); // Ensure we always have an array
       addToast({
         type: 'error',
         title: 'Error',
@@ -218,11 +223,14 @@ export default function AdminDataPage() {
     try {
       const response = await fetch('/api/categories');
       const result = await response.json();
-      if (result.success) {
+      if (result.success && result.data) {
         setCategories(result.data);
+      } else {
+        setCategories([]);
       }
     } catch (error) {
       console.error('Failed to fetch categories:', error);
+      setCategories([]);
     }
   };
 
@@ -230,11 +238,14 @@ export default function AdminDataPage() {
     try {
       const response = await fetch(`/api/statistics?categoryId=${categoryId}`);
       const result = await response.json();
-      if (result.success) {
+      if (result.success && result.data) {
         setMeasures(result.data);
+      } else {
+        setMeasures([]);
       }
     } catch (error) {
       console.error('Failed to fetch measures:', error);
+      setMeasures([]);
     }
   };
 
@@ -618,7 +629,7 @@ export default function AdminDataPage() {
                       className="w-full p-2 border border-gray-300 rounded-md"
                     >
                       <option value="">Choose a template...</option>
-                      {templates.map((template) => (
+                      {templates && templates.map((template) => (
                         <option key={template.id} value={template.id}>
                           {template.name}
                         </option>
@@ -639,7 +650,7 @@ export default function AdminDataPage() {
                                 Your data should have these columns (in any order):
                               </p>
                               <div className="flex flex-wrap gap-2">
-                                {template.templateSchema.expectedHeaders.map((header: string, index: number) => (
+                                {template.templateSchema.expectedHeaders && template.templateSchema.expectedHeaders.map((header: string, index: number) => (
                                   <Badge key={index} variant="outline" className="text-xs">
                                     {header}
                                   </Badge>
@@ -674,7 +685,7 @@ export default function AdminDataPage() {
                       className="w-full p-2 border border-gray-300 rounded-md"
                     >
                       <option value="">Choose a category...</option>
-                      {categories.map((category) => (
+                      {categories && categories.map((category) => (
                         <option key={category.id} value={category.id}>
                           {category.name}
                         </option>
@@ -694,7 +705,7 @@ export default function AdminDataPage() {
                         className="w-full p-2 border border-gray-300 rounded-md"
                       >
                         <option value="">Choose a measure...</option>
-                        {measures.map((measure) => (
+                        {measures && measures.map((measure) => (
                           <option key={measure.id} value={measure.id}>
                             {measure.name}
                           </option>
@@ -865,7 +876,7 @@ Both formats will be automatically converted to CSV.`}
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {importHistory.map((import_) => (
+                  {importHistory && importHistory.map((import_) => (
                     <div key={import_.id} className="border rounded-lg p-4">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
@@ -977,7 +988,7 @@ Both formats will be automatically converted to CSV.`}
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {templates.map((template) => (
+                  {templates && templates.map((template) => (
                     <Card key={template.id} className="cursor-pointer hover:shadow-md transition-shadow">
                       <CardHeader>
                         <CardTitle className="text-lg">{template.name}</CardTitle>
@@ -1061,7 +1072,7 @@ Both formats will be automatically converted to CSV.`}
                   Validation Errors ({errorDetails.errors.length})
                 </h3>
                 <div className="space-y-2">
-                  {errorDetails.errors.map((error, index) => (
+                  {errorDetails.errors && errorDetails.errors.map((error, index) => (
                     <div key={index} className="p-3 bg-red-50 border border-red-200 rounded-md">
                       <p className="text-sm text-red-800">{error}</p>
                     </div>
@@ -1078,7 +1089,7 @@ Both formats will be automatically converted to CSV.`}
                   Warnings ({errorDetails.warnings.length})
                 </h3>
                 <div className="space-y-2">
-                  {errorDetails.warnings.map((warning, index) => (
+                  {errorDetails.warnings && errorDetails.warnings.map((warning, index) => (
                     <div key={index} className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
                       <p className="text-sm text-yellow-800">{warning}</p>
                     </div>

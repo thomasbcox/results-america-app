@@ -1,7 +1,7 @@
 import { config } from 'dotenv';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import Database from 'better-sqlite3';
-import * as sqliteSchema from './db/schema-normalized';
+import * as sqliteSchema from './db/schema';
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
 import { join, dirname } from 'path';
 import { tmpdir } from 'os';
@@ -131,9 +131,10 @@ export async function setupTestDatabase() {
     await migrate(db, { migrationsFolder: './drizzle-sqlite' });
     console.log('✅ SQLite migrations applied successfully');
   } catch (error) {
-    console.log('Migration failed, creating tables manually:', error instanceof Error ? error.message : 'Unknown error');
-    
+    console.log('❌ Migration failed, creating tables manually:', error instanceof Error ? error.message : 'Unknown error');
     // Fallback: Create tables manually using Drizzle schema
+    const logTable = (name) => console.log(`🛠️  Creating table: ${name}`);
+    logTable('states');
     await db.run(`
       CREATE TABLE IF NOT EXISTS states (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -142,7 +143,7 @@ export async function setupTestDatabase() {
         is_active INTEGER DEFAULT 1
       )
     `);
-    
+    logTable('categories');
     await db.run(`
       CREATE TABLE IF NOT EXISTS categories (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -153,7 +154,7 @@ export async function setupTestDatabase() {
         is_active INTEGER DEFAULT 1
       )
     `);
-    
+    logTable('data_sources');
     await db.run(`
       CREATE TABLE IF NOT EXISTS data_sources (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -163,7 +164,7 @@ export async function setupTestDatabase() {
         is_active INTEGER DEFAULT 1
       )
     `);
-    
+    logTable('statistics');
     await db.run(`
       CREATE TABLE IF NOT EXISTS statistics (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -183,7 +184,7 @@ export async function setupTestDatabase() {
         FOREIGN KEY (data_source_id) REFERENCES data_sources(id)
       )
     `);
-    
+    logTable('import_sessions');
     await db.run(`
       CREATE TABLE IF NOT EXISTS import_sessions (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -197,7 +198,7 @@ export async function setupTestDatabase() {
         FOREIGN KEY (data_source_id) REFERENCES data_sources(id)
       )
     `);
-    
+    logTable('data_points');
     await db.run(`
       CREATE TABLE IF NOT EXISTS data_points (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -211,7 +212,7 @@ export async function setupTestDatabase() {
         FOREIGN KEY (statistic_id) REFERENCES statistics(id)
       )
     `);
-    
+    logTable('national_averages');
     await db.run(`
       CREATE TABLE IF NOT EXISTS national_averages (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -221,11 +222,10 @@ export async function setupTestDatabase() {
         calculation_method TEXT NOT NULL DEFAULT 'arithmetic_mean',
         state_count INTEGER NOT NULL,
         last_calculated INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
-        FOREIGN KEY (statistic_id) REFERENCES statistics(id),
-        UNIQUE(statistic_id, year)
+        FOREIGN KEY (statistic_id) REFERENCES statistics(id)
       )
     `);
-    
+    logTable('users');
     await db.run(`
       CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -238,7 +238,7 @@ export async function setupTestDatabase() {
         updated_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
       )
     `);
-    
+    logTable('sessions');
     await db.run(`
       CREATE TABLE IF NOT EXISTS sessions (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -249,90 +249,30 @@ export async function setupTestDatabase() {
         FOREIGN KEY (user_id) REFERENCES users(id)
       )
     `);
-    
+    logTable('magic_links');
     await db.run(`
       CREATE TABLE IF NOT EXISTS magic_links (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         email TEXT NOT NULL,
         token TEXT NOT NULL UNIQUE,
-        expires_at INTEGER NOT NULL,
+        expiresAt INTEGER NOT NULL,
         used INTEGER NOT NULL DEFAULT 0,
-        created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
+        createdAt INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
       )
     `);
-    
-    await db.run(`
-      CREATE TABLE IF NOT EXISTS user_favorites (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER NOT NULL,
-        statistic_id INTEGER NOT NULL,
-        created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
-        FOREIGN KEY (user_id) REFERENCES users(id),
-        FOREIGN KEY (statistic_id) REFERENCES statistics(id),
-        UNIQUE(user_id, statistic_id)
-      )
-    `);
-    
-    await db.run(`
-      CREATE TABLE IF NOT EXISTS user_suggestions (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER NOT NULL,
-        title TEXT NOT NULL,
-        description TEXT NOT NULL,
-        category TEXT,
-        status TEXT NOT NULL DEFAULT 'pending',
-        admin_notes TEXT,
-        created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
-        updated_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
-        FOREIGN KEY (user_id) REFERENCES users(id)
-      )
-    `);
-    
-    // User Authentication Tables
-    await db.run(`
-      CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        email TEXT NOT NULL UNIQUE,
-        name TEXT,
-        role TEXT NOT NULL DEFAULT 'user',
-        is_active INTEGER NOT NULL DEFAULT 1,
-        email_verified INTEGER NOT NULL DEFAULT 0,
-        created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
-        updated_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
-      )
-    `);
-    
-    await db.run(`
-      CREATE TABLE IF NOT EXISTS sessions (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER NOT NULL,
-        token TEXT NOT NULL UNIQUE,
-        expires_at INTEGER NOT NULL,
-        created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
-        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-      )
-    `);
-    
-    await db.run(`
-      CREATE TABLE IF NOT EXISTS magic_links (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        email TEXT NOT NULL,
-        token TEXT NOT NULL UNIQUE,
-        expires_at INTEGER NOT NULL,
-        used INTEGER NOT NULL DEFAULT 0,
-        created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
-      )
-    `);
-    
     // CSV Import Tables
+    logTable('csv_imports');
     await db.run(`
       CREATE TABLE IF NOT EXISTS csv_imports (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
+        description TEXT,
         filename TEXT NOT NULL,
+        file_size INTEGER NOT NULL,
+        file_hash TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'uploaded',
         uploaded_by INTEGER NOT NULL,
         uploaded_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
-        status TEXT NOT NULL DEFAULT 'uploaded',
         validated_at INTEGER,
         published_at INTEGER,
         error_message TEXT,
@@ -346,7 +286,7 @@ export async function setupTestDatabase() {
         FOREIGN KEY (uploaded_by) REFERENCES users(id)
       )
     `);
-    
+    logTable('csv_import_staging');
     await db.run(`
       CREATE TABLE IF NOT EXISTS csv_import_staging (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -368,7 +308,7 @@ export async function setupTestDatabase() {
         FOREIGN KEY (statistic_id) REFERENCES statistics(id)
       )
     `);
-    
+    logTable('csv_import_templates');
     await db.run(`
       CREATE TABLE IF NOT EXISTS csv_import_templates (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -388,7 +328,7 @@ export async function setupTestDatabase() {
         FOREIGN KEY (created_by) REFERENCES users(id)
       )
     `);
-    
+    logTable('csv_import_metadata');
     await db.run(`
       CREATE TABLE IF NOT EXISTS csv_import_metadata (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -402,7 +342,7 @@ export async function setupTestDatabase() {
         UNIQUE(csv_import_id, key)
       )
     `);
-    
+    logTable('csv_import_validation');
     await db.run(`
       CREATE TABLE IF NOT EXISTS csv_import_validation (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -415,6 +355,38 @@ export async function setupTestDatabase() {
         completed_at INTEGER,
         error_count INTEGER DEFAULT 0,
         warning_count INTEGER DEFAULT 0,
+        FOREIGN KEY (csv_import_id) REFERENCES csv_imports(id)
+      )
+    `);
+    logTable('import_logs');
+    await db.run(`
+      CREATE TABLE IF NOT EXISTS import_logs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        csv_import_id INTEGER NOT NULL,
+        log_level TEXT NOT NULL,
+        row_number INTEGER,
+        field_name TEXT,
+        field_value TEXT,
+        expected_value TEXT,
+        failure_category TEXT NOT NULL,
+        message TEXT NOT NULL,
+        details TEXT,
+        timestamp INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
+        FOREIGN KEY (csv_import_id) REFERENCES csv_imports(id)
+      )
+    `);
+    logTable('import_validation_summary');
+    await db.run(`
+      CREATE TABLE IF NOT EXISTS import_validation_summary (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        csv_import_id INTEGER NOT NULL,
+        total_rows INTEGER NOT NULL,
+        valid_rows INTEGER NOT NULL,
+        error_rows INTEGER NOT NULL,
+        failure_breakdown TEXT,
+        validation_time_ms INTEGER,
+        status TEXT NOT NULL,
+        completed_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
         FOREIGN KEY (csv_import_id) REFERENCES csv_imports(id)
       )
     `);
@@ -523,6 +495,8 @@ if (!process.env.SKIP_CACHE_MOCK) {
       get: jest.fn(),
       set: jest.fn(),
       delete: jest.fn(),
+      clear: jest.fn(),
+      getOptional: jest.fn(),
     },
   }));
 }

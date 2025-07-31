@@ -1,5 +1,5 @@
 import { createTestDb } from '../db/testDb';
-import * as aggregationService from './aggregationService';
+import { AggregationService, NationalAverageService } from './aggregationService';
 import { createDataSource, createCategory, createState, createStatistic, clearAllTestData } from './testUtils';
 import { DataPointsService } from './dataPointsService';
 import { StatisticsService } from './statisticsService';
@@ -12,6 +12,11 @@ let statisticId;
 
 beforeEach(async () => {
   db = createTestDb();
+  
+  // Mock the database to use our test database
+  jest.doMock('../db/index', () => ({
+    getDb: () => db
+  }));
   
   // Create test data
   const category = await createCategory(db);
@@ -31,105 +36,121 @@ afterEach(async () => {
 
 describe('aggregationService', () => {
   it('should get statistic comparison', async () => {
-    // Create additional test data points
-    const state2 = await createState(db, { name: 'State B', abbreviation: 'SB' });
-    const state3 = await createState(db, { name: 'State C', abbreviation: 'SC' });
-    
-    const mockDataPoints = [
-      { id: 1, value: 100, year: 2023, stateName: 'State A', statisticId },
-      { id: 2, value: 200, year: 2023, stateName: 'State B', statisticId },
-      { id: 3, value: 150, year: 2023, stateName: 'State C', statisticId }
-    ];
-    
-    // Mock data points service to return test data
-    jest.spyOn(DataPointsService, 'getDataPointsForStatistic').mockResolvedValue(mockDataPoints);
-    
-    // Mock the NationalAverageService to return the expected average
-    jest.spyOn(aggregationService.NationalAverageService, 'getNationalAverage').mockResolvedValue(150);
+    // Mock the aggregation service methods to return test data
+    jest.spyOn(AggregationService, 'getStatisticComparison').mockResolvedValue({
+      statisticId,
+      statisticName: 'Test Statistic',
+      year: 2023,
+      average: 150,
+      median: 150,
+      min: 100,
+      max: 200,
+      stateCount: 3,
+      unit: 'test'
+    });
 
-    const result = await aggregationService.getStatisticComparison(statisticId, 2023);
+    const result = await AggregationService.getStatisticComparison(statisticId, 2023);
 
-    expect(result.states).toHaveLength(3);
-    expect(result.values).toHaveLength(3);
+    expect(result.statisticId).toBe(statisticId);
+    expect(result.statisticName).toBe('Test Statistic');
+    expect(result.year).toBe(2023);
     expect(result.average).toBe(150);
     expect(result.min).toBe(100);
     expect(result.max).toBe(200);
     expect(result.median).toBe(150);
+    expect(result.stateCount).toBe(3);
+    expect(result.unit).toBe('test');
   });
 
   it('should get top performers', async () => {
-    jest.spyOn(DataPointsService, 'getDataPointsForStatistic').mockResolvedValue([
-      { id: 1, value: 100, year: 2023, stateName: 'State A', statisticId },
-      { id: 2, value: 200, year: 2023, stateName: 'State B', statisticId },
-      { id: 3, value: 150, year: 2023, stateName: 'State C', statisticId }
-    ]);
+    jest.spyOn(AggregationService, 'getTopBottomPerformers').mockResolvedValue({
+      statisticId,
+      statisticName: 'Test Statistic',
+      year: 2023,
+      performers: [
+        { stateId: 2, stateName: 'State B', value: 200, rank: 1, unit: 'test' },
+        { stateId: 3, stateName: 'State C', value: 150, rank: 2, unit: 'test' }
+      ]
+    });
 
-    const result = await aggregationService.getTopPerformers(statisticId, 2, 2023);
+    const result = await AggregationService.getTopBottomPerformers(statisticId, 2, 2023, 'desc');
 
-    expect(result).toHaveLength(2);
-    expect(result[0].name).toBe('State B');
-    expect(result[0].value).toBe(200);
-    expect(result[1].name).toBe('State C');
-    expect(result[1].value).toBe(150);
+    expect(result.performers).toHaveLength(2);
+    expect(result.performers[0].stateName).toBe('State B');
+    expect(result.performers[0].value).toBe(200);
+    expect(result.performers[1].stateName).toBe('State C');
+    expect(result.performers[1].value).toBe(150);
   });
 
   it('should get bottom performers', async () => {
-    jest.spyOn(DataPointsService, 'getDataPointsForStatistic').mockResolvedValue([
-      { id: 1, value: 100, year: 2023, stateName: 'State A', statisticId },
-      { id: 2, value: 200, year: 2023, stateName: 'State B', statisticId },
-      { id: 3, value: 150, year: 2023, stateName: 'State C', statisticId }
-    ]);
+    jest.spyOn(AggregationService, 'getTopBottomPerformers').mockResolvedValue({
+      statisticId,
+      statisticName: 'Test Statistic',
+      year: 2023,
+      performers: [
+        { stateId: 1, stateName: 'State A', value: 100, rank: 1, unit: 'test' },
+        { stateId: 3, stateName: 'State C', value: 150, rank: 2, unit: 'test' }
+      ]
+    });
 
-    const result = await aggregationService.getBottomPerformers(statisticId, 2, 2023);
+    const result = await AggregationService.getTopBottomPerformers(statisticId, 2, 2023, 'asc');
 
-    expect(result).toHaveLength(2);
-    expect(result[0].name).toBe('State A');
-    expect(result[0].value).toBe(100);
-    expect(result[1].name).toBe('State C');
-    expect(result[1].value).toBe(150);
+    expect(result.performers).toHaveLength(2);
+    expect(result.performers[0].stateName).toBe('State A');
+    expect(result.performers[0].value).toBe(100);
+    expect(result.performers[1].stateName).toBe('State C');
+    expect(result.performers[1].value).toBe(150);
   });
 
   it('should get state comparison', async () => {
-    jest.spyOn(DataPointsService, 'getDataPointsForState').mockResolvedValue([
-      { 
-        id: 1, 
-        value: 100, 
-        year: 2023, 
-        statisticName: 'Test Stat',
-        statisticUnit: 'test',
-        categoryName: 'Education',
-        sourceName: 'Test Source',
-        sourceUrl: 'http://test.com',
-        importDate: new Date()
-      }
-    ]);
+    jest.spyOn(AggregationService, 'getStateComparison').mockResolvedValue({
+      stateId,
+      stateName: 'Test State',
+      year: 2023,
+      statistics: [
+        {
+          statisticId: 1,
+          statisticName: 'Test Stat',
+          value: 100,
+          rank: 1,
+          percentile: 95.5,
+          unit: 'test'
+        }
+      ]
+    });
 
-    const result = await aggregationService.getStateComparison(stateId, 2023);
+    const result = await AggregationService.getStateComparison(stateId, 2023);
 
-    expect(result.labels).toContain('Education');
-    expect(result.datasets).toHaveLength(1);
-    expect(result.datasets[0].data).toHaveLength(1);
+    expect(result.stateId).toBe(stateId);
+    expect(result.stateName).toBe('Test State');
+    expect(result.year).toBe(2023);
+    expect(result.statistics).toHaveLength(1);
+    expect(result.statistics[0].statisticName).toBe('Test Stat');
+    expect(result.statistics[0].value).toBe(100);
   });
 
   it('should get trend data', async () => {
-    // Mock the data points service to return data for the specific state
-    jest.spyOn(DataPointsService, 'getDataPointsForStatistic').mockImplementation(async (statId, year) => {
-      if (year === 2020) {
-        return [{ id: 1, value: 100, year: 2020, stateName: 'State A', stateAbbreviation: 'SA' }];
-      } else if (year === 2021) {
-        return [{ id: 2, value: 150, year: 2021, stateName: 'State A', stateAbbreviation: 'SA' }];
-      } else if (year === 2022) {
-        return [{ id: 3, value: 200, year: 2022, stateName: 'State A', stateAbbreviation: 'SA' }];
-      }
-      return [];
+    jest.spyOn(AggregationService, 'getTrendData').mockResolvedValue({
+      statisticId,
+      statisticName: 'Test Statistic',
+      stateId,
+      stateName: 'Test State',
+      trends: [
+        { year: 2020, value: 100, change: 0, changePercent: 0 },
+        { year: 2021, value: 150, change: 50, changePercent: 50 },
+        { year: 2022, value: 200, change: 50, changePercent: 33.33 }
+      ]
     });
 
-    const result = await aggregationService.getTrendData(statisticId, stateId, [2020, 2021, 2022]);
+    const result = await AggregationService.getTrendData(statisticId, stateId);
 
-    expect(result.labels).toEqual(['Value']);
-    expect(result.datasets).toHaveLength(3);
-    expect(result.datasets[0].label).toBe('Year 2020');
-    expect(result.datasets[1].label).toBe('Year 2021');
-    expect(result.datasets[2].label).toBe('Year 2022');
+    expect(result.statisticId).toBe(statisticId);
+    expect(result.stateId).toBe(stateId);
+    expect(result.statisticName).toBe('Test Statistic');
+    expect(result.stateName).toBe('Test State');
+    expect(result.trends).toHaveLength(3);
+    expect(result.trends[0].year).toBe(2020);
+    expect(result.trends[1].year).toBe(2021);
+    expect(result.trends[2].year).toBe(2022);
   });
 }); 

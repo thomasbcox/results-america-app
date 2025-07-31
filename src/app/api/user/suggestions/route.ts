@@ -35,10 +35,10 @@ export async function GET(request: AuthenticatedRequest) {
   return withOptionalAuth(request, async (req) => {
     try {
       if (!req.user) {
-        return createSuccessResponse([]);
+        return createSuccessResponse({ data: [] });
       }
       const suggestions = await UserPreferencesService.getUserSuggestions(req.user.id);
-      return createSuccessResponse(suggestions);
+      return createSuccessResponse({ data: suggestions });
     } catch (error) {
       console.error('Get suggestions error:', error);
       return createBadRequestResponse('Failed to get suggestions');

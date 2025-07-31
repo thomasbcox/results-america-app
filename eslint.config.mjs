@@ -31,6 +31,16 @@ const eslintConfig = [
       // Prevent common React issues
       "react/jsx-key": "error",
       "react/no-unescaped-entities": "warn",
+      
+      // Prevent data.data patterns in API responses
+      "no-restricted-properties": [
+        "error",
+        {
+          "object": "data",
+          "property": "data",
+          "message": "Avoid data.data patterns. Use flattened response structure instead."
+        }
+      ],
     },
   },
   {

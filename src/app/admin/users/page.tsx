@@ -34,7 +34,7 @@ export default function AdminUsersPage() {
       if (response.ok) {
         const data = await response.json();
         // The API returns { users: [...], pagination: {...} }
-        setUsers(data.data?.users || []);
+        setUsers(data.users || []);
       }
     } catch (error) {
       console.error("Failed to fetch users:", error);

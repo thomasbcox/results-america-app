@@ -1,8 +1,12 @@
 // Skip cache mock for this test
 process.env.SKIP_CACHE_MOCK = 'true';
 
+// Import the real cache implementation
 import { cache } from './cache';
 import { CacheMissError } from '../errors';
+
+// Ensure we're using the real cache, not the mock
+jest.unmock('./cache');
 
 describe('cache', () => {
   beforeEach(() => {
