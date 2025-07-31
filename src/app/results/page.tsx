@@ -10,6 +10,33 @@ import DataQualityIndicator from "@/components/DataQualityIndicator"
 import AuthStatus from "@/components/AuthStatus"
 import type { ChartData, ChartDataPoint, StatisticData } from "@/types/api"
 
+// State flag component
+const StateFlag = ({ stateName }: { stateName: string }) => {
+  const stateAbbreviations: { [key: string]: string } = {
+    'Alabama': 'AL', 'Alaska': 'AK', 'Arizona': 'AZ', 'Arkansas': 'AR', 'California': 'CA',
+    'Colorado': 'CO', 'Connecticut': 'CT', 'Delaware': 'DE', 'Florida': 'FL', 'Georgia': 'GA',
+    'Hawaii': 'HI', 'Idaho': 'ID', 'Illinois': 'IL', 'Indiana': 'IN', 'Iowa': 'IA',
+    'Kansas': 'KS', 'Kentucky': 'KY', 'Louisiana': 'LA', 'Maine': 'ME', 'Maryland': 'MD',
+    'Massachusetts': 'MA', 'Michigan': 'MI', 'Minnesota': 'MN', 'Mississippi': 'MS', 'Missouri': 'MO',
+    'Montana': 'MT', 'Nebraska': 'NE', 'Nevada': 'NV', 'New Hampshire': 'NH', 'New Jersey': 'NJ',
+    'New Mexico': 'NM', 'New York': 'NY', 'North Carolina': 'NC', 'North Dakota': 'ND', 'Ohio': 'OH',
+    'Oklahoma': 'OK', 'Oregon': 'OR', 'Pennsylvania': 'PA', 'Rhode Island': 'RI', 'South Carolina': 'SC',
+    'South Dakota': 'SD', 'Tennessee': 'TN', 'Texas': 'TX', 'Utah': 'UT', 'Vermont': 'VT',
+    'Virginia': 'VA', 'Washington': 'WA', 'West Virginia': 'WV', 'Wisconsin': 'WI', 'Wyoming': 'WY'
+  }
+
+  const abbreviation = stateAbbreviations[stateName] || stateName.substring(0, 2).toUpperCase()
+  
+  return (
+    <div className="flex items-center gap-3">
+      <div className="w-8 h-6 bg-blue-600 border border-blue-700 rounded flex items-center justify-center shadow-sm">
+        <span className="text-white text-xs font-bold">{abbreviation}</span>
+      </div>
+      <h3 className="font-bold text-black">{stateName}</h3>
+    </div>
+  )
+}
+
 
 
 // Helper function to transform trend data for charts
@@ -91,10 +118,6 @@ export default function ResultsPage() {
     }
     return null
   }
-
-  console.log('ResultsPage - Selected states:', selectedStates)
-  console.log('ResultsPage - Selected measure:', selectedMeasure)
-  console.log('ResultsPage - Selected category:', selectedCategory)
 
   // Validate session state
   useEffect(() => {
@@ -421,7 +444,13 @@ export default function ResultsPage() {
                       No data is available for the selected measure and state combination.
                     </p>
                     <div className="text-sm text-yellow-600 space-y-1">
-                      <p>Selected states: {selectedStates?.join(', ') || 'None'}</p>
+                      <p>Selected states: {selectedStates?.length > 0 ? (
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {selectedStates.map(state => (
+                            <StateFlag key={state} stateName={state} />
+                          ))}
+                        </div>
+                      ) : 'None'}</p>
                       <p>Selected measure: {selectedMeasure || 'None'}</p>
                     </div>
                   </div>
@@ -443,10 +472,7 @@ export default function ResultsPage() {
                 <div key={stateName} className="bg-white rounded-lg shadow-md overflow-hidden">
                   {/* Card header */}
                   <div className="bg-yellow-400 px-4 py-3 flex items-center gap-3">
-                    <div className="w-8 h-6 bg-blue-600 rounded flex items-center justify-center">
-                      <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
-                    </div>
-                    <h3 className="font-bold text-black">{stateName}</h3>
+                    <StateFlag stateName={stateName} />
                   </div>
                   
                   {/* Card content */}

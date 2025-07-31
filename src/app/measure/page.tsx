@@ -31,7 +31,6 @@ function MeasureSelectionContent() {
   const [error, setError] = useState<string | null>(null);
   const [showStateWarning, setShowStateWarning] = useState(false);
 
-
   useEffect(() => {
     if (!selectedStates || selectedStates.length === 0) {
       setShowStateWarning(true);
@@ -52,19 +51,15 @@ function MeasureSelectionContent() {
   useEffect(() => {
     async function fetchStatistics() {
       try {
-        console.log('Fetching statistics for category:', category);
         const response = await fetch('/api/statistics?withAvailability=true');
         if (!response.ok) {
           throw new Error('Failed to fetch statistics');
         }
         const result = await response.json();
-        console.log('API response:', result);
         const data = result.data || [];
-        console.log('Data array length:', data.length);
         const filteredData = category
           ? data.filter((stat: Statistic) => stat.categoryName === category)
           : data;
-        console.log('Filtered data length:', filteredData.length);
         setStatistics(filteredData);
         
 

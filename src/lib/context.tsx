@@ -41,57 +41,83 @@ const createSessionExpiry = (): number => {
 
 // Helper function to get storage based on authentication status
 const getStorage = (isAuthenticated: boolean) => {
-  return isAuthenticated ? localStorage : sessionStorage
+  // Always use sessionStorage for simplicity and reliability
+  return sessionStorage
 }
 
 export function SelectionProvider({ children }: { children: ReactNode }) {
+  // Load initial state from sessionStorage immediately
+  const getInitialState = () => {
+    try {
+      // Check if we're on the client side
+      if (typeof window === 'undefined') {
+        return {
+          selectedStates: [],
+          selectedCategory: null,
+          selectedMeasure: null,
+          favorites: []
+        }
+      }
+
+      const savedStates = sessionStorage.getItem('selectedStates')
+      const savedCategory = sessionStorage.getItem('selectedCategory')
+      const savedMeasure = sessionStorage.getItem('selectedMeasure')
+      const savedFavorites = sessionStorage.getItem('favorites')
+      
+      return {
+        selectedStates: savedStates ? JSON.parse(savedStates) : [],
+        selectedCategory: savedCategory || null,
+        selectedMeasure: savedMeasure ? JSON.parse(savedMeasure) : null,
+        favorites: savedFavorites ? JSON.parse(savedFavorites) : []
+      }
+    } catch (error) {
+      console.error('Error loading initial state:', error)
+      return {
+        selectedStates: [],
+        selectedCategory: null,
+        selectedMeasure: null,
+        favorites: []
+      }
+    }
+  }
+
+  const initialState = getInitialState()
+  
   const [user, setUser] = useState<User | null>(null)
-  const [selectedStates, setSelectedStates] = useState<string[]>([])
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
-  const [selectedMeasure, setSelectedMeasure] = useState<number | null>(null)
-  const [favorites, setFavorites] = useState<number[]>([])
+  const [selectedStates, setSelectedStatesState] = useState<string[]>(initialState.selectedStates)
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(initialState.selectedCategory)
+  const [selectedMeasure, setSelectedMeasure] = useState<number | null>(initialState.selectedMeasure)
+  const [favorites, setFavorites] = useState<number[]>(initialState.favorites)
   const [sessionExpiryWarning, setSessionExpiryWarning] = useState(false)
 
-  // Load user and selections from storage on mount
-  useEffect(() => {
-    const savedUser = localStorage.getItem('user')
-    const storage = getStorage(!!savedUser)
-    
-    const savedStates = storage.getItem('selectedStates')
-    const savedCategory = storage.getItem('selectedCategory')
-    const savedMeasure = storage.getItem('selectedMeasure')
-    const savedFavorites = storage.getItem('favorites')
+  // Custom setter with debug logging
+  const setSelectedStates = (states: string[]) => {
+    setSelectedStatesState(states)
+  }
 
+  // Load user from localStorage on mount
+  useEffect(() => {
+    console.log(`🔄 Context: Loading user from localStorage...`)
+    
+    const savedUser = localStorage.getItem('user')
+    console.log(`🔄 Context: Saved user found:`, !!savedUser)
+    
     // Check if user session is still valid
     if (savedUser) {
       try {
         const parsedUser = JSON.parse(savedUser)
         if (parsedUser.sessionExpiry && !isSessionExpired(parsedUser.sessionExpiry)) {
+          console.log('✅ Context: Valid user session found, loading from localStorage')
           setUser(parsedUser)
         } else {
           // Session expired, clear user data
+          console.log('❌ Context: User session expired, clearing localStorage')
           localStorage.removeItem('user')
-          // Switch to sessionStorage for selections
-          const sessionStates = sessionStorage.getItem('selectedStates')
-          const sessionCategory = sessionStorage.getItem('selectedCategory')
-          const sessionMeasure = sessionStorage.getItem('selectedMeasure')
-          const sessionFavorites = sessionStorage.getItem('favorites')
-          
-          if (sessionStates) setSelectedStates(JSON.parse(sessionStates))
-          if (sessionCategory) setSelectedCategory(sessionCategory)
-          if (sessionMeasure) setSelectedMeasure(JSON.parse(sessionMeasure))
-          if (sessionFavorites) setFavorites(JSON.parse(sessionFavorites))
         }
       } catch (error) {
         console.error('Error parsing saved user data:', error)
         localStorage.removeItem('user')
       }
-    } else {
-      // No authenticated user, load from sessionStorage
-      if (savedStates) setSelectedStates(JSON.parse(savedStates))
-      if (savedCategory) setSelectedCategory(savedCategory)
-      if (savedMeasure) setSelectedMeasure(JSON.parse(savedMeasure))
-      if (savedFavorites) setFavorites(JSON.parse(savedFavorites))
     }
   }, [])
 
@@ -104,34 +130,30 @@ export function SelectionProvider({ children }: { children: ReactNode }) {
     }
   }, [user])
 
-  // Save selections to appropriate storage when they change
+  // Save selections to sessionStorage when they change
   useEffect(() => {
-    const storage = getStorage(!!user)
-    storage.setItem('selectedStates', JSON.stringify(selectedStates))
-  }, [selectedStates, user])
+    sessionStorage.setItem('selectedStates', JSON.stringify(selectedStates))
+  }, [selectedStates])
 
   useEffect(() => {
-    const storage = getStorage(!!user)
     if (selectedCategory) {
-      storage.setItem('selectedCategory', selectedCategory)
+      sessionStorage.setItem('selectedCategory', selectedCategory)
     } else {
-      storage.removeItem('selectedCategory')
+      sessionStorage.removeItem('selectedCategory')
     }
-  }, [selectedCategory, user])
+  }, [selectedCategory])
 
   useEffect(() => {
-    const storage = getStorage(!!user)
     if (selectedMeasure) {
-      storage.setItem('selectedMeasure', JSON.stringify(selectedMeasure))
+      sessionStorage.setItem('selectedMeasure', JSON.stringify(selectedMeasure))
     } else {
-      storage.removeItem('selectedMeasure')
+      sessionStorage.removeItem('selectedMeasure')
     }
-  }, [selectedMeasure, user])
+  }, [selectedMeasure])
 
   useEffect(() => {
-    const storage = getStorage(!!user)
-    storage.setItem('favorites', JSON.stringify(favorites))
-  }, [favorites, user])
+    sessionStorage.setItem('favorites', JSON.stringify(favorites))
+  }, [favorites])
 
   const signIn = async (email: string, name?: string) => {
     console.log('🔐 signIn called with:', { email, name })
@@ -182,29 +204,6 @@ export function SelectionProvider({ children }: { children: ReactNode }) {
       console.log('👤 Setting fallback user in context (catch error):', newUser)
       setUser(newUser)
     }
-    
-    // Migrate sessionStorage data to localStorage
-    const sessionStates = sessionStorage.getItem('selectedStates')
-    const sessionCategory = sessionStorage.getItem('selectedCategory')
-    const sessionMeasure = sessionStorage.getItem('selectedMeasure')
-    const sessionFavorites = sessionStorage.getItem('favorites')
-    
-    if (sessionStates) {
-      localStorage.setItem('selectedStates', sessionStates)
-      sessionStorage.removeItem('selectedStates')
-    }
-    if (sessionCategory) {
-      localStorage.setItem('selectedCategory', sessionCategory)
-      sessionStorage.removeItem('selectedCategory')
-    }
-    if (sessionMeasure) {
-      localStorage.setItem('selectedMeasure', sessionMeasure)
-      sessionStorage.removeItem('selectedMeasure')
-    }
-    if (sessionFavorites) {
-      localStorage.setItem('favorites', sessionFavorites)
-      sessionStorage.removeItem('favorites')
-    }
   }
 
   const signOut = async () => {
@@ -216,29 +215,6 @@ export function SelectionProvider({ children }: { children: ReactNode }) {
       console.log('📡 /api/auth/logout response status:', response.status)
     } catch (error) {
       console.error('❌ Failed to logout from server:', error)
-    }
-    
-    // Migrate localStorage data to sessionStorage before clearing
-    const localStates = localStorage.getItem('selectedStates')
-    const localCategory = localStorage.getItem('selectedCategory')
-    const localMeasure = localStorage.getItem('selectedMeasure')
-    const localFavorites = localStorage.getItem('favorites')
-    
-    if (localStates) {
-      sessionStorage.setItem('selectedStates', localStates)
-      localStorage.removeItem('selectedStates')
-    }
-    if (localCategory) {
-      sessionStorage.setItem('selectedCategory', localCategory)
-      localStorage.removeItem('selectedCategory')
-    }
-    if (localMeasure) {
-      sessionStorage.setItem('selectedMeasure', localMeasure)
-      localStorage.removeItem('selectedMeasure')
-    }
-    if (localFavorites) {
-      sessionStorage.setItem('favorites', localFavorites)
-      localStorage.removeItem('favorites')
     }
     
     setUser(null)
@@ -259,11 +235,10 @@ export function SelectionProvider({ children }: { children: ReactNode }) {
     setSelectedMeasure(null)
     setFavorites([])
     
-    const storage = getStorage(!!user)
-    storage.removeItem('selectedStates')
-    storage.removeItem('selectedCategory')
-    storage.removeItem('selectedMeasure')
-    storage.removeItem('favorites')
+    sessionStorage.removeItem('selectedStates')
+    sessionStorage.removeItem('selectedCategory')
+    sessionStorage.removeItem('selectedMeasure')
+    sessionStorage.removeItem('favorites')
   }
 
   const dismissSessionWarning = () => {
