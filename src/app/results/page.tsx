@@ -41,12 +41,12 @@ const StateFlag = ({ stateName }: { stateName: string }) => {
 
 // Helper function to transform trend data for charts
 const transformTrendDataForCharts = (trendData: any): any[] => {
-  if (!trendData || !trendData.trends || !Array.isArray(trendData.trends)) {
+  if (!trendData || !Array.isArray(trendData)) {
     console.log('transformTrendDataForCharts: Invalid data', { trendData })
     return []
   }
   
-  return trendData.trends.map((trend: any) => ({
+  return trendData.map((trend: any) => ({
     year: trend.year,
     value: trend.value,
     national: trend.national || 0, // TODO: Get national average for each year
@@ -206,7 +206,7 @@ export default function ResultsPage() {
             if (trendResponse.ok) {
               const trendResult = await trendResponse.json()
               console.log(`Trend data response for ${stateName}:`, trendResult)
-              const trend = trendResult.data || null
+              const trend = trendResult.trends || null
               console.log(`Extracted trend data for ${stateName}:`, trend)
               trendDataMap[stateName.toLowerCase()] = trend
             }
@@ -251,7 +251,7 @@ export default function ResultsPage() {
         <div className="max-w-6xl mx-auto flex justify-between items-center">
           <div className="flex items-center gap-4">
             <a
-              href={`/measure?category=${encodeURIComponent(selectedCategory || '')}&measure=${selectedMeasure || ''}`}
+              href={`/measure?category=${encodeURIComponent(selectedCategory || 'Select Category')}&measure=${selectedMeasure || 'Select Measure'}`}
               className="flex items-center gap-2 text-blue-600 hover:text-blue-700 text-sm"
             >
               <ArrowLeft className="w-4 h-4" />
@@ -264,7 +264,7 @@ export default function ResultsPage() {
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
-              <span>{selectedCategory || 'Category'}</span>
+              <span>{selectedCategory || 'Select Category'}</span>
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
