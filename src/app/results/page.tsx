@@ -9,23 +9,41 @@ import ProgressIndicator from "@/components/ProgressIndicator"
 import DataQualityIndicator from "@/components/DataQualityIndicator"
 import AuthStatus from "@/components/AuthStatus"
 import type { ChartData, ChartDataPoint, StatisticData } from "@/types/api"
-
+import StateFlag from "@/components/StateFlag"
 
 
 // Helper function to transform trend data for charts
-const transformTrendDataForCharts = (trendData: any): any[] => {
-  if (!trendData || !trendData.trends || !Array.isArray(trendData.trends)) {
+const transformTrendDataForCharts = (trendData: any, allStateData?: {[key: string]: any}): any[] => {
+  if (!trendData || !Array.isArray(trendData)) {
     console.log('transformTrendDataForCharts: Invalid data', { trendData })
     return []
   }
   
-  return trendData.trends.map((trend: any) => ({
-    year: trend.year,
-    value: trend.value,
-    national: trend.national || 0, // TODO: Get national average for each year
-    change: trend.change,
-    changePercent: trend.changePercent
-  }))
+  return trendData.map((trend: any) => {
+    // Calculate a simple national average from all available state data
+    let nationalAverage = 0
+    if (allStateData) {
+      const allValues = Object.values(allStateData)
+        .filter(stateData => Array.isArray(stateData))
+        .map(stateData => {
+          const yearData = (stateData as any[]).find(d => d.year === trend.year)
+          return yearData ? yearData.value : null
+        })
+        .filter(value => value !== null) as number[]
+      
+      if (allValues.length > 0) {
+        nationalAverage = allValues.reduce((sum, val) => sum + val, 0) / allValues.length
+      }
+    }
+    
+    return {
+      year: trend.year,
+      value: trend.value,
+      national: nationalAverage,
+      change: trend.change,
+      changePercent: trend.changePercent
+    }
+  })
 }
 
 
@@ -55,46 +73,38 @@ export default function ResultsPage() {
   const [measureDetails, setMeasureDetails] = useState<StatisticData | null>(null)
   const [sessionValid, setSessionValid] = useState(false)
 
-  const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ value: number; dataKey: string; name: string }>; label?: string }) => {
+  const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ value: number; dataKey: string; name: string; color: string }>; label?: string }) => {
     if (active && payload && payload.length) {
-      console.log('Tooltip payload:', payload)
-      
       // Find state value and national value from payload
       let stateValue: number | undefined
       let nationalValue: number | undefined
       
       payload.forEach((item) => {
-        if (item.dataKey === 'value' && item.name === 'State Value') {
+        if (item.dataKey === 'value') {
           stateValue = item.value
-        } else if (item.dataKey === 'national' && item.name === 'National Average') {
+        } else if (item.dataKey === 'national') {
           nationalValue = item.value
         }
       })
       
-      // Fallback: if we can't identify by name, use first two values
-      if (stateValue === undefined && nationalValue === undefined && payload.length >= 2) {
-        stateValue = payload[0]?.value
-        nationalValue = payload[1]?.value
-      }
-      
       const difference = (stateValue || 0) - (nationalValue || 0)
-      const unit = measureDetails?.unit || '%'
+      const unit = measureDetails?.unit || ''
       
       return (
         <div className="bg-white p-3 border border-gray-300 rounded-md shadow-lg">
           <p className="font-medium text-black">Year: {label}</p>
-          <p className="text-black">State: {stateValue?.toFixed(2) || 'N/A'}{unit}</p>
-          <p className="text-black">National: {nationalValue?.toFixed(2) || 'N/A'}{unit}</p>
-          <p className="text-black">Difference: {difference?.toFixed(2)}{unit}</p>
+          <p className="text-blue-600">State: {stateValue?.toFixed(2) || 'N/A'}{unit}</p>
+          {nationalValue && nationalValue > 0 && (
+            <>
+              <p className="text-red-600">Average: {nationalValue?.toFixed(2)}{unit}</p>
+              <p className="text-gray-600">Difference: {difference > 0 ? '+' : ''}{difference?.toFixed(2)}{unit}</p>
+            </>
+          )}
         </div>
       )
     }
     return null
   }
-
-  console.log('ResultsPage - Selected states:', selectedStates)
-  console.log('ResultsPage - Selected measure:', selectedMeasure)
-  console.log('ResultsPage - Selected category:', selectedCategory)
 
   // Validate session state
   useEffect(() => {
@@ -182,9 +192,7 @@ export default function ResultsPage() {
             const trendResponse = await fetch(`/api/aggregation?type=trend-data&statisticId=${selectedMeasure}&stateId=${stateId}`)
             if (trendResponse.ok) {
               const trendResult = await trendResponse.json()
-              console.log(`Trend data response for ${stateName}:`, trendResult)
-              const trend = trendResult.data || null
-              console.log(`Extracted trend data for ${stateName}:`, trend)
+              const trend = trendResult.trends || null
               trendDataMap[stateName.toLowerCase()] = trend
             }
           }
@@ -228,7 +236,7 @@ export default function ResultsPage() {
         <div className="max-w-6xl mx-auto flex justify-between items-center">
           <div className="flex items-center gap-4">
             <a
-              href={`/measure?category=${encodeURIComponent(selectedCategory || '')}&measure=${selectedMeasure || ''}`}
+              href={`/measure?category=${encodeURIComponent(selectedCategory || 'Select Category')}&measure=${selectedMeasure || 'Select Measure'}`}
               className="flex items-center gap-2 text-blue-600 hover:text-blue-700 text-sm"
             >
               <ArrowLeft className="w-4 h-4" />
@@ -241,7 +249,7 @@ export default function ResultsPage() {
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
-              <span>{selectedCategory || 'Category'}</span>
+              <span>{selectedCategory || 'Select Category'}</span>
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
@@ -443,10 +451,7 @@ export default function ResultsPage() {
                 <div key={stateName} className="bg-white rounded-lg shadow-md overflow-hidden">
                   {/* Card header */}
                   <div className="bg-yellow-400 px-4 py-3 flex items-center gap-3">
-                    <div className="w-8 h-6 bg-blue-600 rounded flex items-center justify-center">
-                      <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
-                    </div>
-                    <h3 className="font-bold text-black">{stateName}</h3>
+                    <StateFlag stateName={stateName} />
                   </div>
                   
                   {/* Card content */}
@@ -481,7 +486,7 @@ export default function ResultsPage() {
                     <div className="h-64 mb-4">
                       <ResponsiveContainer width="100%" height="100%">
                         <ComposedChart 
-                          data={transformTrendDataForCharts(trendData[stateName.toLowerCase()]) || []}
+                          data={transformTrendDataForCharts(trendData[stateName.toLowerCase()], trendData) || []}
                         >
                           <CartesianGrid strokeDasharray="3 3" />
                           <XAxis dataKey="year" />
@@ -489,7 +494,9 @@ export default function ResultsPage() {
                           <Tooltip content={<CustomTooltip />} />
                           <Legend />
                           <Line type="monotone" dataKey="value" stroke="#3B82F6" strokeWidth={2} name="State Value" />
+                          <Bar dataKey="value" fill="#3B82F6" name="State Value" />
                           <Line type="monotone" dataKey="national" stroke="#EF4444" strokeWidth={2} name="National Average" />
+                          <Bar dataKey="national" fill="#EF4444" name="National Average" />
                         </ComposedChart>
                       </ResponsiveContainer>
                     </div>
