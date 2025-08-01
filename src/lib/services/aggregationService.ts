@@ -1,5 +1,5 @@
 import { getDb } from '../db/index';
-import { dataPoints, statistics, states } from '../db/schema-normalized';
+import { dataPoints, statistics, states, importSessions } from '../db/schema-normalized';
 import { eq, desc, asc, and, inArray } from 'drizzle-orm';
 import { ValidationError, NotFoundError } from '../errors';
 import type { IAggregationService } from '../types/service-interfaces';
@@ -57,6 +57,29 @@ export interface TrendData {
   }>;
 }
 
+// Helper function to get active data points
+async function getActiveDataPoints(statisticId?: number, year?: number) {
+  const db = getDb();
+  const conditions = [eq(importSessions.isActive, 1)];
+  
+  if (statisticId) {
+    conditions.push(eq(dataPoints.statisticId, statisticId));
+  }
+  if (year) {
+    conditions.push(eq(dataPoints.year, year));
+  }
+  
+  return db.select({
+    value: dataPoints.value,
+    stateId: dataPoints.stateId,
+    statisticId: dataPoints.statisticId,
+    year: dataPoints.year,
+  })
+  .from(dataPoints)
+  .innerJoin(importSessions, eq(dataPoints.importSessionId, importSessions.id))
+  .where(and(...conditions));
+}
+
 // National Average Service (existing code)
 export class NationalAverageService {
   static async getNationalAverage(statisticId: number, year: number): Promise<number> {
@@ -68,16 +91,7 @@ export class NationalAverageService {
   }
 
   static async getStoredNationalAverage(statisticId: number, year: number): Promise<{ value: number; stateCount: number } | null> {
-    const db = getDb();
-    const result = await db.select({
-      value: dataPoints.value,
-      stateCount: dataPoints.stateId,
-    })
-      .from(dataPoints)
-      .where(and(
-        eq(dataPoints.statisticId, statisticId),
-        eq(dataPoints.year, year)
-      ));
+    const result = await getActiveDataPoints(statisticId, year);
 
     if (result.length === 0) {
       return null;
@@ -93,15 +107,7 @@ export class NationalAverageService {
   }
 
   static async computeAndStoreNationalAverage(statisticId: number, year: number): Promise<number> {
-    const db = getDb();
-    const result = await db.select({
-      value: dataPoints.value,
-    })
-      .from(dataPoints)
-      .where(and(
-        eq(dataPoints.statisticId, statisticId),
-        eq(dataPoints.year, year)
-      ));
+    const result = await getActiveDataPoints(statisticId, year);
 
     if (result.length === 0) {
       throw new NotFoundError('No data points found for statistic and year');
@@ -144,16 +150,8 @@ export class AggregationService {
    */
   static async getStatisticComparison(statisticId: number, year: number = 2023): Promise<ComparisonData> {
     const db = getDb();
-    // First, let's get the basic data points
-    const dataPointsResult = await db.select({
-      stateId: dataPoints.stateId,
-      value: dataPoints.value,
-    })
-      .from(dataPoints)
-      .where(and(
-        eq(dataPoints.statisticId, statisticId),
-        eq(dataPoints.year, year)
-      ));
+    // Get active data points for this statistic and year
+    const dataPointsResult = await getActiveDataPoints(statisticId, year);
 
     if (dataPointsResult.length === 0) {
       throw new NotFoundError(`No data found for statistic ${statisticId} in year ${year}`);
@@ -227,7 +225,7 @@ export class AggregationService {
       throw new NotFoundError('State');
     }
 
-    // Get all statistics with data for this state and year
+    // Get all statistics with active data for this state and year
     const stateData = await db.select({
       statisticId: dataPoints.statisticId,
       statisticName: statistics.name,
@@ -236,9 +234,11 @@ export class AggregationService {
     })
       .from(dataPoints)
       .innerJoin(statistics, eq(dataPoints.statisticId, statistics.id))
+      .innerJoin(importSessions, eq(dataPoints.importSessionId, importSessions.id))
       .where(and(
         eq(dataPoints.stateId, stateId),
-        eq(dataPoints.year, year)
+        eq(dataPoints.year, year),
+        eq(importSessions.isActive, 1)
       ));
 
     // Calculate rankings for each statistic
@@ -246,9 +246,11 @@ export class AggregationService {
       stateData.map(async (data: any) => {
         const allValues = await db.select({ value: dataPoints.value })
           .from(dataPoints)
+          .innerJoin(importSessions, eq(dataPoints.importSessionId, importSessions.id))
           .where(and(
             eq(dataPoints.statisticId, data.statisticId),
-            eq(dataPoints.year, year)
+            eq(dataPoints.year, year),
+            eq(importSessions.isActive, 1)
           ));
 
         const sortedValues = allValues.map((v: any) => v.value).sort((a: number, b: number) => b - a);

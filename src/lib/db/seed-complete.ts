@@ -34,6 +34,7 @@ export async function seedDatabaseComplete() {
     { name: 'Mississippi', abbreviation: 'MS' },
     { name: 'Missouri', abbreviation: 'MO' },
     { name: 'Montana', abbreviation: 'MT' },
+    { name: 'Nation', abbreviation: 'NA' },
     { name: 'Nebraska', abbreviation: 'NE' },
     { name: 'Nevada', abbreviation: 'NV' },
     { name: 'New Hampshire', abbreviation: 'NH' },

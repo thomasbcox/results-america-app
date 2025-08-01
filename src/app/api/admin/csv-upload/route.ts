@@ -51,21 +51,49 @@ export async function POST(request: NextRequest) {
         summary: result.summary,
       });
     } else {
+      // Log detailed failure information
+      console.error('CSV import failed:', {
+        importId: result.importId,
+        message: result.message,
+        stats: result.stats,
+        summary: result.summary,
+        timestamp: new Date().toISOString()
+      });
+      
       return NextResponse.json({
         success: false,
         importId: result.importId,
         message: result.message,
         stats: result.stats,
         summary: result.summary,
+        error: {
+          type: 'VALIDATION_ERROR',
+          timestamp: new Date().toISOString()
+        }
       }, { status: 400 });
     }
 
   } catch (error) {
     console.error('CSV upload error:', error);
-    return createErrorResponse(new ServiceError(
-      'Failed to process CSV upload',
-      'CSV_UPLOAD_ERROR',
-      500
-    ));
+    
+    // Preserve detailed error information
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    const errorDetails = error instanceof Error ? error.stack : 'No stack trace available';
+    
+    console.error('Error details:', {
+      message: errorMessage,
+      stack: errorDetails,
+      timestamp: new Date().toISOString()
+    });
+    
+    return NextResponse.json({
+      success: false,
+      message: `Upload failed: ${errorMessage}`,
+      error: {
+        message: errorMessage,
+        type: error instanceof Error ? error.constructor.name : 'Unknown',
+        timestamp: new Date().toISOString()
+      }
+    }, { status: 500 });
   }
 } 

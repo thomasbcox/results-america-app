@@ -42,7 +42,9 @@ async function handleGetStates(request: NextRequest) {
   // Handle search
   if (search) {
     const results = await StatesService.searchStates(search);
-    return createSuccessResponse({ data: results });
+    // Filter out "Nation" from search results for user displays
+    const filteredResults = results.filter(state => state.name !== 'Nation');
+    return createSuccessResponse({ data: filteredResults });
   }
 
   // Handle pagination
@@ -51,8 +53,9 @@ async function handleGetStates(request: NextRequest) {
       { page, limit },
       { sortBy, sortOrder }
     );
-    // Return paginated data with pagination info
-    return createSuccessResponse({ data: paginated.data });
+    // Filter out "Nation" from paginated results for user displays
+    const filteredData = paginated.data.filter(state => state.name !== 'Nation');
+    return createSuccessResponse({ data: filteredData });
   }
 
   // Handle sorting without pagination
@@ -61,11 +64,13 @@ async function handleGetStates(request: NextRequest) {
       { page: 1, limit: 50 },
       { sortBy, sortOrder }
     );
-    return createSuccessResponse({ data: paginated.data });
+    // Filter out "Nation" from sorted results for user displays
+    const filteredData = paginated.data.filter(state => state.name !== 'Nation');
+    return createSuccessResponse({ data: filteredData });
   }
 
-  // Default: return all states
-  const states = await StatesService.getAllStates();
+  // Default: return all states (excluding "Nation" for user displays)
+  const states = await StatesService.getDisplayStates();
   // Debug log
   // eslint-disable-next-line no-console
   console.log('API /api/states returning states:', JSON.stringify(states, null, 2));

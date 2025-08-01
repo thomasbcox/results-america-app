@@ -28,10 +28,8 @@ interface CSVImportTemplate {
   id: number;
   name: string;
   description: string;
-  categoryId?: number;
-  dataSourceId?: number;
-  templateSchema: any;
-  validationRules: any;
+  type: string;
+  expectedHeaders: string[];
   sampleData: string;
 }
 
@@ -83,6 +81,13 @@ export default function AdminDataPage() {
     statisticName: ''
   });
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<{
+    stage: 'uploading' | 'processing' | 'validating' | 'complete' | 'error';
+    message: string;
+    current?: number;
+    total?: number;
+    percentage?: number;
+  } | null>(null);
   const [activeTab, setActiveTab] = useState('upload');
   const [pastedData, setPastedData] = useState('');
   const [uploadMethod, setUploadMethod] = useState<'file' | 'paste'>('file');
@@ -296,6 +301,12 @@ export default function AdminDataPage() {
     }
 
     setUploading(true);
+    setUploadProgress({
+      stage: 'uploading',
+      message: 'Starting upload...',
+      percentage: 0
+    });
+    
     try {
       const formData = new FormData();
       
@@ -311,24 +322,48 @@ export default function AdminDataPage() {
       formData.append('templateId', selectedTemplate.toString());
       
       // Get selected category and measure names
-          const selectedCategoryName = categories.find(c => c.id === safeSelectedCategory)?.name || '';
-    const selectedMeasureName = measures.find(m => m.id === safeSelectedMeasure)?.name || '';
+      const selectedCategoryName = categories.find(c => c.id === safeSelectedCategory)?.name || '';
+      const selectedMeasureName = measures.find(m => m.id === safeSelectedMeasure)?.name || '';
+      
+      // Check if this is a Multi Year Export template
+      const isMultiYearExport = selectedTemplate && templates.find(t => t.id === selectedTemplate)?.type === 'multi-year-export';
       
       // Create enhanced metadata with category and measure info
       const enhancedMetadata = {
         ...importMetadata,
-        categoryId: safeSelectedCategory,
-        categoryName: selectedCategoryName,
-        measureId: safeSelectedMeasure,
-        measureName: selectedMeasureName
+        categoryId: isMultiYearExport ? null : safeSelectedCategory,
+        categoryName: isMultiYearExport ? null : selectedCategoryName,
+        measureId: isMultiYearExport ? null : safeSelectedMeasure,
+        measureName: isMultiYearExport ? null : selectedMeasureName
       };
       
       formData.append('metadata', JSON.stringify(enhancedMetadata));
+
+      setUploadProgress({
+        stage: 'uploading',
+        message: 'Uploading file to server...',
+        percentage: 25
+      });
+
+      // Simulate progress for large files
+      const progressInterval = setInterval(() => {
+        setUploadProgress(prev => {
+          if (prev && prev.percentage && prev.percentage < 90) {
+            return {
+              ...prev,
+              percentage: Math.min(prev.percentage + 5, 90)
+            };
+          }
+          return prev;
+        });
+      }, 1000);
 
       const response = await fetch('/api/admin/csv-upload', {
         method: 'POST',
         body: formData,
       });
+
+      clearInterval(progressInterval);
 
       if (response.ok) {
         const result = await response.json();
@@ -336,32 +371,18 @@ export default function AdminDataPage() {
         
         if (result.success === false) {
           // Handle case where API returns 200 but success is false
-          addToast({
-            type: 'error',
-            title: 'Upload Failed',
-            message: result.message || 'Upload failed'
+          setUploadProgress({
+            stage: 'error',
+            message: result.message || 'Upload failed',
+            percentage: 100
           });
           return;
         }
         
-        addToast({
-          type: 'success',
-          title: 'Upload Successful',
-          message: 'Data uploaded successfully!'
-        });
-        
-        // Reset form only on success
-        setSelectedFile(null);
-        clearFileInput();
-        setSelectedTemplate(null);
-        setSelectedCategory(null);
-        setSelectedMeasure(null);
-        setPastedData('');
-        setImportMetadata({
-          name: '',
-          description: '',
-          dataSource: '',
-          statisticName: ''
+        setUploadProgress({
+          stage: 'complete',
+          message: `Upload successful! ${result.stats?.validRows || 0} rows processed.`,
+          percentage: 100
         });
         
         // Wait a moment for the database to be updated, then refresh history
@@ -372,19 +393,53 @@ export default function AdminDataPage() {
         }, 500);
       } else {
         const error = await response.json();
-        addToast({
-          type: 'error',
-          title: 'Upload Failed',
-          message: error.error || 'Unknown error'
+        
+        // Build detailed error message
+        let detailedMessage = error.message || 'Upload failed - unknown error';
+        
+        if (error.stats) {
+          detailedMessage += `\n\n📊 Import Statistics:`;
+          detailedMessage += `\n• Total rows: ${error.stats.totalRows}`;
+          detailedMessage += `\n• Valid rows: ${error.stats.validRows}`;
+          detailedMessage += `\n• Error rows: ${error.stats.errorRows}`;
+        }
+        
+        if (error.summary && error.summary.failureBreakdown) {
+          detailedMessage += `\n\n❌ Error Breakdown:`;
+          Object.entries(error.summary.failureBreakdown).forEach(([category, count]) => {
+            const categoryName = category.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            detailedMessage += `\n• ${categoryName}: ${count} errors`;
+          });
+        }
+        
+        if (error.error && error.error.type) {
+          detailedMessage += `\n\n🔍 Error Type: ${error.error.type}`;
+        }
+        
+        console.error('Upload failed with details:', error);
+        
+        setUploadProgress({
+          stage: 'error',
+          message: detailedMessage,
+          percentage: 100
         });
         // Don't reset form on failure - keep all data for retry
       }
     } catch (error) {
       console.error('Upload error:', error);
-      addToast({
-        type: 'error',
-        title: 'Upload Failed',
-        message: 'Upload failed due to a network error'
+      
+      let errorMessage = 'Upload failed due to a network error';
+      if (error instanceof Error) {
+        errorMessage = `Upload failed: ${error.message}`;
+        if (error.message.includes('fetch')) {
+          errorMessage = 'Upload failed: Network connection error. Please check your internet connection and try again.';
+        }
+      }
+      
+      setUploadProgress({
+        stage: 'error',
+        message: errorMessage,
+        percentage: 100
       });
     } finally {
       setUploading(false);
@@ -528,26 +583,57 @@ export default function AdminDataPage() {
 
   const handleViewErrorDetails = async (importId: number) => {
     try {
-      const response = await fetch(`/api/admin/csv-imports/${importId}/validate`, {
-        method: 'POST',
-      });
+      const response = await fetch(`/api/admin/csv-imports/${importId}/details`);
       
       if (response.ok) {
         const data = await response.json();
-        // If validation succeeds, there are no errors to show
-        addToast({
-          type: 'info',
-          title: 'No Errors',
-          message: 'This import has no validation errors'
-        });
+        
+        if (data.success && data.import) {
+          // Build detailed error information
+          let errorDetails = `Import: ${data.import.name}\n`;
+          errorDetails += `Status: ${data.import.status}\n`;
+          errorDetails += `File: ${data.import.filename}\n`;
+          errorDetails += `Uploaded: ${new Date(data.import.uploadedAt).toLocaleString()}\n\n`;
+          
+          if (data.logs && data.logs.length > 0) {
+            errorDetails += `📋 Processing Logs:\n`;
+            data.logs.forEach((log: any) => {
+              const timestamp = new Date(log.createdAt).toLocaleTimeString();
+              errorDetails += `[${timestamp}] ${log.level}: ${log.message}\n`;
+            });
+          }
+          
+          if (data.summary) {
+            errorDetails += `\n📊 Summary:\n`;
+            errorDetails += `• Total rows: ${data.summary.totalRows || 0}\n`;
+            errorDetails += `• Valid rows: ${data.summary.validRows || 0}\n`;
+            errorDetails += `• Error rows: ${data.summary.errorRows || 0}\n`;
+            
+            if (data.summary.failureBreakdown) {
+              errorDetails += `\n❌ Error Breakdown:\n`;
+              Object.entries(data.summary.failureBreakdown).forEach(([category, count]) => {
+                const categoryName = category.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                errorDetails += `• ${categoryName}: ${count} errors\n`;
+              });
+            }
+          }
+          
+          // Show details in a modal or alert
+          const title = data.import.status === 'failed' ? 'Error Details' : 'Import Details';
+          alert(`${title} for Import ${importId}:\n\n${errorDetails}`);
+        } else {
+          addToast({
+            type: 'error',
+            title: 'Error Details Failed',
+            message: 'Failed to load import details'
+          });
+        }
       } else {
         const errorData = await response.json();
-        setErrorDetails({
-          show: true,
-          importId,
-          errors: errorData.data?.errors || [],
-          warnings: errorData.data?.warnings || [],
-          stats: errorData.data?.stats || {}
+        addToast({
+          type: 'error',
+          title: 'Error Details Failed',
+          message: errorData.message || 'Failed to load error details'
         });
       }
     } catch (error) {
@@ -568,7 +654,13 @@ export default function AdminDataPage() {
         return <CheckCircle className="h-5 w-5 text-green-500" />;
       case 'published':
         return <CheckCircle className="h-5 w-5 text-blue-500" />;
+      case 'imported':
+        return <CheckCircle className="h-5 w-5 text-green-500" />;
+      case 'importing':
+        return <Clock className="h-5 w-5 text-blue-500" />;
       case 'error':
+      case 'failed':
+      case 'validation_failed':
         return <XCircle className="h-5 w-5 text-red-500" />;
       default:
         return <AlertCircle className="h-5 w-5 text-gray-500" />;
@@ -580,12 +672,16 @@ export default function AdminDataPage() {
       staged: 'secondary',
       validated: 'default',
       published: 'default',
-      error: 'destructive'
+      error: 'destructive',
+      failed: 'destructive',
+      validation_failed: 'destructive',
+      imported: 'default',
+      importing: 'secondary'
     };
 
     return (
       <Badge variant={variants[status] || 'outline'}>
-        {status.charAt(0).toUpperCase() + status.slice(1)}
+        {status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
       </Badge>
     );
   };
@@ -648,25 +744,25 @@ export default function AdminDataPage() {
                       <h4 className="text-sm font-medium text-gray-700 mb-2">Template Headers</h4>
                       {(() => {
                         const template = templates.find(t => t.id === selectedTemplate);
-                        if (template?.templateSchema?.expectedHeaders) {
+                        if (template?.expectedHeaders) {
                           return (
                             <div className="space-y-2">
                               <p className="text-sm text-gray-600">
                                 Your data should have these columns (in any order):
                               </p>
                               <div className="flex flex-wrap gap-2">
-                                {template.templateSchema.expectedHeaders && template.templateSchema.expectedHeaders.map((header: string, index: number) => (
+                                {template.expectedHeaders && template.expectedHeaders.map((header: string, index: number) => (
                                   <Badge key={index} variant="outline" className="text-xs">
                                     {header}
                                   </Badge>
                                 ))}
                               </div>
-                              {template.templateSchema.flexibleColumns && (
+                              {template.templateSchema?.flexibleColumns && (
                                 <p className="text-xs text-blue-600 mt-2">
                                   💡 This template supports additional columns beyond the required ones.
                                 </p>
                               )}
-                              {template.templateSchema.multiYearSupport && (
+                              {template.templateSchema?.multiYearSupport && (
                                 <p className="text-xs text-green-600 mt-1">
                                   📅 This template supports multiple years of data in a single file.
                                 </p>
@@ -687,7 +783,8 @@ export default function AdminDataPage() {
                     <select
                       value={safeSelectedCategory || ''}
                       onChange={(e) => setSelectedCategory(Number(e.target.value) || null)}
-                      className="w-full p-2 border border-gray-300 rounded-md"
+                      disabled={selectedTemplate && templates.find(t => t.id === selectedTemplate)?.type === 'multi-year-export'}
+                      className={`w-full p-2 border border-gray-300 rounded-md ${selectedTemplate && templates.find(t => t.id === selectedTemplate)?.type === 'multi-year-export' ? 'bg-gray-100 text-gray-500' : ''}`}
                     >
                       <option value="">Choose a category...</option>
                       {categories && categories.map((category) => (
@@ -696,6 +793,11 @@ export default function AdminDataPage() {
                         </option>
                       ))}
                     </select>
+                    {selectedTemplate && templates.find(t => t.id === selectedTemplate)?.type === 'multi-year-export' && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        💡 Category is determined from your CSV data for Multi Year Export format
+                      </p>
+                    )}
                   </div>
 
                   {/* Measure Selection */}
@@ -707,7 +809,8 @@ export default function AdminDataPage() {
                       <select
                         value={safeSelectedMeasure || ''}
                         onChange={(e) => setSelectedMeasure(Number(e.target.value) || null)}
-                        className="w-full p-2 border border-gray-300 rounded-md"
+                        disabled={selectedTemplate && templates.find(t => t.id === selectedTemplate)?.type === 'multi-year-export'}
+                        className={`w-full p-2 border border-gray-300 rounded-md ${selectedTemplate && templates.find(t => t.id === selectedTemplate)?.type === 'multi-year-export' ? 'bg-gray-100 text-gray-500' : ''}`}
                       >
                         <option value="">Choose a measure...</option>
                         {measures && measures.map((measure) => (
@@ -716,6 +819,11 @@ export default function AdminDataPage() {
                           </option>
                         ))}
                       </select>
+                      {selectedTemplate && templates.find(t => t.id === selectedTemplate)?.type === 'multi-year-export' && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          💡 Measure is determined from your CSV data for Multi Year Export format
+                        </p>
+                      )}
                     </div>
                   )}
 
@@ -848,20 +956,111 @@ Both formats will be automatically converted to CSV.`}
                     />
                   </div>
 
-                  <Button
-                    onClick={handleUpload}
-                    disabled={
-                      !selectedTemplate || 
-                      !safeSelectedCategory ||
-                      !safeSelectedMeasure ||
-                      uploading || 
-                      (uploadMethod === 'file' && !selectedFile) ||
-                      (uploadMethod === 'paste' && !pastedData.trim())
-                    }
-                    className="w-full"
-                  >
-                    {uploading ? 'Uploading...' : `Upload ${uploadMethod === 'file' ? 'File' : 'Data'}`}
-                  </Button>
+                  {/* Progress Indicator */}
+                  {uploadProgress && (
+                    <div className="space-y-3 p-4 bg-gray-50 rounded-lg border">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-gray-700">
+                          {uploadProgress.stage === 'uploading' && '📤 Uploading...'}
+                          {uploadProgress.stage === 'processing' && '⚙️ Processing...'}
+                          {uploadProgress.stage === 'validating' && '✅ Validating...'}
+                          {uploadProgress.stage === 'complete' && '🎉 Complete!'}
+                          {uploadProgress.stage === 'error' && '❌ Error'}
+                        </span>
+                        {uploadProgress.percentage !== undefined && (
+                          <span className="text-sm text-gray-500">
+                            {uploadProgress.percentage}%
+                          </span>
+                        )}
+                      </div>
+                      
+                      {/* Progress Bar */}
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div 
+                          className={`h-2 rounded-full transition-all duration-300 ${
+                            uploadProgress.stage === 'error' ? 'bg-red-500' :
+                            uploadProgress.stage === 'complete' ? 'bg-green-500' :
+                            'bg-blue-500'
+                          }`}
+                          style={{ width: `${uploadProgress.percentage || 0}%` }}
+                        />
+                      </div>
+                      
+                      {/* Status Message */}
+                      <div className="text-sm text-gray-600 whitespace-pre-line">
+                        {uploadProgress.message}
+                      </div>
+                      
+                      {/* Action Buttons */}
+                      {uploadProgress.stage === 'complete' && (
+                        <div className="flex gap-2">
+                          <Button
+                            onClick={() => {
+                              setUploadProgress(null);
+                              setSelectedFile(null);
+                              clearFileInput();
+                              setSelectedTemplate(null);
+                              setSelectedCategory(null);
+                              setSelectedMeasure(null);
+                              setPastedData('');
+                              setImportMetadata({
+                                name: '',
+                                description: '',
+                                dataSource: '',
+                                statisticName: ''
+                              });
+                            }}
+                            className="flex-1"
+                          >
+                            Upload Another File
+                          </Button>
+                          <Button
+                            variant="outline"
+                            onClick={() => setUploadProgress(null)}
+                            className="flex-1"
+                          >
+                            Close
+                          </Button>
+                        </div>
+                      )}
+                      
+                      {uploadProgress.stage === 'error' && (
+                        <div className="flex gap-2">
+                          <Button
+                            onClick={() => setUploadProgress(null)}
+                            className="flex-1"
+                          >
+                            Try Again
+                          </Button>
+                          <Button
+                            variant="outline"
+                            onClick={() => setUploadProgress(null)}
+                            className="flex-1"
+                          >
+                            Close
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Upload Button */}
+                  {!uploadProgress && (
+                    <Button
+                      onClick={handleUpload}
+                      disabled={
+                        !selectedTemplate || 
+                        (selectedTemplate && templates.find(t => t.id === selectedTemplate)?.type !== 'multi-year-export' && !safeSelectedCategory) ||
+                        (selectedTemplate && templates.find(t => t.id === selectedTemplate)?.type !== 'multi-year-export' && !safeSelectedMeasure) ||
+                        uploading || 
+                        (uploadMethod === 'file' && !selectedFile) ||
+                        (uploadMethod === 'paste' && !pastedData.trim())
+                      }
+                      className="w-full"
+                    >
+                      {uploading ? 'Uploading...' : `Upload ${uploadMethod === 'file' ? 'File' : 'Data'}`}
+                    </Button>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -962,6 +1161,15 @@ Both formats will be automatically converted to CSV.`}
                               <Eye className="h-4 w-4 mr-1" />
                               View
                             </Button>
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              onClick={() => handleViewErrorDetails(import_.id)}
+                              disabled={validatingImports.has(import_.id)}
+                            >
+                              <FileText className="h-4 w-4 mr-1" />
+                              Details
+                            </Button>
                           </div>
                         </div>
                       </div>
@@ -1004,7 +1212,7 @@ Both formats will be automatically converted to CSV.`}
                           <div className="text-sm">
                             <span className="font-medium">Expected Columns:</span>
                             <p className="text-gray-600 mt-1">
-                              {template.templateSchema.expectedHeaders.join(', ')}
+                              {template.expectedHeaders.join(', ')}
                             </p>
                           </div>
                           <Button size="sm" variant="outline" className="w-full">

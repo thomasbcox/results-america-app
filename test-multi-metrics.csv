@@ -1,0 +1,21 @@
+State,Year,Category,Measure,Value
+California,2023,Economy,Median Household Income,85000
+Texas,2023,Economy,Median Household Income,72000
+Alabama,2023,Economy,Median Household Income,65000
+Alaska,2023,Economy,Median Household Income,78000
+Arizona,2023,Economy,Median Household Income,68000
+California,2023,Economy,Unemployment Rate,4.2
+Texas,2023,Economy,Unemployment Rate,3.8
+Alabama,2023,Economy,Unemployment Rate,3.2
+Alaska,2023,Economy,Unemployment Rate,4.1
+Arizona,2023,Economy,Unemployment Rate,3.5
+California,2023,Education,High School Graduation Rate,85.2
+Texas,2023,Education,High School Graduation Rate,89.1
+Alabama,2023,Education,High School Graduation Rate,82.1
+Alaska,2023,Education,High School Graduation Rate,88.5
+Arizona,2023,Education,High School Graduation Rate,84.7
+California,2023,Healthcare,Life Expectancy,80.1
+Texas,2023,Healthcare,Life Expectancy,78.9
+Alabama,2023,Healthcare,Life Expectancy,75.2
+Alaska,2023,Healthcare,Life Expectancy,78.9
+Arizona,2023,Healthcare,Life Expectancy,80.1 

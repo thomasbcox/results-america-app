@@ -32,7 +32,7 @@ export class ComprehensiveCSVImportService {
     const fileHash = createHash('sha256').update(fileBuffer).digest('hex');
     const fileSize = fileBuffer.length;
 
-    // Check for duplicate file
+    // Check for duplicate file - only block if it was successfully imported
     const existingImport = await db
       .select()
       .from(csvImports)
@@ -40,12 +40,20 @@ export class ComprehensiveCSVImportService {
       .limit(1);
 
     if (existingImport.length > 0) {
-      return {
-        success: false,
-        importId: existingImport[0].id,
-        message: 'This file has already been imported',
-        stats: { totalRows: 0, validRows: 0, errorRows: 0 }
-      };
+      const duplicate = existingImport[0];
+      
+      // Only block if the previous import was successful
+      if (duplicate.status === 'imported') {
+        return {
+          success: false,
+          importId: duplicate.id,
+          message: `This file has already been successfully imported as "${duplicate.name}" (Import ID: ${duplicate.id}) on ${new Date(duplicate.uploadedAt).toLocaleString()}. If you need to re-import, please modify the file content first.`,
+          stats: { totalRows: 0, validRows: 0, errorRows: 0 }
+        };
+      } else {
+        // Allow re-importing failed/validation_failed imports
+        await ImportLoggingService.logInfo(duplicate.id, `Re-attempting import of previously failed file`);
+      }
     }
 
     // Create import record

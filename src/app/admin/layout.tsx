@@ -11,7 +11,8 @@ import {
   LogOut,
   User,
   Shield,
-  MessageSquare
+  MessageSquare,
+  Layers
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -113,6 +114,12 @@ export default function AdminLayout({
       href: '/admin/data',
       icon: Database,
       current: pathname === '/admin/data'
+    },
+    {
+      name: 'Import Sessions',
+      href: '/admin/sessions',
+      icon: Layers,
+      current: pathname === '/admin/sessions'
     },
     {
       name: 'User Management',

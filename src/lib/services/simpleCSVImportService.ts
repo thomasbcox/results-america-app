@@ -21,7 +21,7 @@ export interface SimpleCSVTemplate {
   id: number;
   name: string;
   description: string;
-  type: 'multi-category' | 'single-category';
+  type: 'multi-category' | 'single-category' | 'multi-year-export';
   expectedHeaders: string[];
   sampleData: string;
 }
@@ -56,7 +56,8 @@ export class SimpleCSVImportService {
       id: t.id,
       name: t.name,
       description: t.description,
-      type: t.name.includes('Multi-Category') ? 'multi-category' : 'single-category',
+      type: t.name.includes('Multi-Category') ? 'multi-category' : 
+             t.name.includes('Multi Year Export') ? 'multi-year-export' : 'single-category',
       expectedHeaders: JSON.parse(t.templateSchema).expectedHeaders,
       sampleData: t.sampleData || ''
     }));
@@ -225,6 +226,15 @@ export class SimpleCSVImportService {
             statisticName: record.Measure || record.measure || record.Statistic,
             value: parseFloat(record.Value || record.value)
           };
+        } else if (template.type === 'multi-year-export') {
+          // Multi Year Export template: ID, State, Year, Category, Measure Name, Value, state_id, category_id, measure_id
+          mappedData = {
+            stateName: record.State || record.state,
+            year: parseInt(record.Year || record.year),
+            categoryName: record.Category || record.category,
+            statisticName: record['Measure Name'] || record['MeasureName'] || record.Measure || record.measure,
+            value: parseFloat(record.Value || record.value)
+          };
         } else {
           // Single-category template: State, Year, Value
           mappedData = {
@@ -268,11 +278,11 @@ export class SimpleCSVImportService {
           continue;
         }
 
-        // Match category and statistic (for multi-category template)
+        // Match category and statistic (for multi-category and multi-year-export templates)
         let categoryId: number | null = null;
         let statisticId: number | null = null;
 
-        if (template.type === 'multi-category') {
+        if (template.type === 'multi-category' || template.type === 'multi-year-export') {
           const categoryMatch = allCategories.find((c: any) => 
             c.name.toLowerCase() === mappedData.categoryName.toLowerCase()
           );
@@ -420,7 +430,8 @@ export class SimpleCSVImportService {
       id: template.id,
       name: template.name,
       description: template.description,
-      type: template.name.includes('Multi-Category') ? 'multi-category' : 'single-category',
+      type: template.name.includes('Multi-Category') ? 'multi-category' : 
+             template.name.includes('Multi Year Export') ? 'multi-year-export' : 'single-category',
       expectedHeaders: JSON.parse(template.templateSchema).expectedHeaders,
       sampleData: template.sampleData || ''
     };
@@ -488,8 +499,9 @@ export class SimpleCSVImportService {
     // Check if our specific templates exist
     const hasMultiCategory = existingTemplates.some((t: any) => t.name === 'Multi-Category Data Import');
     const hasSingleCategory = existingTemplates.some((t: any) => t.name === 'Single-Category Data Import');
+    const hasMultiYearExport = existingTemplates.some((t: any) => t.name === 'Multi Year Export');
 
-    if (hasMultiCategory && hasSingleCategory) {
+    if (hasMultiCategory && hasSingleCategory && hasMultiYearExport) {
       return; // Our templates already exist
     }
 
@@ -507,7 +519,7 @@ Texas,2023,Economy,GDP,2200000
 California,2023,Education,Graduation Rate,85.2
 Texas,2023,Education,Graduation Rate,89.1`,
         isActive: 1,
-        createdBy: 1 // Use existing admin user ID
+        createdBy: 5 // Use admin user ID
       }).onConflictDoNothing();
       console.log('✅ Created Multi-Category Data Import template');
     }
@@ -526,9 +538,31 @@ Texas,2023,2200000
 New York,2023,1800000
 Florida,2023,1200000`,
         isActive: 1,
-        createdBy: 1 // Use existing admin user ID
+        createdBy: 5 // Use admin user ID
       }).onConflictDoNothing();
       console.log('✅ Created Single-Category Data Import template');
+    }
+
+    // Create Multi Year Export Template if it doesn't exist
+    if (!hasMultiYearExport) {
+      await db.insert(csvImportTemplates).values({
+        name: 'Multi Year Export',
+        description: 'Import data from legacy system export format. Includes ID and foreign key columns that will be ignored.',
+        templateSchema: JSON.stringify({
+          expectedHeaders: ['ID', 'State', 'Year', 'Category', 'Measure Name', 'Value', 'state_id', 'category_id', 'measure_id']
+        }),
+                             sampleData: `ID,State,Year,Category,Measure Name,Value,state_id,category_id,measure_id
+1,Nation,2018,Economy,Net Job Growth,149148.6,1,1,15
+2,Texas,2023,Economy,Net Job Growth,125000,1,2,15
+3,California,2023,Economy,Net Job Growth,98000,2,2,15
+4,Texas,2022,Economy,Net Job Growth,110000,1,2,15
+5,California,2022,Economy,Net Job Growth,85000,2,2,15
+6,Texas,2023,Education,Graduation Rate,89.1,1,1,8
+7,California,2023,Education,Graduation Rate,85.2,2,1,8`,
+        isActive: 1,
+        createdBy: 5 // Use admin user ID
+      }).onConflictDoNothing();
+      console.log('✅ Created Multi Year Export template');
     }
   }
 } 

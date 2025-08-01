@@ -54,6 +54,14 @@ export class StatesService {
     }
   }
 
+  /**
+   * Get all states excluding "Nation" for user-facing displays
+   */
+  static async getDisplayStates(useCache = true): Promise<StateData[]> {
+    const allStates = await this.getAllStates(useCache);
+    return allStates.filter(state => state.name !== 'Nation');
+  }
+
   static async getStatesWithPagination(
     options: PaginationOptions, 
     filters: FilterOptions = {}
@@ -70,7 +78,9 @@ export class StatesService {
 
   static async searchStates(query: string): Promise<StateData[]> {
     const allStates = await this.getAllStates(false); // Don't use cache for search
-    return FilterService.filterStates(allStates, { search: query });
+    const filtered = FilterService.filterStates(allStates, { search: query });
+    // Filter out "Nation" from search results for user displays
+    return filtered.filter(state => state.name !== 'Nation');
   }
 
   static async getStateById(id: number): Promise<StateData | null> {
