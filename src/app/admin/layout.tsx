@@ -37,8 +37,13 @@ export default function AdminLayout({
 
   const fetchUser = async () => {
     console.log('🔍 Admin layout: Checking authentication...')
-    console.log('🔍 Admin layout: Current URL:', window.location.href)
-    console.log('🔍 Admin layout: Document cookies:', document.cookie)
+    
+    // Only access browser APIs after hydration
+    if (typeof window !== 'undefined') {
+      console.log('🔍 Admin layout: Current URL:', window.location.href)
+      console.log('🔍 Admin layout: Document cookies:', document.cookie)
+    }
+    
     try {
       const response = await fetch("/api/auth/me");
       console.log('📡 Admin layout: /api/auth/me response status:', response.status)
@@ -58,20 +63,28 @@ export default function AdminLayout({
           } else {
             console.log('❌ Admin layout: User is not admin, redirecting to login')
             // Redirect to login if not admin
-            window.location.href = '/auth/login';
+            if (typeof window !== 'undefined') {
+              window.location.href = '/auth/login';
+            }
           }
         } else {
           console.log('❌ Admin layout: No user data in response, redirecting to login')
-          window.location.href = '/auth/login';
+          if (typeof window !== 'undefined') {
+            window.location.href = '/auth/login';
+          }
         }
       } else {
         console.log('❌ Admin layout: User not authenticated, redirecting to login')
         // Redirect to login if not authenticated
-        window.location.href = '/auth/login';
+        if (typeof window !== 'undefined') {
+          window.location.href = '/auth/login';
+        }
       }
     } catch (error) {
       console.error('❌ Admin layout: Failed to fetch user:', error);
-      window.location.href = '/auth/login';
+      if (typeof window !== 'undefined') {
+        window.location.href = '/auth/login';
+      }
     } finally {
       setLoading(false);
     }
@@ -80,7 +93,9 @@ export default function AdminLayout({
   const handleLogout = async () => {
     try {
       await fetch("/api/auth/logout", { method: "POST" });
-      window.location.href = '/auth/login';
+      if (typeof window !== 'undefined') {
+        window.location.href = '/auth/login';
+      }
     } catch (error) {
       console.error('Logout failed:', error);
     }

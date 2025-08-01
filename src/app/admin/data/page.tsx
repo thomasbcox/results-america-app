@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/toast";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
+import { useSafeContextValue } from "@/lib/utils/hydrationUtils";
 import { 
   Upload, 
   FileText, 
@@ -70,6 +71,10 @@ export default function AdminDataPage() {
   const [selectedTemplate, setSelectedTemplate] = useState<number | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
   const [selectedMeasure, setSelectedMeasure] = useState<number | null>(null);
+  
+  // Use safe context values to prevent hydration mismatches
+  const safeSelectedCategory = useSafeContextValue(selectedCategory);
+  const safeSelectedMeasure = useSafeContextValue(selectedMeasure);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [importMetadata, setImportMetadata] = useState({
     name: '',
@@ -122,14 +127,14 @@ export default function AdminDataPage() {
 
   // Reset measure selection when category changes
   useEffect(() => {
-    if (selectedCategory) {
-      fetchMeasures(selectedCategory);
+    if (safeSelectedCategory) {
+      fetchMeasures(safeSelectedCategory);
       setSelectedMeasure(null);
     } else {
       setMeasures([]);
       setSelectedMeasure(null);
     }
-  }, [selectedCategory]);
+  }, [safeSelectedCategory]);
 
   // Poll validation progress for imports being validated
   useEffect(() => {
@@ -306,15 +311,15 @@ export default function AdminDataPage() {
       formData.append('templateId', selectedTemplate.toString());
       
       // Get selected category and measure names
-      const selectedCategoryName = categories.find(c => c.id === selectedCategory)?.name || '';
-      const selectedMeasureName = measures.find(m => m.id === selectedMeasure)?.name || '';
+          const selectedCategoryName = categories.find(c => c.id === safeSelectedCategory)?.name || '';
+    const selectedMeasureName = measures.find(m => m.id === safeSelectedMeasure)?.name || '';
       
       // Create enhanced metadata with category and measure info
       const enhancedMetadata = {
         ...importMetadata,
-        categoryId: selectedCategory,
+        categoryId: safeSelectedCategory,
         categoryName: selectedCategoryName,
-        measureId: selectedMeasure,
+        measureId: safeSelectedMeasure,
         measureName: selectedMeasureName
       };
       
@@ -680,7 +685,7 @@ export default function AdminDataPage() {
                       Data Category
                     </label>
                     <select
-                      value={selectedCategory || ''}
+                      value={safeSelectedCategory || ''}
                       onChange={(e) => setSelectedCategory(Number(e.target.value) || null)}
                       className="w-full p-2 border border-gray-300 rounded-md"
                     >
@@ -694,13 +699,13 @@ export default function AdminDataPage() {
                   </div>
 
                   {/* Measure Selection */}
-                  {selectedCategory && (
+                  {safeSelectedCategory && (
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Data Measure
                       </label>
                       <select
-                        value={selectedMeasure || ''}
+                        value={safeSelectedMeasure || ''}
                         onChange={(e) => setSelectedMeasure(Number(e.target.value) || null)}
                         className="w-full p-2 border border-gray-300 rounded-md"
                       >
@@ -847,8 +852,8 @@ Both formats will be automatically converted to CSV.`}
                     onClick={handleUpload}
                     disabled={
                       !selectedTemplate || 
-                      !selectedCategory ||
-                      !selectedMeasure ||
+                      !safeSelectedCategory ||
+                      !safeSelectedMeasure ||
                       uploading || 
                       (uploadMethod === 'file' && !selectedFile) ||
                       (uploadMethod === 'paste' && !pastedData.trim())

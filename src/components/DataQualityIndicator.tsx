@@ -113,7 +113,11 @@ export default function DataQualityIndicator({
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => window.open(sourceUrl, '_blank')}
+                    onClick={() => {
+                      if (typeof window !== 'undefined') {
+                        window.open(sourceUrl, '_blank')
+                      }
+                    }}
                     className="h-6 px-2 text-xs"
                   >
                     <ExternalLink className="h-3 w-3 mr-1" />

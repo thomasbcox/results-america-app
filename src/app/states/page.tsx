@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react"
 import { ArrowLeft, X, ArrowRight } from "lucide-react"
 import { useSelection } from "@/lib/context"
+import { ClientOnly, useSafeContextValue } from "@/lib/utils/hydrationUtils"
 import Link from "next/link"
 import Image from "next/image"
 import AuthStatus from "@/components/AuthStatus"
@@ -18,6 +19,9 @@ export default function StateSelection() {
   const [states, setStates] = useState<State[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  // Use safe context values to prevent hydration mismatches
+  const safeSelectedStates = useSafeContextValue(selectedStates)
 
   useEffect(() => {
     async function fetchStates() {
@@ -40,16 +44,18 @@ export default function StateSelection() {
   }, [])
 
   const handleStateSelect = (state: string) => {
-    if (selectedStates.includes(state)) {
-      setSelectedStates(selectedStates.filter(s => s !== state))
-    } else if (selectedStates.length < 4) {
-      setSelectedStates([...selectedStates, state])
+    if (safeSelectedStates?.includes(state)) {
+      setSelectedStates(safeSelectedStates.filter(s => s !== state))
+    } else if (safeSelectedStates && safeSelectedStates.length < 4) {
+      setSelectedStates([...safeSelectedStates, state])
     }
     setShowDropdown(false)
   }
 
   const removeState = (state: string) => {
-    setSelectedStates(selectedStates.filter(s => s !== state))
+    if (safeSelectedStates) {
+      setSelectedStates(safeSelectedStates.filter(s => s !== state))
+    }
   }
 
   const clearAll = () => {
@@ -129,70 +135,79 @@ export default function StateSelection() {
           )}
           
           {!loading && !error && (
-            <div className="relative">
-              <button
-                onClick={() => setShowDropdown(!showDropdown)}
-                className="w-full bg-white border border-gray-300 rounded-md px-4 py-3 text-left flex justify-between items-center hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
-              >
-                <span className="text-black">
-                  {selectedStates.length === 0 
-                    ? "Select a state (1-4 required)"
-                    : `Selected ${selectedStates.length} state${selectedStates.length === 1 ? '' : 's'}`
-                  }
-                </span>
+            <ClientOnly fallback={
+              <div className="w-full bg-white border border-gray-300 rounded-md px-4 py-3 text-left flex justify-between items-center text-black">
+                <span className="text-black">Loading...</span>
                 <div className="w-4 h-4 text-gray-600">▼</div>
-              </button>
+              </div>
+            }>
+              <div className="relative">
+                <button
+                  onClick={() => setShowDropdown(!showDropdown)}
+                  className="w-full bg-white border border-gray-300 rounded-md px-4 py-3 text-left flex justify-between items-center hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
+                >
+                  <span className="text-black">
+                    {safeSelectedStates?.length === 0 
+                      ? "Select a state (1-4 required)"
+                      : `Selected ${safeSelectedStates?.length || 0} state${(safeSelectedStates?.length || 0) === 1 ? '' : 's'}`
+                    }
+                  </span>
+                  <div className="w-4 h-4 text-gray-600">▼</div>
+                </button>
 
-              {showDropdown && (
-                <div className="absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-md mt-1 max-h-60 overflow-y-auto z-10">
-                  {states
-                    .filter((state) => !selectedStates.includes(state.name))
-                    .map((state) => (
-                      <button
-                        key={state.id}
-                        onClick={() => handleStateSelect(state.name)}
-                        className="w-full px-4 py-2 text-left hover:bg-gray-100 focus:outline-none focus:bg-gray-100 text-black"
-                      >
-                        {state.name}
-                      </button>
-                    ))}
-                </div>
-              )}
-            </div>
+                {showDropdown && (
+                  <div className="absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-md mt-1 max-h-60 overflow-y-auto z-10">
+                    {states
+                      .filter((state) => !safeSelectedStates?.includes(state.name))
+                      .map((state) => (
+                        <button
+                          key={state.id}
+                          onClick={() => handleStateSelect(state.name)}
+                          className="w-full px-4 py-2 text-left hover:bg-gray-100 focus:outline-none focus:bg-gray-100 text-black"
+                        >
+                          {state.name}
+                        </button>
+                      ))}
+                  </div>
+                )}
+              </div>
+            </ClientOnly>
           )}
 
           {/* Selected states display */}
-          {selectedStates.length > 0 && (
-            <div className="mt-4">
-              <div className="flex flex-wrap gap-2 mb-2">
-                {selectedStates.map((state) => (
-                  <div
-                    key={state}
-                    className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-2"
-                  >
-                    <span>{state}</span>
-                    <button
-                      onClick={() => removeState(state)}
-                      className="text-blue-600 hover:text-blue-800"
+          <ClientOnly fallback={<div className="mt-4 h-8"></div>}>
+            {safeSelectedStates && safeSelectedStates.length > 0 && (
+              <div className="mt-4">
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {safeSelectedStates.map((state) => (
+                    <div
+                      key={state}
+                      className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-2"
                     >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </div>
-                ))}
+                      <span>{state}</span>
+                      <button
+                        onClick={() => removeState(state)}
+                        className="text-blue-600 hover:text-blue-800"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-black">
+                    {safeSelectedStates.length} of 4 selected
+                  </span>
+                  <button
+                    onClick={clearAll}
+                    className="text-sm text-blue-600 hover:text-blue-700 underline"
+                  >
+                    Clear all
+                  </button>
+                </div>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-black">
-                  {selectedStates.length} of 4 selected
-                </span>
-                <button
-                  onClick={clearAll}
-                  className="text-sm text-blue-600 hover:text-blue-700 underline"
-                >
-                  Clear all
-                </button>
-              </div>
-            </div>
-          )}
+            )}
+          </ClientOnly>
         </div>
 
         {/* Navigation buttons */}
@@ -203,21 +218,27 @@ export default function StateSelection() {
           >
             Back
           </Link>
-          <Link
-            href={selectedStates.length > 0 ? "/category" : "#"}
-            className={`flex-1 font-medium py-3 px-6 rounded-md text-center transition-colors ${
-              selectedStates.length > 0
-                ? "bg-blue-600 text-white hover:bg-blue-700"
-                : "bg-gray-300 text-gray-500 cursor-not-allowed"
-            }`}
-            onClick={(e) => {
-              if (selectedStates.length === 0) {
-                e.preventDefault()
-              }
-            }}
-          >
-            Continue
-          </Link>
+          <ClientOnly fallback={
+            <button className="flex-1 bg-gray-300 text-gray-500 font-medium py-3 px-6 rounded-md text-center cursor-not-allowed">
+              Continue
+            </button>
+          }>
+            <Link
+              href={safeSelectedStates && safeSelectedStates.length > 0 ? "/category" : "#"}
+              className={`flex-1 font-medium py-3 px-6 rounded-md text-center transition-colors ${
+                safeSelectedStates && safeSelectedStates.length > 0
+                  ? "bg-blue-600 text-white hover:bg-blue-700"
+                  : "bg-gray-300 text-gray-500 cursor-not-allowed"
+              }`}
+              onClick={(e) => {
+                if (!safeSelectedStates || safeSelectedStates.length === 0) {
+                  e.preventDefault()
+                }
+              }}
+            >
+              Continue
+            </Link>
+          </ClientOnly>
         </div>
       </div>
 

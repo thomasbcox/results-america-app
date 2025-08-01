@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from '@jest/globals';
-import { setupTestDatabase, seedTestData, cleanupTestDatabase, getTestDb } from '../test-setup';
+import { setupTestDatabase, seedTestData, cleanupTestDatabase, getTestDb, clearTestData } from '../test-setup';
 import { UserPreferencesService } from './userPreferencesService';
-import { userFavorites, userSuggestions, statistics, users } from '../db/schema';
+import { userFavorites, userSuggestions, statistics, users, categories, dataSources } from '../db/schema';
 import { eq } from 'drizzle-orm';
 import { ServiceError, NotFoundError, ValidationError } from '../errors';
 
@@ -28,10 +28,47 @@ describe('UserPreferencesService', () => {
   });
 
   beforeEach(async () => {
-    // Clean up any test data
-    await db.delete(userFavorites);
-    await db.delete(userSuggestions);
-    await db.delete(users);
+    // Clean up any test data using the proper function
+    await clearTestData();
+
+    // Create required test data
+    await db.insert(categories).values([
+      {
+        name: 'Test Category',
+        description: 'Test category for testing',
+        icon: 'test',
+        sortOrder: 1,
+        isActive: 1
+      }
+    ]);
+
+    await db.insert(dataSources).values([
+      {
+        name: 'Test Data Source',
+        description: 'Test data source for testing',
+        url: 'https://test.com',
+        isActive: 1
+      }
+    ]);
+
+    await db.insert(statistics).values([
+      {
+        categoryId: 1,
+        dataSourceId: 1,
+        name: 'Test Statistic 1',
+        description: 'Test statistic for testing',
+        unit: 'percentage',
+        isActive: 1
+      },
+      {
+        categoryId: 1,
+        dataSourceId: 1,
+        name: 'Test Statistic 2',
+        description: 'Another test statistic',
+        unit: 'count',
+        isActive: 1
+      }
+    ]);
 
     // Create a test user
     const userResult = await db.insert(users).values({
@@ -229,12 +266,14 @@ describe('UserPreferencesService', () => {
       await db.insert(userSuggestions).values([
         {
           userId: testUserId,
+          email: 'testuser@example.com',
           title: 'Suggestion 1',
           description: 'Description 1',
           status: 'pending'
         },
         {
           userId: testUserId,
+          email: 'testuser@example.com',
           title: 'Suggestion 2',
           description: 'Description 2',
           status: 'approved'
@@ -282,18 +321,21 @@ describe('UserPreferencesService', () => {
       await db.insert(userSuggestions).values([
         {
           userId: testUserId,
+          email: 'testuser@example.com',
           title: 'Pending Suggestion',
           description: 'A pending suggestion',
           status: 'pending'
         },
         {
           userId: testUserId,
+          email: 'testuser@example.com',
           title: 'Approved Suggestion',
           description: 'An approved suggestion',
           status: 'approved'
         },
         {
           userId: testUserId,
+          email: 'testuser@example.com',
           title: 'Rejected Suggestion',
           description: 'A rejected suggestion',
           status: 'rejected'
@@ -327,6 +369,7 @@ describe('UserPreferencesService', () => {
     beforeEach(async () => {
       const suggestionResult = await db.insert(userSuggestions).values({
         userId: testUserId,
+        email: 'testuser@example.com',
         title: 'Test Suggestion',
         description: 'Test description',
         status: 'pending'
@@ -372,6 +415,7 @@ describe('UserPreferencesService', () => {
     beforeEach(async () => {
       const suggestionResult = await db.insert(userSuggestions).values({
         userId: testUserId,
+        email: 'testuser@example.com',
         title: 'Test Suggestion',
         description: 'Test description',
         status: 'pending'

@@ -1,5 +1,5 @@
 import { getDb } from '../db';
-import { userFavorites, userSuggestions, statistics } from '../db/schema';
+import { userFavorites, userSuggestions, statistics, users } from '../db/schema';
 import { eq, and, desc } from 'drizzle-orm';
 import { ServiceError, NotFoundError, ValidationError } from '../errors';
 import type { User } from '../../types/api';
@@ -116,9 +116,28 @@ export class UserPreferencesService {
       throw new ValidationError('Either userId or email is required');
     }
 
+    // If userId is provided, we need to get the user's email
+    let email = data.email;
+    if (data.userId && !email) {
+      const user = await db
+        .select({ email: users.email })
+        .from(users)
+        .where(eq(users.id, data.userId))
+        .limit(1);
+      
+      if (user.length === 0) {
+        throw new NotFoundError('User not found');
+      }
+      email = user[0].email;
+    }
+
+    if (!email) {
+      throw new ValidationError('Email is required');
+    }
+
     await db.insert(userSuggestions).values({
       userId: data.userId || null,
-      email: data.email || null,
+      email: email,
       title: data.title,
       description: data.description,
       category: data.category || 'feature_request',

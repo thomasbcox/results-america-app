@@ -2,6 +2,7 @@
 import { useState, useEffect, Suspense } from "react";
 import { ArrowRight, Star } from "lucide-react";
 import { useSelection } from "@/lib/context";
+import { ClientOnly, useSafeContextValue } from "@/lib/utils/hydrationUtils";
 import { useSearchParams } from "next/navigation";
 import DataQualityIndicator from "@/components/DataQualityIndicator";
 import AuthStatus from "@/components/AuthStatus";
@@ -26,18 +27,22 @@ function MeasureSelectionContent() {
   const category = searchParams.get('category');
   const measureParam = searchParams.get('measure');
 
+  // Use safe context values to prevent hydration mismatches
+  const safeSelectedMeasure = useSafeContextValue(selectedMeasure);
+  const safeSelectedStates = useSafeContextValue(selectedStates);
+
   const [statistics, setStatistics] = useState<Statistic[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showStateWarning, setShowStateWarning] = useState(false);
 
   useEffect(() => {
-    if (!selectedStates || selectedStates.length === 0) {
+    if (!safeSelectedStates || safeSelectedStates.length === 0) {
       setShowStateWarning(true);
     } else {
       setShowStateWarning(false);
     }
-  }, [selectedStates]);
+  }, [safeSelectedStates]);
 
   useEffect(() => {
     if (measureParam) {
@@ -155,7 +160,13 @@ function MeasureSelectionContent() {
                 </div>
                 <h3 className="text-lg font-semibold text-red-900 mb-2">Error Loading Measures</h3>
                 <p className="text-red-700 mb-4">{error}</p>
-                <button onClick={() => window.location.reload()} className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors">Try Again</button>
+                <ClientOnly fallback={<button className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors">Try Again</button>}>
+                  <button onClick={() => {
+                    if (typeof window !== 'undefined') {
+                      window.location.reload()
+                    }
+                  }} className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors">Try Again</button>
+                </ClientOnly>
               </div>
             </div>
           )}
@@ -164,7 +175,7 @@ function MeasureSelectionContent() {
               {statistics.map((statistic) => (
                 <div
                   key={statistic.id}
-                  className={`bg-white rounded-lg shadow-md overflow-hidden border-2 transition-all cursor-pointer ${selectedMeasure === statistic.id ? 'border-blue-500 shadow-lg' : 'border-transparent hover:border-gray-300'} ${!statistic.hasData ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  className={`bg-white rounded-lg shadow-md overflow-hidden border-2 transition-all cursor-pointer ${safeSelectedMeasure === statistic.id ? 'border-blue-500 shadow-lg' : 'border-transparent hover:border-gray-300'} ${!statistic.hasData ? 'opacity-50 cursor-not-allowed' : ''}`}
                   onClick={() => handleMeasureSelect(statistic.id, statistic.hasData || false)}
                 >
                   <div className="bg-blue-600 px-4 py-3 flex items-center justify-between">
@@ -216,14 +227,16 @@ function MeasureSelectionContent() {
               ))}
             </div>
           )}
-          {selectedMeasure && !showStateWarning && (
-            <div className="mt-8 text-center">
-              <a href="/results" className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium">
-                View Results
-                <ArrowRight className="w-4 h-4 ml-2" />
-              </a>
-            </div>
-          )}
+          <ClientOnly fallback={<div className="mt-8 h-12"></div>}>
+            {safeSelectedMeasure && !showStateWarning && (
+              <div className="mt-8 text-center">
+                <a href="/results" className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium">
+                  View Results
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </a>
+              </div>
+            )}
+          </ClientOnly>
         </div>
       </div>
       <div className="bg-white px-4 py-4 text-center">

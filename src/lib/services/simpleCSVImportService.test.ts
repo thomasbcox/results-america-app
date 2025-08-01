@@ -70,16 +70,20 @@ describe('SimpleCSVImportService', () => {
   });
 
   describe('uploadCSV', () => {
-    const mockCSVContent = `State,Category,Statistic,Value,Year
-Alabama,Economy,GDP,200000,2023
-Alaska,Economy,GDP,50000,2023`;
+    const mockCSVContent = `State,Year,Category,Measure,Value
+Alabama,2023,Economy,GDP,200000
+Alaska,2023,Economy,GDP,50000`;
 
     it('should successfully upload a valid CSV file', async () => {
+      // Get the first available template
+      const templates = await SimpleCSVImportService.getTemplates();
+      expect(templates.length).toBeGreaterThan(0);
+      
       const file = new File(mockCSVContent, 'test.csv');
       const metadata = { description: 'Test import' };
       const uploadedBy = 1;
 
-      const result = await SimpleCSVImportService.uploadCSV(file, 1, metadata, uploadedBy);
+      const result = await SimpleCSVImportService.uploadCSV(file, templates[0].id, metadata, uploadedBy);
 
       expect(result.success).toBe(true);
       expect(result.importId).toBeDefined();
@@ -89,15 +93,19 @@ Alaska,Economy,GDP,50000,2023`;
     });
 
     it('should reject duplicate files', async () => {
+      // Get the first available template
+      const templates = await SimpleCSVImportService.getTemplates();
+      expect(templates.length).toBeGreaterThan(0);
+      
       const file = new File(mockCSVContent, 'test.csv');
       const metadata = { description: 'Test import' };
       const uploadedBy = 1;
 
       // First upload
-      await SimpleCSVImportService.uploadCSV(file, 1, metadata, uploadedBy);
+      await SimpleCSVImportService.uploadCSV(file, templates[0].id, metadata, uploadedBy);
 
       // Second upload with same content
-      const result = await SimpleCSVImportService.uploadCSV(file, 1, metadata, uploadedBy);
+      const result = await SimpleCSVImportService.uploadCSV(file, templates[0].id, metadata, uploadedBy);
 
       expect(result.success).toBe(false);
       expect(result.message).toContain('already been uploaded');
@@ -116,6 +124,10 @@ Alaska,Economy,GDP,50000,2023`;
     });
 
     it('should handle malformed CSV', async () => {
+      // Get the first available template
+      const templates = await SimpleCSVImportService.getTemplates();
+      expect(templates.length).toBeGreaterThan(0);
+      
       const malformedCSV = `Invalid,CSV,Content
 No,proper,headers
 or,data,format`;
@@ -123,7 +135,7 @@ or,data,format`;
       const metadata = { description: 'Test import' };
       const uploadedBy = 1;
 
-      const result = await SimpleCSVImportService.uploadCSV(file, 1, metadata, uploadedBy);
+      const result = await SimpleCSVImportService.uploadCSV(file, templates[0].id, metadata, uploadedBy);
 
       expect(result.success).toBe(false);
       expect(result.errors).toBeDefined();
@@ -133,23 +145,27 @@ or,data,format`;
 
   describe('processData', () => {
     it('should process valid data records', async () => {
+      // Get the first available template
+      const templates = await SimpleCSVImportService.getTemplates();
+      expect(templates.length).toBeGreaterThan(0);
+      
       const importId = 1;
       const records = [
         {
           State: 'Alabama',
+          Year: '2023',
           Category: 'Economy',
-          Statistic: 'GDP',
-          Value: '200000',
-          Year: '2023'
+          Measure: 'GDP',
+          Value: '200000'
         }
       ];
       const template = {
-        id: 1,
-        name: 'Single Category Template',
-        description: 'Test template',
-        type: 'single-category' as const,
-        expectedHeaders: ['State', 'Category', 'Statistic', 'Value', 'Year'],
-        sampleData: ''
+        id: templates[0].id,
+        name: templates[0].name,
+        description: templates[0].description,
+        type: templates[0].type,
+        expectedHeaders: templates[0].expectedHeaders,
+        sampleData: templates[0].sampleData
       };
 
       const result = await SimpleCSVImportService.processData(importId, records, template);
@@ -162,23 +178,27 @@ or,data,format`;
     });
 
     it('should handle invalid data records', async () => {
+      // Get the first available template
+      const templates = await SimpleCSVImportService.getTemplates();
+      expect(templates.length).toBeGreaterThan(0);
+      
       const importId = 1;
       const records = [
         {
           State: 'Invalid State',
+          Year: '2023',
           Category: 'Economy',
-          Statistic: 'GDP',
-          Value: 'invalid',
-          Year: '2023'
+          Measure: 'GDP',
+          Value: 'invalid'
         }
       ];
       const template = {
-        id: 1,
-        name: 'Single Category Template',
-        description: 'Test template',
-        type: 'single-category' as const,
-        expectedHeaders: ['State', 'Category', 'Statistic', 'Value', 'Year'],
-        sampleData: ''
+        id: templates[0].id,
+        name: templates[0].name,
+        description: templates[0].description,
+        type: templates[0].type,
+        expectedHeaders: templates[0].expectedHeaders,
+        sampleData: templates[0].sampleData
       };
 
       const result = await SimpleCSVImportService.processData(importId, records, template);
@@ -190,15 +210,25 @@ or,data,format`;
   });
 
   describe('validateHeaders', () => {
-    it('should validate correct headers', () => {
-      const headers = ['State', 'Category', 'Statistic', 'Value', 'Year'];
+    it('should validate correct headers', async () => {
+      // Get the first available template
+      const templates = await SimpleCSVImportService.getTemplates();
+      expect(templates.length).toBeGreaterThan(0);
+      
+      const headers = {
+        State: 'Alabama',
+        Year: '2023',
+        Category: 'Economy',
+        Measure: 'GDP',
+        Value: '200000'
+      };
       const template = {
-        id: 1,
-        name: 'Single Category Template',
-        description: 'Test template',
-        type: 'single-category' as const,
-        expectedHeaders: ['State', 'Category', 'Statistic', 'Value', 'Year'],
-        sampleData: ''
+        id: templates[0].id,
+        name: templates[0].name,
+        description: templates[0].description,
+        type: templates[0].type,
+        expectedHeaders: templates[0].expectedHeaders,
+        sampleData: templates[0].sampleData
       };
 
       const result = SimpleCSVImportService.validateHeaders(headers, template);
@@ -207,15 +237,25 @@ or,data,format`;
       expect(result.errors).toHaveLength(0);
     });
 
-    it('should reject incorrect headers', () => {
-      const headers = ['State', 'Wrong', 'Headers'];
+    it('should reject incorrect headers', async () => {
+      // Get the first available template
+      const templates = await SimpleCSVImportService.getTemplates();
+      expect(templates.length).toBeGreaterThan(0);
+      
+      const headers = {
+        State: 'Alabama',
+        Wrong: 'Data',
+        Headers: 'Invalid',
+        Invalid: 'Format',
+        Data: 'Test'
+      };
       const template = {
-        id: 1,
-        name: 'Single Category Template',
-        description: 'Test template',
-        type: 'single-category' as const,
-        expectedHeaders: ['State', 'Category', 'Statistic', 'Value', 'Year'],
-        sampleData: ''
+        id: templates[0].id,
+        name: templates[0].name,
+        description: templates[0].description,
+        type: templates[0].type,
+        expectedHeaders: templates[0].expectedHeaders,
+        sampleData: templates[0].sampleData
       };
 
       const result = SimpleCSVImportService.validateHeaders(headers, template);
@@ -224,15 +264,25 @@ or,data,format`;
       expect(result.errors.length).toBeGreaterThan(0);
     });
 
-    it('should handle case-insensitive headers', () => {
-      const headers = ['state', 'category', 'statistic', 'value', 'year'];
+    it('should handle case-insensitive headers', async () => {
+      // Get the first available template
+      const templates = await SimpleCSVImportService.getTemplates();
+      expect(templates.length).toBeGreaterThan(0);
+      
+      const headers = {
+        state: 'Alabama',
+        year: '2023',
+        category: 'Economy',
+        measure: 'GDP',
+        value: '200000'
+      };
       const template = {
-        id: 1,
-        name: 'Single Category Template',
-        description: 'Test template',
-        type: 'single-category' as const,
-        expectedHeaders: ['State', 'Category', 'Statistic', 'Value', 'Year'],
-        sampleData: ''
+        id: templates[0].id,
+        name: templates[0].name,
+        description: templates[0].description,
+        type: templates[0].type,
+        expectedHeaders: templates[0].expectedHeaders,
+        sampleData: templates[0].sampleData
       };
 
       const result = SimpleCSVImportService.validateHeaders(headers, template);
@@ -244,10 +294,15 @@ or,data,format`;
 
   describe('getTemplate', () => {
     it('should return template by ID', async () => {
-      const template = await SimpleCSVImportService.getTemplate(1);
+      // Get the first available template
+      const templates = await SimpleCSVImportService.getTemplates();
+      expect(templates.length).toBeGreaterThan(0);
+      
+      const firstTemplateId = templates[0].id;
+      const template = await SimpleCSVImportService.getTemplate(firstTemplateId);
 
       expect(template).toBeDefined();
-      expect(template?.id).toBe(1);
+      expect(template?.id).toBe(firstTemplateId);
       expect(template?.name).toBeDefined();
       expect(template?.description).toBeDefined();
       expect(template?.type).toBeDefined();
@@ -263,9 +318,13 @@ or,data,format`;
 
   describe('getImportMetadata', () => {
     it('should return import metadata', async () => {
+      // Get the first available template
+      const templates = await SimpleCSVImportService.getTemplates();
+      expect(templates.length).toBeGreaterThan(0);
+      
       // First create an import
       const file = new File('State,Value\nAlabama,100', 'test.csv');
-      const result = await SimpleCSVImportService.uploadCSV(file, 1, { description: 'Test' }, 1);
+      const result = await SimpleCSVImportService.uploadCSV(file, templates[0].id, { description: 'Test' }, 1);
       
       if (result.success && result.importId) {
         const metadata = await SimpleCSVImportService.getImportMetadata(result.importId);
@@ -285,9 +344,13 @@ or,data,format`;
 
   describe('getImportSessionId', () => {
     it('should return import session ID', async () => {
+      // Get the first available template
+      const templates = await SimpleCSVImportService.getTemplates();
+      expect(templates.length).toBeGreaterThan(0);
+      
       // First create an import
       const file = new File('State,Value\nAlabama,100', 'test.csv');
-      const result = await SimpleCSVImportService.uploadCSV(file, 1, { description: 'Test' }, 1);
+      const result = await SimpleCSVImportService.uploadCSV(file, templates[0].id, { description: 'Test' }, 1);
       
       if (result.success && result.importId) {
         const sessionId = await SimpleCSVImportService.getImportSessionId(result.importId);

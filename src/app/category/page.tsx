@@ -3,6 +3,7 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { GraduationCap, DollarSign, ShieldCheck, Building2, Heart, TrendingUp, Eye } from "lucide-react"
 import { useSelection } from "@/lib/context"
+import { ClientOnly, useSafeContextValue } from "@/lib/utils/hydrationUtils"
 import AuthStatus from "@/components/AuthStatus"
 
 interface Category {
@@ -33,8 +34,11 @@ export default function CategorySelection() {
   const [error, setError] = useState<string | null>(null)
   const [retryCount, setRetryCount] = useState(0)
 
+  // Use safe context values to prevent hydration mismatches
+  const safeSelectedCategory = useSafeContextValue(selectedCategory)
+
   console.log('CategorySelection - User:', user)
-  console.log('CategorySelection - Selected category:', selectedCategory)
+  console.log('CategorySelection - Selected category:', safeSelectedCategory)
 
   useEffect(() => {
     async function fetchCategories() {
@@ -138,11 +142,13 @@ export default function CategorySelection() {
           <p className="text-black text-center text-sm">
             Choose a category to see state performance measures
           </p>
-          {selectedCategory && (
-            <p className="text-green-600 text-center text-sm mt-2 font-medium">
-              ✓ Selected: {selectedCategory}
-            </p>
-          )}
+          <ClientOnly fallback={<div className="h-6"></div>}>
+            {safeSelectedCategory && (
+              <p className="text-green-600 text-center text-sm mt-2 font-medium">
+                ✓ Selected: {safeSelectedCategory}
+              </p>
+            )}
+          </ClientOnly>
           {!user && (
             <p className="text-blue-600 text-center text-xs mt-2">
               💡 Your selections will be saved for this session
@@ -184,7 +190,7 @@ export default function CategorySelection() {
                 className={`w-full flex items-center justify-between p-4 rounded-md border transition-colors ${
                   (category.statisticCount || 0) === 0
                     ? 'bg-gray-200 text-gray-500 border-gray-300 cursor-not-allowed opacity-60'
-                    : selectedCategory === category.name
+                    : safeSelectedCategory === category.name
                     ? 'bg-red-600 text-white border-red-600 shadow-md cursor-pointer'
                     : 'bg-gray-100 text-black border-gray-300 hover:bg-gray-200 cursor-pointer'
                 }`}
@@ -192,7 +198,7 @@ export default function CategorySelection() {
                 <div className="flex items-center gap-3">
                   {getCategoryIcon(category.icon)}
                   <span className="font-medium">{category.name}</span>
-                  {selectedCategory === category.name && (
+                  {safeSelectedCategory === category.name && (
                     <div className="w-2 h-2 bg-white rounded-full"></div>
                   )}
                 </div>
@@ -228,21 +234,27 @@ export default function CategorySelection() {
           >
             Back
           </a>
-          {selectedCategory ? (
-            <a
-              href={`/measure?category=${encodeURIComponent(selectedCategory)}`}
-              className="flex-1 bg-blue-600 text-white font-medium py-3 px-6 rounded-md text-center hover:bg-blue-700 transition-colors"
-            >
-              Continue
-            </a>
-          ) : (
-            <button
-              disabled
-              className="flex-1 bg-gray-300 text-gray-500 font-medium py-3 px-6 rounded-md text-center cursor-not-allowed"
-            >
+          <ClientOnly fallback={
+            <button className="flex-1 bg-gray-300 text-gray-500 font-medium py-3 px-6 rounded-md text-center cursor-not-allowed">
               Continue
             </button>
-          )}
+          }>
+            {safeSelectedCategory ? (
+              <a
+                href={`/measure?category=${encodeURIComponent(safeSelectedCategory)}`}
+                className="flex-1 bg-blue-600 text-white font-medium py-3 px-6 rounded-md text-center hover:bg-blue-700 transition-colors"
+              >
+                Continue
+              </a>
+            ) : (
+              <button
+                disabled
+                className="flex-1 bg-gray-300 text-gray-500 font-medium py-3 px-6 rounded-md text-center cursor-not-allowed"
+              >
+                Continue
+              </button>
+            )}
+          </ClientOnly>
         </div>
       </div>
 

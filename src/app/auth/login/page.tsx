@@ -36,7 +36,9 @@ export default function LoginPage() {
         // In a real app, the user would click the link in their email
         if (data.success && data.magicLink) {
           // In development mode, redirect directly to the magic link
-          window.location.href = data.magicLink;
+          if (typeof window !== 'undefined') {
+            window.location.href = data.magicLink;
+          }
         } else if (data.success) {
           setMessage({
             type: 'success',

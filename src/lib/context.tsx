@@ -46,42 +46,13 @@ const getStorage = (isAuthenticated: boolean) => {
 }
 
 export function SelectionProvider({ children }: { children: ReactNode }) {
-  // Load initial state from sessionStorage immediately
-  const getInitialState = () => {
-    try {
-      // Check if we're on the client side
-      if (typeof window === 'undefined') {
-        return {
-          selectedStates: [],
-          selectedCategory: null,
-          selectedMeasure: null,
-          favorites: []
-        }
-      }
-
-      const savedStates = sessionStorage.getItem('selectedStates')
-      const savedCategory = sessionStorage.getItem('selectedCategory')
-      const savedMeasure = sessionStorage.getItem('selectedMeasure')
-      const savedFavorites = sessionStorage.getItem('favorites')
-      
-      return {
-        selectedStates: savedStates ? JSON.parse(savedStates) : [],
-        selectedCategory: savedCategory || null,
-        selectedMeasure: savedMeasure ? JSON.parse(savedMeasure) : null,
-        favorites: savedFavorites ? JSON.parse(savedFavorites) : []
-      }
-    } catch (error) {
-      console.error('Error loading initial state:', error)
-      return {
-        selectedStates: [],
-        selectedCategory: null,
-        selectedMeasure: null,
-        favorites: []
-      }
-    }
+  // Always start with empty state to prevent hydration mismatches
+  const initialState = {
+    selectedStates: [],
+    selectedCategory: null,
+    selectedMeasure: null,
+    favorites: []
   }
-
-  const initialState = getInitialState()
   
   const [user, setUser] = useState<User | null>(null)
   const [selectedStates, setSelectedStatesState] = useState<string[]>(initialState.selectedStates)
@@ -94,6 +65,31 @@ export function SelectionProvider({ children }: { children: ReactNode }) {
   const setSelectedStates = (states: string[]) => {
     setSelectedStatesState(states)
   }
+
+  // Load saved state from sessionStorage after hydration
+  useEffect(() => {
+    try {
+      const savedStates = sessionStorage.getItem('selectedStates')
+      const savedCategory = sessionStorage.getItem('selectedCategory')
+      const savedMeasure = sessionStorage.getItem('selectedMeasure')
+      const savedFavorites = sessionStorage.getItem('favorites')
+      
+      if (savedStates) {
+        setSelectedStatesState(JSON.parse(savedStates))
+      }
+      if (savedCategory) {
+        setSelectedCategory(savedCategory)
+      }
+      if (savedMeasure) {
+        setSelectedMeasure(JSON.parse(savedMeasure))
+      }
+      if (savedFavorites) {
+        setFavorites(JSON.parse(savedFavorites))
+      }
+    } catch (error) {
+      console.error('Error loading saved state:', error)
+    }
+  }, [])
 
   // Load user from localStorage on mount
   useEffect(() => {

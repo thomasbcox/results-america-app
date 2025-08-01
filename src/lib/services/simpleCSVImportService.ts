@@ -507,7 +507,7 @@ Texas,2023,Economy,GDP,2200000
 California,2023,Education,Graduation Rate,85.2
 Texas,2023,Education,Graduation Rate,89.1`,
         isActive: 1,
-        createdBy: 3 // Use existing admin user ID
+        createdBy: 1 // Use existing admin user ID
       }).onConflictDoNothing();
       console.log('✅ Created Multi-Category Data Import template');
     }
@@ -526,7 +526,7 @@ Texas,2023,2200000
 New York,2023,1800000
 Florida,2023,1200000`,
         isActive: 1,
-        createdBy: 3 // Use existing admin user ID
+        createdBy: 1 // Use existing admin user ID
       }).onConflictDoNothing();
       console.log('✅ Created Single-Category Data Import template');
     }

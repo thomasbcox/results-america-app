@@ -470,8 +470,37 @@ export async function seedTestData() {
     { email: 'admin@example.com', name: 'Admin User', role: 'admin', isActive: 1, emailVerified: 1 }
   ]);
   
-  // Note: CSV import data is not seeded by default to avoid complexity
-  // Tests that need CSV import data should seed it specifically
+  // Insert sample CSV import templates for testing
+  await db.insert(sqliteSchema.csvImportTemplates).values([
+    {
+      name: 'Multi-Category Data Import',
+      description: 'Import data with multiple categories and measures. Each row can have different categories and measures.',
+      templateSchema: JSON.stringify({
+        expectedHeaders: ['State', 'Year', 'Category', 'Measure', 'Value']
+      }),
+      sampleData: `State,Year,Category,Measure,Value
+California,2023,Economy,GDP,3500000
+Texas,2023,Economy,GDP,2200000
+California,2023,Education,Graduation Rate,85.2
+Texas,2023,Education,Graduation Rate,89.1`,
+      isActive: 1,
+      createdBy: 1 // admin@example.com
+    },
+    {
+      name: 'Single-Category Data Import',
+      description: 'Import data for one specific category and measure. All rows must be for the same category and measure.',
+      templateSchema: JSON.stringify({
+        expectedHeaders: ['State', 'Year', 'Value']
+      }),
+      sampleData: `State,Year,Value
+California,2023,3500000
+Texas,2023,2200000
+New York,2023,1800000
+Florida,2023,1200000`,
+      isActive: 1,
+      createdBy: 1 // admin@example.com
+    }
+  ]);
 }
 
 // Create a test database instance that will be shared

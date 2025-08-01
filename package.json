@@ -43,7 +43,10 @@
     "test:csv-performance": "jest tests/csv/performance",
     "test:csv-edge-cases": "jest tests/csv/edge-cases",
     "test:csv-security": "jest tests/csv/security",
-    "test:csv-all": "jest tests/csv"
+    "test:csv-all": "jest tests/csv",
+    "test:hydration": "jest tests/hydration-utils.test.ts",
+    "audit:hydration": "tsx scripts/audit-hydration-mismatches.ts",
+    "fix:hydration": "tsx scripts/audit-hydration-mismatches.ts && echo 'Run the fixes documented in HYDRATION_MISMATCH_PREVENTION.md'"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.4",
