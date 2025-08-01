@@ -50,6 +50,8 @@ The main admin dashboard provides:
 - **Data Management Interface** (`/admin/data`) - Upload, validate, and publish CSV data
 - **Import History Tracking** - Full audit trail of all data imports
 - **Template System** - Pre-built templates for common data sources (BEA, BLS, Census)
+- **Import Sessions Management** (`/admin/sessions`) - Manage data staging and activation
+- **Session Status System** - Coherent status tracking for data imports
 
 #### 🚧 **Planned Features** (Not Yet Implemented)
 - Analytics dashboard (`/admin/analytics`)
@@ -98,6 +100,79 @@ Navigate to `/admin/data` in your browser to access the CSV import interface. Yo
 1. **Upload**: Select template and upload CSV file (max 10MB)
 2. **Stage**: Data is parsed and stored in staging tables
 3. **Validate**: Multi-level validation (schema, business rules, data quality)
+
+## 📊 Import Sessions Management
+
+### Overview
+
+The Import Sessions system provides comprehensive management of data imports with coherent status tracking and data staging capabilities. This system allows you to:
+
+- **Track Data Lineage**: See where each data point came from
+- **Stage Data**: Import data without making it visible to users
+- **Activate/Deactivate**: Control which data is visible to users
+- **Inspect Data**: View actual imported data points
+- **Manage Lifecycle**: Delete old or failed imports
+
+### Accessing the System
+
+Navigate to `/admin/sessions` to access the Import Sessions management interface.
+
+### Session Status System
+
+The system uses a coherent status system with four distinct states:
+
+#### 🟢 Active
+- **Meaning**: Data is visible to users in charts and comparisons
+- **Conditions**: Has data points AND `isActive = 1`
+- **Actions**: Deactivate, Delete
+
+#### 🟡 Inactive
+- **Meaning**: Data is imported but hidden from users
+- **Conditions**: Has data points AND `isActive = 0`
+- **Actions**: Activate, Delete
+
+#### 🔴 Failed
+- **Meaning**: Import failed - no data was stored despite expecting data
+- **Conditions**: Expected data points > 0, but actual data points = 0
+- **Actions**: Delete only
+
+#### ⚪ Empty
+- **Meaning**: No data expected or imported
+- **Conditions**: Expected data points = 0, actual data points = 0
+- **Actions**: Delete only
+
+### Data Point Information
+
+Each session displays:
+- **Data Points**: Actual count of data points in database
+- **Expected**: Expected count from import metadata (shown if different)
+- **View Button**: Click to inspect actual data rows in a modal
+
+### Available Actions
+
+#### Activate ▶️
+- **Purpose**: Make data visible to users
+- **Available**: Only for "inactive" sessions
+- **Effect**: Sets `isActive = 1`
+
+#### Deactivate ⏸️
+- **Purpose**: Hide data from users (preserves data)
+- **Available**: Only for "active" sessions
+- **Effect**: Sets `isActive = 0`
+
+#### Delete 🗑️
+- **Purpose**: Permanently remove data and session
+- **Available**: All sessions
+- **Effect**: Deletes all data points and session record
+- **Confirmation**: Shows count of data points to be deleted
+
+### User Impact
+
+- **Active Sessions**: Data appears in charts and comparisons
+- **Inactive Sessions**: Data is preserved but hidden from users
+- **Failed/Empty Sessions**: No impact on user experience
+
+For detailed technical documentation, see [Session Status Guide](./docs/SESSION_STATUS_GUIDE.md).
 4. **Publish**: Move validated data to production tables
 5. **Track**: Complete audit trail in import history
 
@@ -160,6 +235,11 @@ For detailed usage instructions, see `CSV_IMPORT_SYSTEM.md`.
 - `POST /api/admin/csv-imports/{id}/validate` - Validate staged data
 - `POST /api/admin/csv-imports/{id}/publish` - Publish validated data
 - `GET /api/admin/csv-templates` - List available templates
+
+#### ✅ **Import Sessions Management**
+- `GET /api/admin/import-sessions` - List all import sessions with status
+- `PATCH /api/admin/import-sessions` - Activate/deactivate/delete sessions
+- `GET /api/admin/import-sessions/[id]/data-points` - View session data points
 
 #### 🚧 **Planned** (Not Yet Implemented)
 - `POST /api/admin/seed` - Seed the database

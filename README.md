@@ -188,6 +188,7 @@ NODE_ENV=production
 - [Database Setup](./DATABASE_SETUP.md) - Database configuration and migration
 - [Roadmap](./ROADMAP.md) - Development roadmap and phases
 - [User Authentication](./USER_AUTHENTICATION.md) - Authentication system details
+- [Session Status Guide](./docs/SESSION_STATUS_GUIDE.md) - Import session status system and management
 
 ## 🔧 Development
 

@@ -169,27 +169,68 @@ export default function AdminSessionsPage() {
         </Button>
       </div>
 
-      {/* Help Section */}
+      {/* Status Guide Section */}
       <Card className="mb-6">
-        <CardContent className="p-4">
-          <h3 className="font-semibold mb-2">How to Manage Data:</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
+        <CardContent className="p-6">
+          <h3 className="font-semibold text-lg mb-4">Session Status Guide</h3>
+          
+          {/* Status Definitions */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
             <div>
-              <p><strong>🟢 Active:</strong> Data is visible to users in charts and comparisons</p>
-              <p><strong>🟡 Inactive:</strong> Data is imported but hidden from users</p>
-              <p><strong>🔴 Failed:</strong> Import failed - no data was stored</p>
-              <p><strong>⚪ Empty:</strong> No data expected or imported</p>
+              <h4 className="font-medium mb-3">Status Meanings</h4>
+              <div className="space-y-3 text-sm">
+                <div className="flex items-center space-x-3">
+                  <CheckCircle className="h-4 w-4 text-green-500" />
+                  <span><strong>Active:</strong> Data visible to users in charts and comparisons</span>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <Pause className="h-4 w-4 text-yellow-500" />
+                  <span><strong>Inactive:</strong> Data imported but hidden from users</span>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <XCircle className="h-4 w-4 text-red-500" />
+                  <span><strong>Failed:</strong> Import failed - no data was stored</span>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <AlertCircle className="h-4 w-4 text-gray-500" />
+                  <span><strong>Empty:</strong> No data expected or imported</span>
+                </div>
+              </div>
             </div>
+            
             <div>
-              <p><strong>▶️ Activate:</strong> Make data visible to users</p>
-              <p><strong>⏸️ Deactivate:</strong> Hide data from users (preserves data)</p>
-              <p><strong>🗑️ Delete:</strong> Permanently remove data and session</p>
+              <h4 className="font-medium mb-3">Available Actions</h4>
+              <div className="space-y-3 text-sm">
+                <div className="flex items-center space-x-3">
+                  <Play className="h-4 w-4 text-green-500" />
+                  <span><strong>Activate:</strong> Make data visible to users</span>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <Pause className="h-4 w-4 text-yellow-500" />
+                  <span><strong>Deactivate:</strong> Hide data from users (preserves data)</span>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <Trash2 className="h-4 w-4 text-red-500" />
+                  <span><strong>Delete:</strong> Permanently remove data and session</span>
+                </div>
+              </div>
             </div>
           </div>
-          <div className="mt-4 pt-4 border-t text-sm text-gray-600">
-            <p><strong>📊 Data Points:</strong> Shows actual data points stored in database</p>
-            <p><strong>📋 Expected:</strong> Shows expected count from import metadata (if different)</p>
-            <p><strong>👁️ View:</strong> Click to inspect the actual data rows</p>
+          
+          {/* Data Point Information */}
+          <div className="border-t pt-4">
+            <h4 className="font-medium mb-3">Data Point Information</h4>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
+              <div>
+                <p><strong>📊 Data Points:</strong> Actual count stored in database</p>
+              </div>
+              <div>
+                <p><strong>📋 Expected:</strong> Expected count from import metadata</p>
+              </div>
+              <div>
+                <p><strong>👁️ View:</strong> Click to inspect actual data rows</p>
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>
