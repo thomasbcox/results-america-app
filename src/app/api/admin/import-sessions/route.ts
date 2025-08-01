@@ -42,22 +42,27 @@ export async function GET(request: NextRequest) {
           .from(dataPoints)
           .where(eq(dataPoints.importSessionId, session.id));
 
-        // Determine import status based on data points and session info
-        let importStatus = 'unknown';
-        if (dataPointCount[0]?.count > 0) {
-          importStatus = 'imported';
+        // Determine coherent status based on data points and session state
+        let sessionStatus = 'unknown';
+        const actualDataPoints = dataPointCount[0]?.count || 0;
+        
+        if (actualDataPoints > 0) {
+          // Has data points - check if active
+          sessionStatus = session.isActive === 1 ? 'active' : 'inactive';
         } else if (session.recordCount && session.recordCount > 0) {
-          importStatus = 'staged';
+          // Expected data but none imported - likely failed
+          sessionStatus = 'failed';
         } else {
-          importStatus = 'empty';
+          // No expected data and no actual data
+          sessionStatus = 'empty';
         }
 
         return {
           ...session,
-          dataPointCount: dataPointCount[0]?.count || 0,
+          dataPointCount: actualDataPoints,
           importId: session.importId,
           importName: session.importName,
-          importStatus: session.importStatus || importStatus,
+          sessionStatus: sessionStatus, // Use new coherent status
           importUploadedAt: session.importUploadedAt,
         };
       })

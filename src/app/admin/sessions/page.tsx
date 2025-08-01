@@ -30,7 +30,7 @@ interface ImportSession {
   updatedAt: string;
   importId: number | null;
   importName: string | null;
-  importStatus: string | null;
+  sessionStatus: string; // New coherent status
   importUploadedAt: string | null;
   dataPointCount: number;
 }
@@ -114,37 +114,33 @@ export default function AdminSessionsPage() {
     }
   };
 
-  const getStatusIcon = (isActive: number, importStatus: string | null) => {
-    if (importStatus === 'imported' && isActive) {
-      return <CheckCircle className="h-5 w-5 text-green-500" />;
-    } else if (importStatus === 'imported' && !isActive) {
-      return <Pause className="h-5 w-5 text-yellow-500" />;
-    } else if (importStatus === 'staged' && isActive) {
-      return <Clock className="h-5 w-5 text-blue-500" />;
-    } else if (importStatus === 'failed' || importStatus === 'validation_failed') {
-      return <XCircle className="h-5 w-5 text-red-500" />;
-    } else if (importStatus === 'empty') {
-      return <AlertCircle className="h-5 w-5 text-gray-500" />;
-    } else {
-      return <Clock className="h-5 w-5 text-blue-500" />;
+  const getStatusIcon = (sessionStatus: string) => {
+    switch (sessionStatus) {
+      case 'active':
+        return <CheckCircle className="h-5 w-5 text-green-500" />;
+      case 'inactive':
+        return <Pause className="h-5 w-5 text-yellow-500" />;
+      case 'failed':
+        return <XCircle className="h-5 w-5 text-red-500" />;
+      case 'empty':
+        return <AlertCircle className="h-5 w-5 text-gray-500" />;
+      default:
+        return <Clock className="h-5 w-5 text-blue-500" />;
     }
   };
 
-  const getStatusBadge = (isActive: number, importStatus: string | null) => {
-    if (importStatus === 'imported' && isActive) {
-      return <Badge variant="default">Active</Badge>;
-    } else if (importStatus === 'imported' && !isActive) {
-      return <Badge variant="secondary">Inactive</Badge>;
-    } else if (importStatus === 'staged' && isActive) {
-      return <Badge variant="secondary">Staged</Badge>;
-    } else if (importStatus === 'failed') {
-      return <Badge variant="destructive">Failed</Badge>;
-    } else if (importStatus === 'validation_failed') {
-      return <Badge variant="destructive">Validation Failed</Badge>;
-    } else if (importStatus === 'empty') {
-      return <Badge variant="outline">Empty</Badge>;
-    } else {
-      return <Badge variant="outline">Unknown</Badge>;
+  const getStatusBadge = (sessionStatus: string) => {
+    switch (sessionStatus) {
+      case 'active':
+        return <Badge variant="default">Active</Badge>;
+      case 'inactive':
+        return <Badge variant="secondary">Inactive</Badge>;
+      case 'failed':
+        return <Badge variant="destructive">Failed</Badge>;
+      case 'empty':
+        return <Badge variant="outline">Empty</Badge>;
+      default:
+        return <Badge variant="outline">Unknown</Badge>;
     }
   };
 
@@ -180,8 +176,9 @@ export default function AdminSessionsPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
             <div>
               <p><strong>🟢 Active:</strong> Data is visible to users in charts and comparisons</p>
-              <p><strong>🟡 Staged:</strong> Data is imported but hidden from users</p>
+              <p><strong>🟡 Inactive:</strong> Data is imported but hidden from users</p>
               <p><strong>🔴 Failed:</strong> Import failed - no data was stored</p>
+              <p><strong>⚪ Empty:</strong> No data expected or imported</p>
             </div>
             <div>
               <p><strong>▶️ Activate:</strong> Make data visible to users</p>
@@ -221,13 +218,13 @@ export default function AdminSessionsPage() {
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
-                    {getStatusIcon(session.isActive, session.importStatus)}
+                    {getStatusIcon(session.sessionStatus)}
                     <div>
                       <CardTitle className="text-lg">{session.name}</CardTitle>
                       <p className="text-sm text-gray-600">{session.description}</p>
                     </div>
                   </div>
-                  {getStatusBadge(session.isActive, session.importStatus)}
+                  {getStatusBadge(session.sessionStatus)}
                 </div>
               </CardHeader>
               <CardContent>
@@ -262,17 +259,18 @@ export default function AdminSessionsPage() {
                     <p className="text-sm">{new Date(session.createdAt).toLocaleDateString()}</p>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-500">Import Status</p>
-                    <p className="text-sm">{session.importStatus || 'N/A'}</p>
+                    <p className="text-sm font-medium text-gray-500">Session Status</p>
+                    <p className="text-sm">{session.sessionStatus}</p>
                   </div>
                 </div>
 
 
 
                 <div className="flex flex-wrap gap-2">
-                  {(session.importStatus === 'imported' || session.importStatus === 'staged') && (
+                  {/* Show activate/deactivate buttons only for sessions with data */}
+                  {(session.sessionStatus === 'active' || session.sessionStatus === 'inactive') && (
                     <>
-                      {session.isActive === 1 ? (
+                      {session.sessionStatus === 'active' ? (
                         <Button
                           size="sm"
                           variant="outline"
