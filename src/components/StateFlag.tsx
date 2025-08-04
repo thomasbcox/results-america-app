@@ -50,7 +50,7 @@ export default function StateFlag({
 
   // Fallback colored rectangle if image fails or doesn't exist
   if (imageError || !normalizedStateCode) {
-    const fallbackColor = fallbackColors[stateCode.toUpperCase()] || 'bg-gray-400'
+    const fallbackColor = (fallbackColors as Record<string, string>)[stateCode.toUpperCase()] || 'bg-gray-400'
     return (
       <div 
         className={`

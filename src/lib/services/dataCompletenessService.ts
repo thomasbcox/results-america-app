@@ -129,7 +129,7 @@ export class DataCompletenessService {
     
     for (const category of allCategories) {
       // Filter statistics for this category
-      const categoryStats = allStatistics.filter(stat => stat.categoryId === category.id);
+      const categoryStats = allStatistics.filter((stat: any) => stat.categoryId === category.id);
       
       if (filters.categoryId && category.id !== filters.categoryId) {
         continue;
@@ -143,10 +143,10 @@ export class DataCompletenessService {
         }
 
         // Get production data for this statistic
-        const statProductionData = productionData.filter(dp => dp.statisticId === stat.id);
+        const statProductionData = productionData.filter((dp: any) => dp.statisticId === stat.id);
         
         // Get staged data for this statistic
-        const statStagedData = stagedData.filter(dp => dp.statisticId === stat.id);
+        const statStagedData = stagedData.filter((dp: any) => dp.statisticId === stat.id);
         
         // Group by year
         const years = new Map<number, YearCompleteness>();
@@ -195,7 +195,7 @@ export class DataCompletenessService {
           yearData.stagedStates++;
           
           // Check for overlap (both production and staged data for same state-year)
-          const hasProduction = statProductionData.some(pd => 
+          const hasProduction = statProductionData.some((pd: any) => 
             pd.year === dp.year && pd.stateId === dp.stateId
           );
           
@@ -425,7 +425,7 @@ export class DataCompletenessService {
       overlaps,
       totalOverlaps: overlaps.length,
       averageDifference: overlaps.length > 0 
-        ? overlaps.reduce((sum, o) => sum + parseFloat(o.difference), 0) / overlaps.length
+        ? overlaps.reduce((sum: number, o: any) => sum + parseFloat(o.difference), 0) / overlaps.length
         : 0,
     };
   }

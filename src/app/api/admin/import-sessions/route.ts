@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
 
     // Get data point counts for each session
     const sessionsWithCounts = await Promise.all(
-      sessions.map(async (session) => {
+      sessions.map(async (session: any) => {
         const dataPointCount = await db
           .select({ count: sql<number>`count(*)` })
           .from(dataPoints)

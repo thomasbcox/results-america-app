@@ -154,7 +154,7 @@ export default function AdminLayout({
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Navigation Bar */}
-      <nav className="bg-white shadow-sm border-b border-gray-200">
+      <nav className="bg-white shadow-sm border-b border-gray-200 relative z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             {/* Left side - Logo and Navigation */}
@@ -196,7 +196,7 @@ export default function AdminLayout({
                         <Button
                           variant="ghost"
                           className={`inline-flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${
-                            item.items.some(subItem => subItem.current)
+                            item.items?.some(subItem => subItem.current)
                               ? 'bg-blue-100 text-blue-700 border border-blue-200 shadow-sm'
                               : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 border border-transparent hover:border-gray-200'
                           }`}
@@ -206,7 +206,7 @@ export default function AdminLayout({
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="start" className="w-48">
-                        {item.items.map((subItem) => (
+                        {item.items?.map((subItem) => (
                           <DropdownMenuItem key={subItem.name} asChild>
                             <Link
                               href={subItem.href}
@@ -285,7 +285,7 @@ export default function AdminLayout({
                     <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                       {item.name}
                     </div>
-                    {item.items.map((subItem) => (
+                    {item.items?.map((subItem) => (
                       <Link
                         key={subItem.name}
                         href={subItem.href}

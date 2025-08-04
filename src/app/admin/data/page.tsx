@@ -29,7 +29,21 @@ interface CSVImportTemplate {
   name: string;
   description: string;
   type: string;
-  expectedHeaders: string[];
+  categoryId?: number;
+  dataSourceId?: number;
+  templateSchema: {
+    columns: {
+      name: string;
+      type: 'string' | 'number' | 'date' | 'boolean';
+      required: boolean;
+      mapping?: string;
+      validation?: any;
+    }[];
+    expectedHeaders: string[];
+    flexibleColumns?: boolean;
+    multiYearSupport?: boolean;
+  };
+  validationRules: any;
   sampleData: string;
 }
 
@@ -108,6 +122,13 @@ export default function AdminDataPage() {
 
   const [validatingImports, setValidatingImports] = useState<Set<number>>(new Set());
   const [validationProgress, setValidationProgress] = useState<{[key: number]: {current: number, total: number}}>({});
+
+  // Helper function to check if selected template is multi-year-export
+  const isMultiYearExportTemplate = () => {
+    if (!selectedTemplate) return false;
+    const template = templates.find(t => t.id === selectedTemplate);
+    return template?.type === 'multi-year-export';
+  };
 
   const handlePasteData = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     let data = e.target.value;
@@ -326,7 +347,7 @@ export default function AdminDataPage() {
       const selectedMeasureName = measures.find(m => m.id === safeSelectedMeasure)?.name || '';
       
       // Check if this is a Multi Year Export template
-      const isMultiYearExport = selectedTemplate && templates.find(t => t.id === selectedTemplate)?.type === 'multi-year-export';
+      const isMultiYearExport = isMultiYearExportTemplate();
       
       // Create enhanced metadata with category and measure info
       const enhancedMetadata = {
@@ -744,14 +765,14 @@ export default function AdminDataPage() {
                       <h4 className="text-sm font-medium text-gray-700 mb-2">Template Headers</h4>
                       {(() => {
                         const template = templates.find(t => t.id === selectedTemplate);
-                        if (template?.expectedHeaders) {
+                        if (template?.templateSchema?.expectedHeaders) {
                           return (
                             <div className="space-y-2">
                               <p className="text-sm text-gray-600">
                                 Your data should have these columns (in any order):
                               </p>
                               <div className="flex flex-wrap gap-2">
-                                {template.expectedHeaders && template.expectedHeaders.map((header: string, index: number) => (
+                                {template.templateSchema.expectedHeaders && template.templateSchema.expectedHeaders.map((header: string, index: number) => (
                                   <Badge key={index} variant="outline" className="text-xs">
                                     {header}
                                   </Badge>
@@ -783,8 +804,8 @@ export default function AdminDataPage() {
                     <select
                       value={safeSelectedCategory || ''}
                       onChange={(e) => setSelectedCategory(Number(e.target.value) || null)}
-                      disabled={selectedTemplate && templates.find(t => t.id === selectedTemplate)?.type === 'multi-year-export'}
-                      className={`w-full p-2 border border-gray-300 rounded-md ${selectedTemplate && templates.find(t => t.id === selectedTemplate)?.type === 'multi-year-export' ? 'bg-gray-100 text-gray-500' : ''}`}
+                      disabled={isMultiYearExportTemplate()}
+                      className={`w-full p-2 border border-gray-300 rounded-md ${isMultiYearExportTemplate() ? 'bg-gray-100 text-gray-500' : ''}`}
                     >
                       <option value="">Choose a category...</option>
                       {categories && categories.map((category) => (
@@ -793,7 +814,7 @@ export default function AdminDataPage() {
                         </option>
                       ))}
                     </select>
-                    {selectedTemplate && templates.find(t => t.id === selectedTemplate)?.type === 'multi-year-export' && (
+                    {isMultiYearExportTemplate() && (
                       <p className="text-xs text-gray-500 mt-1">
                         💡 Category is determined from your CSV data for Multi Year Export format
                       </p>
@@ -809,8 +830,8 @@ export default function AdminDataPage() {
                       <select
                         value={safeSelectedMeasure || ''}
                         onChange={(e) => setSelectedMeasure(Number(e.target.value) || null)}
-                        disabled={selectedTemplate && templates.find(t => t.id === selectedTemplate)?.type === 'multi-year-export'}
-                        className={`w-full p-2 border border-gray-300 rounded-md ${selectedTemplate && templates.find(t => t.id === selectedTemplate)?.type === 'multi-year-export' ? 'bg-gray-100 text-gray-500' : ''}`}
+                        disabled={isMultiYearExportTemplate()}
+                        className={`w-full p-2 border border-gray-300 rounded-md ${isMultiYearExportTemplate() ? 'bg-gray-100 text-gray-500' : ''}`}
                       >
                         <option value="">Choose a measure...</option>
                         {measures && measures.map((measure) => (
@@ -819,7 +840,7 @@ export default function AdminDataPage() {
                           </option>
                         ))}
                       </select>
-                      {selectedTemplate && templates.find(t => t.id === selectedTemplate)?.type === 'multi-year-export' && (
+                      {isMultiYearExportTemplate() && (
                         <p className="text-xs text-gray-500 mt-1">
                           💡 Measure is determined from your CSV data for Multi Year Export format
                         </p>
@@ -1212,7 +1233,7 @@ Both formats will be automatically converted to CSV.`}
                           <div className="text-sm">
                             <span className="font-medium">Expected Columns:</span>
                             <p className="text-gray-600 mt-1">
-                              {template.expectedHeaders.join(', ')}
+                              {template.templateSchema.expectedHeaders.join(', ')}
                             </p>
                           </div>
                           <Button size="sm" variant="outline" className="w-full">

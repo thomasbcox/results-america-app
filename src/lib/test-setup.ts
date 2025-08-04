@@ -133,7 +133,7 @@ export async function setupTestDatabase() {
   } catch (error) {
     console.log('❌ Migration failed, creating tables manually:', error instanceof Error ? error.message : 'Unknown error');
     // Fallback: Create tables manually using Drizzle schema
-    const logTable = (name) => console.log(`🛠️  Creating table: ${name}`);
+    const logTable = (name: string) => console.log(`🛠️  Creating table: ${name}`);
     logTable('states');
     await db.run(`
       CREATE TABLE IF NOT EXISTS states (

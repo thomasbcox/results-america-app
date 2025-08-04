@@ -15,7 +15,8 @@ import {
   Pause,
   RefreshCw,
   Database,
-  FileText
+  FileText,
+  AlertCircle
 } from 'lucide-react';
 
 interface ImportSession {

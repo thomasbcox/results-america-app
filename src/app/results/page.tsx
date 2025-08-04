@@ -49,7 +49,7 @@ export default function ResultsPage() {
         <div className="bg-white p-3 border border-gray-300 rounded shadow-lg">
           <p className="font-medium">{`Year: ${label}`}</p>
           {payload.map((entry, index) => (
-            <p key={index} style={{ color: entry.color }}>
+            <p key={index} style={{ color: (entry as any).color }}>
               {`${entry.name}: ${entry.value}`}
             </p>
           ))}
@@ -208,7 +208,7 @@ export default function ResultsPage() {
                         {
                           id: 'states',
                           label: 'States',
-                          completed: safeSelectedStates && safeSelectedStates.length > 0,
+                          completed: !!(safeSelectedStates && safeSelectedStates.length > 0),
                           current: false
                         },
                         {
