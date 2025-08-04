@@ -1,12 +1,12 @@
 import { NextRequest } from 'next/server';
 import { DataCompletenessService } from '@/lib/services/dataCompletenessService';
-import { validateAdminAccess } from '@/lib/middleware/auth';
+import { getAdminUser } from '@/lib/middleware/auth';
 
 export async function GET(request: NextRequest) {
   try {
     // Validate admin access
-    const authResult = await validateAdminAccess(request);
-    if (!authResult.success) {
+    const user = await getAdminUser(request);
+    if (!user) {
       return Response.json(
         { success: false, error: 'Admin access required' },
         { status: 401 }
