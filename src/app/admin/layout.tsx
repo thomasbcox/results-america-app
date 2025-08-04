@@ -13,9 +13,17 @@ import {
   Shield,
   MessageSquare,
   Layers,
-  PieChart
+  PieChart,
+  ChevronDown,
+  Menu
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface User {
   id: number;
@@ -111,40 +119,20 @@ export default function AdminLayout({
       current: pathname === '/admin'
     },
     {
-      name: 'Data Management',
-      href: '/admin/data',
-      icon: Database,
-      current: pathname === '/admin/data'
+      name: 'Data',
+      items: [
+        { name: 'Data Management', href: '/admin/data', icon: Database, current: pathname === '/admin/data' },
+        { name: 'Data Completeness', href: '/admin/data-completeness', icon: PieChart, current: pathname === '/admin/data-completeness' },
+        { name: 'Import Sessions', href: '/admin/sessions', icon: Layers, current: pathname === '/admin/sessions' },
+      ]
     },
     {
-      name: 'Data Completeness',
-      href: '/admin/data-completeness',
-      icon: PieChart,
-      current: pathname === '/admin/data-completeness'
-    },
-    {
-      name: 'Import Sessions',
-      href: '/admin/sessions',
-      icon: Layers,
-      current: pathname === '/admin/sessions'
-    },
-    {
-      name: 'User Management',
-      href: '/admin/users',
-      icon: Users,
-      current: pathname === '/admin/users'
-    },
-    {
-      name: 'Suggestions',
-      href: '/admin/suggestions',
-      icon: MessageSquare,
-      current: pathname === '/admin/suggestions'
-    },
-    {
-      name: 'Settings',
-      href: '/admin/settings',
-      icon: Settings,
-      current: pathname === '/admin/settings'
+      name: 'Admin',
+      items: [
+        { name: 'User Management', href: '/admin/users', icon: Users, current: pathname === '/admin/users' },
+        { name: 'Suggestions', href: '/admin/suggestions', icon: MessageSquare, current: pathname === '/admin/suggestions' },
+        { name: 'Settings', href: '/admin/settings', icon: Settings, current: pathname === '/admin/settings' },
+      ]
     }
   ];
 
@@ -171,33 +159,72 @@ export default function AdminLayout({
           <div className="flex justify-between h-16">
             {/* Left side - Logo and Navigation */}
             <div className="flex">
-              {/* Logo */}
-              <div className="flex-shrink-0 flex items-center">
-                <Link href="/admin" className="flex items-center hover:opacity-80 transition-opacity duration-200">
-                  <Shield className="h-8 w-8 text-blue-600" />
-                  <span className="ml-2 text-xl font-bold text-gray-900">
-                    Results America Admin
-                  </span>
-                </Link>
-              </div>
+                          {/* Logo */}
+            <div className="flex-shrink-0 flex items-center">
+              <Link href="/admin" className="flex items-center hover:opacity-80 transition-opacity duration-200">
+                <Shield className="h-8 w-8 text-blue-600" />
+                <span className="ml-2 text-lg font-bold text-gray-900">
+                  Admin
+                </span>
+              </Link>
+            </div>
 
-              {/* Navigation Links */}
-              <div className="hidden xl:ml-6 xl:flex xl:space-x-2">
-                {navigation.map((item) => (
-                  <Link
-                    key={item.name}
-                    href={item.href}
-                    className={`inline-flex items-center px-1.5 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${
-                      item.current
-                        ? 'bg-blue-100 text-blue-700 border border-blue-200 shadow-sm'
-                        : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 border border-transparent hover:border-gray-200'
-                    }`}
-                  >
-                    <item.icon className="h-4 w-4 mr-1" />
-                    {item.name}
-                  </Link>
-                ))}
-              </div>
+            {/* Navigation Links */}
+            <div className="hidden lg:ml-6 lg:flex lg:space-x-2">
+              {navigation.map((item) => {
+                if (item.href) {
+                  // Single link
+                  return (
+                    <Link
+                      key={item.name}
+                      href={item.href}
+                      className={`inline-flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${
+                        item.current
+                          ? 'bg-blue-100 text-blue-700 border border-blue-200 shadow-sm'
+                          : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 border border-transparent hover:border-gray-200'
+                      }`}
+                    >
+                      <item.icon className="h-4 w-4 mr-1" />
+                      {item.name}
+                    </Link>
+                  );
+                } else {
+                  // Dropdown menu
+                  return (
+                    <DropdownMenu key={item.name}>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          className={`inline-flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${
+                            item.items.some(subItem => subItem.current)
+                              ? 'bg-blue-100 text-blue-700 border border-blue-200 shadow-sm'
+                              : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 border border-transparent hover:border-gray-200'
+                          }`}
+                        >
+                          {item.name}
+                          <ChevronDown className="h-4 w-4 ml-1" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="start" className="w-48">
+                        {item.items.map((subItem) => (
+                          <DropdownMenuItem key={subItem.name} asChild>
+                            <Link
+                              href={subItem.href}
+                              className={`flex items-center px-3 py-2 text-sm ${
+                                subItem.current ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50'
+                              }`}
+                            >
+                              <subItem.icon className="h-4 w-4 mr-2" />
+                              {subItem.name}
+                            </Link>
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  );
+                }
+              })}
+            </div>
             </div>
 
             {/* Right side - User menu */}
@@ -232,22 +259,52 @@ export default function AdminLayout({
         {/* Mobile navigation */}
         <div className="sm:hidden">
           <div className="pt-2 pb-3 space-y-1">
-            {navigation.map((item) => (
-              <Link
-                key={item.name}
-                href={item.href}
-                className={`block pl-3 pr-4 py-3 border-l-4 text-base font-medium rounded-r-md transition-colors duration-200 ${
-                  item.current
-                    ? 'bg-blue-100 border-blue-500 text-blue-700 shadow-sm'
-                    : 'border-transparent text-gray-600 hover:bg-gray-100 hover:border-gray-300 hover:text-gray-800'
-                }`}
-              >
-                <div className="flex items-center">
-                  <item.icon className="h-4 w-4 mr-3" />
-                  {item.name}
-                </div>
-              </Link>
-            ))}
+            {navigation.map((item) => {
+              if (item.href) {
+                // Single link
+                return (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    className={`block pl-3 pr-4 py-3 border-l-4 text-base font-medium rounded-r-md transition-colors duration-200 ${
+                      item.current
+                        ? 'bg-blue-100 border-blue-500 text-blue-700 shadow-sm'
+                        : 'border-transparent text-gray-600 hover:bg-gray-100 hover:border-gray-300 hover:text-gray-800'
+                    }`}
+                  >
+                    <div className="flex items-center">
+                      <item.icon className="h-4 w-4 mr-3" />
+                      {item.name}
+                    </div>
+                  </Link>
+                );
+              } else {
+                // Dropdown section
+                return (
+                  <div key={item.name}>
+                    <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      {item.name}
+                    </div>
+                    {item.items.map((subItem) => (
+                      <Link
+                        key={subItem.name}
+                        href={subItem.href}
+                        className={`block pl-6 pr-4 py-2 border-l-4 text-sm font-medium transition-colors duration-200 ${
+                          subItem.current
+                            ? 'bg-blue-100 border-blue-500 text-blue-700 shadow-sm'
+                            : 'border-transparent text-gray-600 hover:bg-gray-100 hover:border-gray-300 hover:text-gray-800'
+                        }`}
+                      >
+                        <div className="flex items-center">
+                          <subItem.icon className="h-4 w-4 mr-3" />
+                          {subItem.name}
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                );
+              }
+            })}
           </div>
         </div>
       </nav>

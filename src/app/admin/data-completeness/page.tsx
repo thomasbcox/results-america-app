@@ -202,6 +202,98 @@ export default function DataCompletenessPage() {
         </p>
       </div>
 
+      {/* Filters & Search - Moved above summary cards */}
+      <Card className="mb-4">
+        <CardContent className="pt-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+            <div>
+              <Label htmlFor="category-select" className="text-sm font-medium">Category</Label>
+              <select
+                id="category-select"
+                value={selectedCategory}
+                onChange={(e) => {
+                  setSelectedCategory(e.target.value);
+                  const categoryId = e.target.value ? parseInt(e.target.value) : undefined;
+                  setFilters(prev => ({ ...prev, categoryId }));
+                }}
+                className="w-full mt-1 p-2 border border-gray-300 rounded-md text-sm"
+              >
+                <option value="">All Categories</option>
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            
+            <div>
+              <Label htmlFor="metric-search" className="text-sm font-medium">Search Metric</Label>
+              <div className="relative mt-1">
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-400" />
+                <Input
+                  id="metric-search"
+                  placeholder="Search metrics..."
+                  value={searchMetric}
+                  onChange={(e) => {
+                    setSearchMetric(e.target.value);
+                    // Find matching statistic and set filter
+                    const matchingStat = statistics.find(stat => 
+                      stat.name.toLowerCase().includes(e.target.value.toLowerCase())
+                    );
+                    setFilters(prev => ({ 
+                      ...prev, 
+                      metricId: matchingStat?.id 
+                    }));
+                  }}
+                  className="pl-8 text-sm"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-2">
+              <Button
+                variant={filters.showIncompleteOnly ? "default" : "outline"}
+                size="sm"
+                onClick={() => setFilters(prev => ({ 
+                  ...prev, 
+                  showIncompleteOnly: !prev.showIncompleteOnly 
+                }))}
+                className="text-xs"
+              >
+                Incomplete Only
+              </Button>
+              <Button
+                variant={filters.showStagedOnly ? "default" : "outline"}
+                size="sm"
+                onClick={() => setFilters(prev => ({ 
+                  ...prev, 
+                  showStagedOnly: !prev.showStagedOnly 
+                }))}
+                className="text-xs"
+              >
+                Staged Only
+              </Button>
+            </div>
+
+            <div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setFilters({});
+                  setSelectedCategory('');
+                  setSearchMetric('');
+                }}
+                className="text-xs"
+              >
+                Clear All
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <Card>
@@ -276,98 +368,6 @@ export default function DataCompletenessPage() {
           </CardContent>
         </Card>
       </div>
-
-      {/* Filters */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Filter className="h-5 w-5" />
-            Filters & Search
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-            <div>
-              <Label htmlFor="category-select">Category</Label>
-              <select
-                id="category-select"
-                value={selectedCategory}
-                onChange={(e) => {
-                  setSelectedCategory(e.target.value);
-                  const categoryId = e.target.value ? parseInt(e.target.value) : undefined;
-                  setFilters(prev => ({ ...prev, categoryId }));
-                }}
-                className="w-full mt-1 p-2 border border-gray-300 rounded-md"
-              >
-                <option value="">All Categories</option>
-                {categories.map((category) => (
-                  <option key={category.id} value={category.id}>
-                    {category.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            
-            <div>
-              <Label htmlFor="metric-search">Search Metric</Label>
-              <div className="relative mt-1">
-                <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-400" />
-                <Input
-                  id="metric-search"
-                  placeholder="Search metrics..."
-                  value={searchMetric}
-                  onChange={(e) => {
-                    setSearchMetric(e.target.value);
-                    // Find matching statistic and set filter
-                    const matchingStat = statistics.find(stat => 
-                      stat.name.toLowerCase().includes(e.target.value.toLowerCase())
-                    );
-                    setFilters(prev => ({ 
-                      ...prev, 
-                      metricId: matchingStat?.id 
-                    }));
-                  }}
-                  className="pl-8"
-                />
-              </div>
-            </div>
-          </div>
-          
-          <div className="flex flex-wrap gap-4">
-            <Button
-              variant={filters.showIncompleteOnly ? "default" : "outline"}
-              size="sm"
-              onClick={() => setFilters(prev => ({ 
-                ...prev, 
-                showIncompleteOnly: !prev.showIncompleteOnly 
-              }))}
-            >
-              Show Incomplete Only
-            </Button>
-            <Button
-              variant={filters.showStagedOnly ? "default" : "outline"}
-              size="sm"
-              onClick={() => setFilters(prev => ({ 
-                ...prev, 
-                showStagedOnly: !prev.showStagedOnly 
-              }))}
-            >
-              Show Staged Only
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setFilters({});
-                setSelectedCategory('');
-                setSearchMetric('');
-              }}
-            >
-              Clear Filters
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Main Content */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>

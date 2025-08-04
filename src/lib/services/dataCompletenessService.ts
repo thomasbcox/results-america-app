@@ -82,10 +82,13 @@ export class DataCompletenessService {
     .where(eq(categories.isActive, 1))
     .orderBy(categories.name);
 
-    // Get all states for total count
-    const allStates = await db.select({ id: states.id })
+    // Get all states for total count (excluding "Nation")
+    const allStates = await db.select({ id: states.id, name: states.name })
       .from(states)
-      .where(eq(states.isActive, 1));
+      .where(and(
+        eq(states.isActive, 1),
+        sql`${states.name} != 'Nation'`
+      ));
     const totalStates = allStates.length;
 
     // Get all statistics with their categories
