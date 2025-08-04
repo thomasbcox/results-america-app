@@ -1,7 +1,7 @@
 #!/usr/bin/env tsx
 
-import { getDb } from '../src/lib/db';
-import { categories, statistics } from '../src/lib/db/schema-postgres';
+import { getDb } from '../../src/lib/db';
+import { categories, statistics } from '../../src/lib/db/schema-postgres';
 
 async function checkCategoriesAndStats() {
   const db = getDb();  console.log('📊 Checking categories and statistics...');

@@ -1,4 +1,4 @@
-import { getDb } from '../src/lib/db';
+import { getDb } from '../../src/lib/db';
 
 async function checkSchema() {
   const db = getDb();  try {

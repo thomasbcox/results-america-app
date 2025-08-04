@@ -1,7 +1,7 @@
 #!/usr/bin/env tsx
 
-import { getDb } from '../src/lib/db/index';
-import { csvImportTemplates, categories, dataSources } from '../src/lib/db/schema-postgres';
+import { getDb } from '../../src/lib/db/index';
+import { csvImportTemplates, categories, dataSources } from '../../src/lib/db/schema-postgres';
 import { eq } from 'drizzle-orm';
 
 async function setupCSVTemplates() {

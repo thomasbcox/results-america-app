@@ -12,7 +12,8 @@ import {
   User,
   Shield,
   MessageSquare,
-  Layers
+  Layers,
+  PieChart
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -114,6 +115,12 @@ export default function AdminLayout({
       href: '/admin/data',
       icon: Database,
       current: pathname === '/admin/data'
+    },
+    {
+      name: 'Data Completeness',
+      href: '/admin/data-completeness',
+      icon: PieChart,
+      current: pathname === '/admin/data-completeness'
     },
     {
       name: 'Import Sessions',

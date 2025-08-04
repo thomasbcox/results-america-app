@@ -1,5 +1,5 @@
-import { getDb } from '../src/lib/db';
-import { states, categories, statistics, dataSources } from '../src/lib/db/schema-postgres';
+import { getDb } from '../../src/lib/db';
+import { states, categories, statistics, dataSources } from '../../src/lib/db/schema-postgres';
 import { eq } from 'drizzle-orm';
 
 async function setupTestData() {

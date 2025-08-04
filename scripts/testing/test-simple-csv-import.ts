@@ -1,8 +1,8 @@
 #!/usr/bin/env tsx
 
-import { SimpleCSVImportService } from '../src/lib/services/simpleCSVImportService';
-import { getDb } from '../src/lib/db';
-import { csvImports, csvImportStaging, dataPoints } from '../src/lib/db/schema-postgres';
+import { SimpleCSVImportService } from '../../src/lib/services/simpleCSVImportService';
+import { getDb } from '../../src/lib/db';
+import { csvImports, csvImportStaging, dataPoints } from '../../src/lib/db/schema-postgres';
 import { eq } from 'drizzle-orm';
 
 async function testSimpleCSVImport() {

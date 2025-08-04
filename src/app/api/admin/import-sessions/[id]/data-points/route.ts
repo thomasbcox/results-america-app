@@ -6,15 +6,16 @@ import { getAdminUser } from '@/lib/middleware/auth';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     const user = await getAdminUser(request);
     if (!user) {
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
     }
 
-    const sessionId = parseInt(params.id);
+    const sessionId = parseInt(id);
     if (isNaN(sessionId)) {
       return NextResponse.json({ error: 'Invalid session ID' }, { status: 400 });
     }

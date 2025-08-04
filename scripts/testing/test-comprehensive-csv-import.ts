@@ -1,4 +1,4 @@
-import { ComprehensiveCSVImportService } from '../src/lib/services/comprehensiveCSVImportService';
+import { ComprehensiveCSVImportService } from '../../src/lib/services/comprehensiveCSVImportService';
 
 // Test CSV with various validation errors
 const testCSV = `state,category,statistic,value,year

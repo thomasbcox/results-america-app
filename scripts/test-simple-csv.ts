@@ -190,7 +190,7 @@ Texas,2023,Education,High School Graduation Rate,89.1`;
         stats: result1.stats
       });
     } catch (error) {
-      console.log('Multi-Category Import Error:', error.message);
+      console.log('Multi-Category Import Error:', error instanceof Error ? error.message : String(error));
     }
 
     // Test 2: Single-Category CSV Import
@@ -225,7 +225,7 @@ Arizona,2023,68000`;
         stats: result2.stats
       });
     } catch (error) {
-      console.log('Single-Category Import Error:', error.message);
+      console.log('Single-Category Import Error:', error instanceof Error ? error.message : String(error));
     }
 
     // Test 3: Get Templates
@@ -239,7 +239,7 @@ Arizona,2023,68000`;
         console.log(`  Headers: ${template.expectedHeaders.join(', ')}`);
       });
     } catch (error) {
-      console.log('Get Templates Error:', error.message);
+      console.log('Get Templates Error:', error instanceof Error ? error.message : String(error));
     }
 
     // Summary
