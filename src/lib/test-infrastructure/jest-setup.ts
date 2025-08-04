@@ -1,5 +1,6 @@
 import { config } from 'dotenv';
 import { afterAll } from '@jest/globals';
+import React from 'react';
 import { TestUtils, BulletproofTestDatabase } from './bulletproof-test-db';
 
 // Load environment variables for tests
@@ -352,6 +353,4 @@ setupGlobalTestEnvironment();
 export {
   TestUtils,
   BulletproofTestDatabase,
-  TestDatabaseManager,
-  JestTestHelpers,
 }; 

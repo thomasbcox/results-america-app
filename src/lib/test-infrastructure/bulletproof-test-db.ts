@@ -32,7 +32,7 @@ export interface TestDatabaseConfig {
 
 export interface TestDatabase {
   /** The Drizzle database instance */
-  db: BetterSQLite3Database;
+  db: BetterSQLite3Database<typeof schema>;
   /** The underlying SQLite database */
   sqlite: Database.Database;
   /** Unique identifier for this test database */
@@ -708,8 +708,8 @@ export class BulletproofTestDatabase {
    */
   private static async seedUsers(testDb: TestDatabase): Promise<void> {
     const users = [
-      { email: 'test@example.com', name: 'Test User', role: 'user', isActive: 1, emailVerified: 1 },
-      { email: 'admin@example.com', name: 'Admin User', role: 'admin', isActive: 1, emailVerified: 1 }
+      { email: 'test@example.com', name: 'Test User', role: 'user' as const, isActive: 1, emailVerified: 1 },
+      { email: 'admin@example.com', name: 'Admin User', role: 'admin' as const, isActive: 1, emailVerified: 1 }
     ];
 
     await testDb.db.insert(schema.users).values(users);

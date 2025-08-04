@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { 
   BarChart3, 
   Database, 
@@ -40,6 +40,7 @@ export default function AdminLayout({
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const pathname = usePathname();
+  const router = useRouter();
 
   useEffect(() => {
     fetchUser();
@@ -73,28 +74,20 @@ export default function AdminLayout({
           } else {
             console.log('❌ Admin layout: User is not admin, redirecting to login')
             // Redirect to login if not admin
-            if (typeof window !== 'undefined') {
-              window.location.href = '/auth/login';
-            }
+            router.push('/auth/login');
           }
         } else {
           console.log('❌ Admin layout: No user data in response, redirecting to login')
-          if (typeof window !== 'undefined') {
-            window.location.href = '/auth/login';
-          }
+          router.push('/auth/login');
         }
       } else {
         console.log('❌ Admin layout: User not authenticated, redirecting to login')
         // Redirect to login if not authenticated
-        if (typeof window !== 'undefined') {
-          window.location.href = '/auth/login';
-        }
+        router.push('/auth/login');
       }
     } catch (error) {
       console.error('❌ Admin layout: Failed to fetch user:', error);
-      if (typeof window !== 'undefined') {
-        window.location.href = '/auth/login';
-      }
+      router.push('/auth/login');
     } finally {
       setLoading(false);
     }
@@ -103,9 +96,7 @@ export default function AdminLayout({
   const handleLogout = async () => {
     try {
       await fetch("/api/auth/logout", { method: "POST" });
-      if (typeof window !== 'undefined') {
-        window.location.href = '/auth/login';
-      }
+      router.push('/auth/login');
     } catch (error) {
       console.error('Logout failed:', error);
     }
