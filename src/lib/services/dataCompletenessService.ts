@@ -318,9 +318,19 @@ export class DataCompletenessService {
     
     const categoriesWithData = categories.filter(cat => cat.metricsWithData > 0).length;
     const metricsWithData = categories.reduce((sum, cat) => sum + cat.metricsWithData, 0);
-    const yearsWithData = categories.reduce((sum, cat) => 
-      sum + cat.metrics.reduce((mSum, metric) => mSum + metric.yearsWithData, 0), 0
-    );
+    
+    // Calculate unique years across all metrics (not sum of per-metric counts)
+    const allYears = new Set<number>();
+    categories.forEach(category => {
+      category.metrics.forEach(metric => {
+        metric.years.forEach(year => {
+          if (year.productionStates > 0 || year.stagedStates > 0) {
+            allYears.add(year.year);
+          }
+        });
+      });
+    });
+    const yearsWithData = allYears.size;
     
     const overallCoveragePercentage = totalMetrics > 0 
       ? Math.round((metricsWithData / totalMetrics) * 100)
