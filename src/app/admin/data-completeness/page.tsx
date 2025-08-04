@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { 
   BarChart3, 
   Filter, 
@@ -14,7 +16,8 @@ import {
   Clock, 
   Database,
   TrendingUp,
-  Eye
+  Eye,
+  Search
 } from 'lucide-react';
 
 interface DataCompletenessReport {
@@ -79,10 +82,19 @@ export default function DataCompletenessPage() {
   const [error, setError] = useState<string | null>(null);
   const [filters, setFilters] = useState<CompletenessFilters>({});
   const [activeTab, setActiveTab] = useState('overview');
+  const [categories, setCategories] = useState<Array<{id: number, name: string}>>([]);
+  const [statistics, setStatistics] = useState<Array<{id: number, name: string, categoryName: string}>>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [searchMetric, setSearchMetric] = useState<string>('');
 
   useEffect(() => {
     loadReport();
   }, [filters]);
+
+  useEffect(() => {
+    loadCategories();
+    loadStatistics();
+  }, []);
 
   const loadReport = async () => {
     try {
@@ -110,6 +122,30 @@ export default function DataCompletenessPage() {
       console.error('Error loading report:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadCategories = async () => {
+    try {
+      const response = await fetch('/api/admin/categories');
+      const result = await response.json();
+      if (result.success) {
+        setCategories(result.data);
+      }
+    } catch (err) {
+      console.error('Error loading categories:', err);
+    }
+  };
+
+  const loadStatistics = async () => {
+    try {
+      const response = await fetch('/api/admin/statistics');
+      const result = await response.json();
+      if (result.success) {
+        setStatistics(result.data);
+      }
+    } catch (err) {
+      console.error('Error loading statistics:', err);
     }
   };
 
@@ -204,6 +240,26 @@ export default function DataCompletenessPage() {
             <p className="text-xs text-muted-foreground">
               of {report.summary.totalYears} total years
             </p>
+            {report.summary.yearsWithData > 0 && (
+              <div className="mt-2">
+                <p className="text-xs text-muted-foreground mb-1">Years present:</p>
+                <div className="flex flex-wrap gap-1">
+                  {Array.from(new Set(
+                    report.categories.flatMap(cat => 
+                      cat.metrics.flatMap(metric => 
+                        metric.years
+                          .filter(year => year.productionStates > 0 || year.stagedStates > 0)
+                          .map(year => year.year)
+                      )
+                    )
+                  )).sort().map(year => (
+                    <Badge key={year} variant="outline" className="text-xs">
+                      {year}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -226,10 +282,57 @@ export default function DataCompletenessPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Filter className="h-5 w-5" />
-            Filters
+            Filters & Search
           </CardTitle>
         </CardHeader>
         <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+            <div>
+              <Label htmlFor="category-select">Category</Label>
+              <select
+                id="category-select"
+                value={selectedCategory}
+                onChange={(e) => {
+                  setSelectedCategory(e.target.value);
+                  const categoryId = e.target.value ? parseInt(e.target.value) : undefined;
+                  setFilters(prev => ({ ...prev, categoryId }));
+                }}
+                className="w-full mt-1 p-2 border border-gray-300 rounded-md"
+              >
+                <option value="">All Categories</option>
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            
+            <div>
+              <Label htmlFor="metric-search">Search Metric</Label>
+              <div className="relative mt-1">
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-400" />
+                <Input
+                  id="metric-search"
+                  placeholder="Search metrics..."
+                  value={searchMetric}
+                  onChange={(e) => {
+                    setSearchMetric(e.target.value);
+                    // Find matching statistic and set filter
+                    const matchingStat = statistics.find(stat => 
+                      stat.name.toLowerCase().includes(e.target.value.toLowerCase())
+                    );
+                    setFilters(prev => ({ 
+                      ...prev, 
+                      metricId: matchingStat?.id 
+                    }));
+                  }}
+                  className="pl-8"
+                />
+              </div>
+            </div>
+          </div>
+          
           <div className="flex flex-wrap gap-4">
             <Button
               variant={filters.showIncompleteOnly ? "default" : "outline"}
@@ -254,7 +357,11 @@ export default function DataCompletenessPage() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setFilters({})}
+              onClick={() => {
+                setFilters({});
+                setSelectedCategory('');
+                setSearchMetric('');
+              }}
             >
               Clear Filters
             </Button>
