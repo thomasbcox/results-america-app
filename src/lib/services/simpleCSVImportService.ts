@@ -87,18 +87,29 @@ export class SimpleCSVImportService {
       
       const fileHash = createHash('sha256').update(fileContent).digest('hex');
       
-      // Check for duplicate uploads
+      // Check for duplicate uploads with smart retry logic
       const existingImport = await db.select()
         .from(csvImports)
         .where(eq(csvImports.fileHash, fileHash))
         .limit(1);
 
       if (existingImport.length > 0) {
-        return {
-          success: false,
-          message: 'This file has already been uploaded',
-          errors: ['Duplicate file detected']
-        };
+        const existing = existingImport[0];
+        
+        // Allow retry if previous attempt failed or was aborted
+        if (existing.status === 'failed' || existing.status === 'validation_failed') {
+          console.log(`Allowing retry of failed import ${existing.id}`);
+          // Continue with retry
+        } else if (existing.status === 'imported' || existing.status === 'published') {
+          return {
+            success: false,
+            message: `This file has already been successfully imported as "${existing.name}" (Import ID: ${existing.id}) on ${new Date(existing.uploadedAt).toLocaleString()}. If you need to re-import, please modify the file content first.`,
+            errors: ['File already successfully imported']
+          };
+        } else {
+          // For other statuses (uploaded, validating, etc.), allow retry
+          console.log(`Allowing retry of import ${existing.id} with status ${existing.status}`);
+        }
       }
 
       // Get template
@@ -365,8 +376,8 @@ export class SimpleCSVImportService {
           value: mappedData.value,
           rawData: JSON.stringify(record),
           validationStatus: 'valid',
-          isProcessed: 1,
-          processedAt: new Date()
+          isProcessed: 0, // Don't mark as processed yet
+          processedAt: null // Don't set processedAt until actually processed
         });
 
       } catch (error) {
@@ -519,7 +530,7 @@ Texas,2023,Economy,GDP,2200000
 California,2023,Education,Graduation Rate,85.2
 Texas,2023,Education,Graduation Rate,89.1`,
         isActive: 1,
-        createdBy: 5 // Use admin user ID
+        createdBy: 2 // Use admin user ID (admin@example.com)
       }).onConflictDoNothing();
       console.log('✅ Created Multi-Category Data Import template');
     }
@@ -538,7 +549,7 @@ Texas,2023,2200000
 New York,2023,1800000
 Florida,2023,1200000`,
         isActive: 1,
-        createdBy: 5 // Use admin user ID
+        createdBy: 2 // Use admin user ID (admin@example.com)
       }).onConflictDoNothing();
       console.log('✅ Created Single-Category Data Import template');
     }
@@ -551,7 +562,7 @@ Florida,2023,1200000`,
         templateSchema: JSON.stringify({
           expectedHeaders: ['ID', 'State', 'Year', 'Category', 'Measure Name', 'Value', 'state_id', 'category_id', 'measure_id']
         }),
-                             sampleData: `ID,State,Year,Category,Measure Name,Value,state_id,category_id,measure_id
+        sampleData: `ID,State,Year,Category,Measure Name,Value,state_id,category_id,measure_id
 1,Nation,2018,Economy,Net Job Growth,149148.6,1,1,15
 2,Texas,2023,Economy,Net Job Growth,125000,1,2,15
 3,California,2023,Economy,Net Job Growth,98000,2,2,15
@@ -560,7 +571,7 @@ Florida,2023,1200000`,
 6,Texas,2023,Education,Graduation Rate,89.1,1,1,8
 7,California,2023,Education,Graduation Rate,85.2,2,1,8`,
         isActive: 1,
-        createdBy: 5 // Use admin user ID
+        createdBy: 2 // Use admin user ID (admin@example.com)
       }).onConflictDoNothing();
       console.log('✅ Created Multi Year Export template');
     }

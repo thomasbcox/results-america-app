@@ -13,7 +13,7 @@ module.exports = {
       useESM: true 
     }],
   },
-  setupFilesAfterEnv: ['<rootDir>/src/lib/test-infrastructure/jest-setup.ts'],
+  setupFilesAfterEnv: ['<rootDir>/src/lib/test-infrastructure/jest-setup.ts', '@testing-library/jest-dom'],
   testTimeout: 30000,
   // Clear mocks between tests to ensure isolation
   clearMocks: true,

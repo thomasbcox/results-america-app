@@ -28,23 +28,30 @@ global.console = {
  * This setup provides the necessary globals for testing Next.js API routes
  */
 export function setupNextApiTestEnvironment() {
+  // Store the native URL constructor before we override it
+  const NativeURL = global.URL;
+  
   // Mock Next.js Request and Response objects
   global.Request = class MockRequest {
-    url: string;
+    private _url: string;
     method: string;
     headers: Headers;
     body: any;
 
     constructor(input: string | Request, init?: RequestInit) {
       if (typeof input === 'string') {
-        this.url = input;
+        this._url = input;
       } else {
-        this.url = input.url;
+        this._url = input.url;
       }
       
       this.method = init?.method || 'GET';
       this.headers = new Headers(init?.headers);
       this.body = init?.body;
+    }
+
+    get url() {
+      return this._url;
     }
 
     async json() {
@@ -74,6 +81,10 @@ export function setupNextApiTestEnvironment() {
     text() {
       return Promise.resolve(typeof this.body === 'string' ? this.body : JSON.stringify(this.body));
     }
+
+    static json(data: any, init?: ResponseInit) {
+      return new MockResponse(data, init);
+    }
   } as any;
 
   // Mock Next.js server components
@@ -96,21 +107,21 @@ export function setupNextApiTestEnvironment() {
     hash: string;
 
     constructor(url: string, base?: string) {
-      const fullUrl = base ? new URL(url, base).href : url;
-      const urlObj = new URL(fullUrl);
+      // Use the stored native URL constructor to avoid infinite recursion
+      const nativeURL = new NativeURL(url, base);
       
-      this.href = urlObj.href;
-      this.origin = urlObj.origin;
-      this.protocol = urlObj.protocol;
-      this.username = urlObj.username;
-      this.password = urlObj.password;
-      this.host = urlObj.host;
-      this.hostname = urlObj.hostname;
-      this.port = urlObj.port;
-      this.pathname = urlObj.pathname;
-      this.search = urlObj.search;
-      this.searchParams = urlObj.searchParams;
-      this.hash = urlObj.hash;
+      this.href = nativeURL.href;
+      this.origin = nativeURL.origin;
+      this.protocol = nativeURL.protocol;
+      this.username = nativeURL.username;
+      this.password = nativeURL.password;
+      this.host = nativeURL.host;
+      this.hostname = nativeURL.hostname;
+      this.port = nativeURL.port;
+      this.pathname = nativeURL.pathname;
+      this.search = nativeURL.search;
+      this.searchParams = nativeURL.searchParams;
+      this.hash = nativeURL.hash;
     }
   } as any;
 
@@ -133,10 +144,10 @@ export function setupDatabaseTestEnvironment() {
     let mockDb: any = null;
     
     return {
-      db: {
-        get: () => mockDb,
-        set: (db: any) => { mockDb = db; }
-      }
+      getDb: () => mockDb,
+      db: () => mockDb,
+      setTestDb: (db: any) => { mockDb = db; },
+      postgresSchema: {}
     };
   });
 
@@ -220,8 +231,8 @@ export class TestDatabaseManager {
     this.currentTestDb = testDb;
 
     // Mock the database module to use our test database
-    const { db } = require('@/lib/db/index');
-    db.set(testDb.db);
+    const { setTestDb } = require('@/lib/db/index');
+    setTestDb(testDb.db);
 
     return testDb;
   }

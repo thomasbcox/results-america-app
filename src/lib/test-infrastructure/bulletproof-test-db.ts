@@ -264,14 +264,14 @@ export class BulletproofTestDatabase {
       if (statistics) {
         await this.seedStatistics(testDb);
       }
+      if (users) {
+        await this.seedUsers(testDb);
+      }
       if (importSessions) {
         await this.seedImportSessions(testDb);
       }
       if (dataPoints) {
         await this.seedDataPoints(testDb);
-      }
-      if (users) {
-        await this.seedUsers(testDb);
       }
       if (csvTemplates) {
         await this.seedCsvTemplates(testDb);
@@ -732,7 +732,7 @@ Texas,2023,Economy,GDP,2200000
 California,2023,Education,Graduation Rate,85.2
 Texas,2023,Education,Graduation Rate,89.1`,
         isActive: 1,
-        createdBy: 1 // admin@example.com
+        createdBy: 2 // admin@example.com
       },
       {
         name: 'Single-Category Data Import',
@@ -746,7 +746,24 @@ Texas,2023,2200000
 New York,2023,1800000
 Florida,2023,1200000`,
         isActive: 1,
-        createdBy: 1 // admin@example.com
+        createdBy: 2 // admin@example.com
+      },
+      {
+        name: 'Multi Year Export',
+        description: 'Import data from legacy system export format. Includes ID and foreign key columns that will be ignored.',
+        templateSchema: JSON.stringify({
+          expectedHeaders: ['ID', 'State', 'Year', 'Category', 'Measure Name', 'Value', 'state_id', 'category_id', 'measure_id']
+        }),
+        sampleData: `ID,State,Year,Category,Measure Name,Value,state_id,category_id,measure_id
+1,Nation,2018,Economy,Net Job Growth,149148.6,1,1,15
+2,Texas,2023,Economy,Net Job Growth,125000,1,2,15
+3,California,2023,Economy,Net Job Growth,98000,2,2,15
+4,Texas,2022,Economy,Net Job Growth,110000,1,2,15
+5,California,2022,Economy,Net Job Growth,85000,2,2,15
+6,Texas,2023,Education,Graduation Rate,89.1,1,1,8
+7,California,2023,Education,Graduation Rate,85.2,2,1,8`,
+        isActive: 1,
+        createdBy: 2 // admin@example.com
       }
     ];
 

@@ -70,8 +70,8 @@ export class DataCompletenessService {
   /**
    * Get comprehensive data completeness report
    */
-  static async getCompletenessReport(filters: CompletenessFilters = {}): Promise<DataCompletenessReport> {
-    const db = getDb();
+  static async getCompletenessReport(filters: CompletenessFilters = {}, dbInstance?: any): Promise<DataCompletenessReport> {
+    const db = dbInstance || getDb();
     
     // Get all categories
     const allCategories = await db.select({
@@ -356,8 +356,8 @@ export class DataCompletenessService {
   /**
    * Get data freshness report (when data was last updated)
    */
-  static async getDataFreshnessReport(): Promise<any> {
-    const db = getDb();
+  static async getDataFreshnessReport(dbInstance?: any): Promise<any> {
+    const db = dbInstance || getDb();
     
     // Get latest import dates for each statistic
     const latestImports = await db.select({
@@ -393,8 +393,8 @@ export class DataCompletenessService {
   /**
    * Get overlap analysis (where staged data exists for production data)
    */
-  static async getOverlapAnalysis(): Promise<any> {
-    const db = getDb();
+  static async getOverlapAnalysis(dbInstance?: any): Promise<any> {
+    const db = dbInstance || getDb();
     
     // Find cases where staged data overlaps with production data
     const overlaps = await db.select({

@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import { useClientOnly, ClientOnly, useSafeContextValue } from '../src/lib/utils/hydrationUtils'
+import React from 'react'
 
 // Mock Next.js router
 jest.mock('next/router', () => ({
@@ -40,7 +41,7 @@ const mockContext = {
 
 jest.mock('../src/lib/context', () => ({
   useSelection: () => mockContext,
-  SelectionProvider: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  SelectionProvider: ({ children }: { children: React.ReactNode }) => React.createElement('div', null, children),
 }))
 
 describe('Hydration Mismatch Prevention', () => {
@@ -48,10 +49,10 @@ describe('Hydration Mismatch Prevention', () => {
     it('should return false initially and true after mount', () => {
       const TestComponent = () => {
         const isClient = useClientOnly()
-        return <div data-testid="client-status">{isClient ? 'client' : 'server'}</div>
+        return React.createElement('div', { 'data-testid': 'client-status' }, isClient ? 'client' : 'server')
       }
 
-      render(<TestComponent />)
+      render(React.createElement(TestComponent))
       
       // Initially should show server state
       expect(screen.getByTestId('client-status')).toHaveTextContent('server')
@@ -65,13 +66,13 @@ describe('Hydration Mismatch Prevention', () => {
 
   describe('ClientOnly', () => {
     it('should show fallback during SSR', () => {
-      const TestComponent = () => (
-        <ClientOnly fallback={<div data-testid="loading">Loading...</div>}>
-          <div data-testid="content">Actual Content</div>
-        </ClientOnly>
+      const TestComponent = () => React.createElement(
+        ClientOnly,
+        { fallback: React.createElement('div', { 'data-testid': 'loading' }, 'Loading...') },
+        React.createElement('div', { 'data-testid': 'content' }, 'Actual Content')
       )
 
-      render(<TestComponent />)
+      render(React.createElement(TestComponent))
       
       // Should show fallback initially
       expect(screen.getByTestId('loading')).toBeInTheDocument()
@@ -79,13 +80,13 @@ describe('Hydration Mismatch Prevention', () => {
     })
 
     it('should show children after hydration', () => {
-      const TestComponent = () => (
-        <ClientOnly fallback={<div data-testid="loading">Loading...</div>}>
-          <div data-testid="content">Actual Content</div>
-        </ClientOnly>
+      const TestComponent = () => React.createElement(
+        ClientOnly,
+        { fallback: React.createElement('div', { 'data-testid': 'loading' }, 'Loading...') },
+        React.createElement('div', { 'data-testid': 'content' }, 'Actual Content')
       )
 
-      render(<TestComponent />)
+      render(React.createElement(TestComponent))
       
       // After hydration, should show actual content
       setTimeout(() => {
@@ -99,80 +100,104 @@ describe('Hydration Mismatch Prevention', () => {
     it('should return null during SSR', () => {
       const TestComponent = () => {
         const safeValue = useSafeContextValue('test-value')
-        return <div data-testid="safe-value">{safeValue || 'null'}</div>
+        return React.createElement('div', { 'data-testid': 'safe-value' }, safeValue || 'null')
       }
 
-      render(<TestComponent />)
-      
-      // Should return null during SSR
+      render(React.createElement(TestComponent))
       expect(screen.getByTestId('safe-value')).toHaveTextContent('null')
     })
 
-    it('should return actual value after hydration', () => {
+    it('should return value after hydration', () => {
       const TestComponent = () => {
         const safeValue = useSafeContextValue('test-value')
-        return <div data-testid="safe-value">{safeValue || 'null'}</div>
+        return React.createElement('div', { 'data-testid': 'safe-value' }, safeValue || 'null')
       }
 
-      render(<TestComponent />)
+      render(React.createElement(TestComponent))
       
-      // After hydration, should return actual value
       setTimeout(() => {
         expect(screen.getByTestId('safe-value')).toHaveTextContent('test-value')
       }, 0)
     })
   })
-})
 
-describe('Hydration Mismatch Detection', () => {
-  it('should detect context values that differ between server/client', () => {
-    // This test simulates the scenario that caused the original hydration mismatch
-    const TestComponent = () => {
-      const { selectedCategory, selectedMeasure } = mockContext
-      
-      return (
-        <div>
-          <a href={`/measure?category=${selectedCategory || 'Select Category'}&measure=${selectedMeasure || 'Select Measure'}`}>
-            Back to Selection
-          </a>
-          <span>{selectedCategory || 'Select Category'}</span>
-        </div>
-      )
-    }
+  describe('Context Value Safety', () => {
+    it('should handle undefined context values gracefully', () => {
+      const TestComponent = () => {
+        const safeValue = useSafeContextValue(undefined)
+        return React.createElement('div', { 'data-testid': 'safe-value' }, safeValue || 'null')
+      }
 
-    render(<TestComponent />)
-    
-    // The server would render with default values
-    // The client would render with actual values
-    // This creates a hydration mismatch
-    expect(screen.getByRole('link')).toHaveAttribute('href', expect.stringContaining('Select Category'))
+      render(React.createElement(TestComponent))
+      expect(screen.getByTestId('safe-value')).toHaveTextContent('null')
+    })
   })
 
-  it('should prevent hydration mismatch with ClientOnly wrapper', () => {
-    const TestComponent = () => {
-      const { selectedCategory, selectedMeasure } = mockContext
-      
-      return (
-        <ClientOnly fallback={<div data-testid="loading">Loading...</div>}>
-          <div>
-            <a href={`/measure?category=${selectedCategory || 'Select Category'}&measure=${selectedMeasure || 'Select Measure'}`}>
-              Back to Selection
-            </a>
-            <span>{selectedCategory || 'Select Category'}</span>
-          </div>
-        </ClientOnly>
-      )
-    }
+  describe('Navigation Link Safety', () => {
+    it('should handle undefined category and measure in navigation links', () => {
+      const TestComponent = () => {
+        const selectedCategory = undefined
+        const selectedMeasure = undefined
+        
+        return React.createElement('div', null,
+          React.createElement('a', { 
+            href: `/measure?category=${selectedCategory || 'Select Category'}&measure=${selectedMeasure || 'Select Measure'}` 
+          }, 'Back to Selection'),
+          React.createElement('span', null, selectedCategory || 'Select Category')
+        )
+      }
 
-    render(<TestComponent />)
-    
-    // Should show loading during SSR
-    expect(screen.getByTestId('loading')).toBeInTheDocument()
-    
-    // After hydration, should show actual content
-    setTimeout(() => {
-      expect(screen.getByRole('link')).toBeInTheDocument()
-      expect(screen.queryByTestId('loading')).not.toBeInTheDocument()
-    }, 0)
+      render(React.createElement(TestComponent))
+      expect(screen.getByRole('link')).toHaveAttribute('href', expect.stringContaining('Select Category'))
+    })
+
+    it('should handle defined category and measure in navigation links', () => {
+      const TestComponent = () => {
+        const selectedCategory = 'Economy'
+        const selectedMeasure = 'GDP'
+        
+        return React.createElement('div', null,
+          React.createElement('a', { 
+            href: `/measure?category=${selectedCategory || 'Select Category'}&measure=${selectedMeasure || 'Select Measure'}` 
+          }, 'Back to Selection'),
+          React.createElement('span', null, selectedCategory || 'Select Category')
+        )
+      }
+
+      render(React.createElement(TestComponent))
+      expect(screen.getByRole('link')).toHaveAttribute('href', expect.stringContaining('Economy'))
+      expect(screen.getByRole('link')).toHaveAttribute('href', expect.stringContaining('GDP'))
+    })
+  })
+
+  describe('ClientOnly with Navigation', () => {
+    it('should handle navigation links safely during SSR', () => {
+      const TestComponent = () => {
+        const selectedCategory = undefined
+        const selectedMeasure = undefined
+        
+        return React.createElement(
+          ClientOnly,
+          { fallback: React.createElement('div', { 'data-testid': 'loading' }, 'Loading...') },
+          React.createElement('div', null,
+            React.createElement('a', { 
+              href: `/measure?category=${selectedCategory || 'Select Category'}&measure=${selectedMeasure || 'Select Measure'}` 
+            }, 'Back to Selection'),
+            React.createElement('span', null, selectedCategory || 'Select Category')
+          )
+        )
+      }
+
+      render(React.createElement(TestComponent))
+      
+      // Should show loading initially
+      expect(screen.getByTestId('loading')).toBeInTheDocument()
+      
+      // After hydration, should show navigation
+      setTimeout(() => {
+        expect(screen.getByRole('link')).toBeInTheDocument()
+        expect(screen.getByRole('link')).toHaveAttribute('href', expect.stringContaining('Select Category'))
+      }, 0)
+    })
   })
 }) 

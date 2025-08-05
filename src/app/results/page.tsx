@@ -71,10 +71,35 @@ export default function ResultsPage() {
         setLoading(true)
         setError(null)
 
-        // Mock API call - replace with real API
-        await new Promise(resolve => setTimeout(resolve, 1000))
+        // Fetch real measure details from the database
+        const measureResponse = await fetch(`/api/statistics/${safeSelectedMeasure}`);
+        if (!measureResponse.ok) {
+          throw new Error('Failed to fetch measure details');
+        }
+        const measureResult = await measureResponse.json();
         
-        // Mock data
+        if (!measureResult.success) {
+          throw new Error('Failed to fetch measure details');
+        }
+
+        // The API returns the measure data directly, not wrapped in a data property
+        const measureData = measureResult;
+        
+        if (!measureData.name) {
+          throw new Error('Measure not found');
+        }
+
+        // Set measure details with real data from database
+        setMeasureDetails({
+          name: measureData.name,
+          unit: measureData.unit,
+          dataQuality: measureData.dataQuality || 'mock',
+          provenance: measureData.provenance,
+          description: measureData.description,
+          categoryName: measureData.categoryName
+        });
+
+        // Mock trend data for now (will be replaced with real data later)
         const mockTrendData: Record<string, any> = {}
         safeSelectedStates.forEach(state => {
           mockTrendData[state.toLowerCase()] = {
@@ -86,12 +111,6 @@ export default function ResultsPage() {
         })
 
         setTrendData(mockTrendData)
-        setMeasureDetails({
-          name: 'Sample Measure',
-          unit: 'units',
-          dataQuality: 'mock',
-          provenance: 'Mock data for testing'
-        })
         setSessionValid(true)
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to fetch data')

@@ -91,17 +91,19 @@ export function createTestDb() {
 
 export function clearTestDb(db: ReturnType<typeof createTestDb>) {
   // Clear all data from tables in reverse dependency order
-  const clearTablesSQL = `
-    DELETE FROM national_averages;
-    DELETE FROM data_points;
-    DELETE FROM import_sessions;
-    DELETE FROM statistics;
-    DELETE FROM data_sources;
-    DELETE FROM categories;
-    DELETE FROM states;
-  `;
+  const clearTables = [
+    'DELETE FROM national_averages',
+    'DELETE FROM data_points', 
+    'DELETE FROM import_sessions',
+    'DELETE FROM statistics',
+    'DELETE FROM data_sources',
+    'DELETE FROM categories',
+    'DELETE FROM states'
+  ];
   
-  db.run(clearTablesSQL);
+  clearTables.forEach(sql => {
+    db.run(sql);
+  });
 }
 
 export function closeTestDb(db: ReturnType<typeof createTestDb>) {

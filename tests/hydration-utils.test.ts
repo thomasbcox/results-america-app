@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import { useClientOnly, ClientOnly, useSafeContextValue } from '../src/lib/utils/hydrationUtils'
+import React from 'react'
 
 // Mock React hooks
 jest.mock('react', () => ({
@@ -17,10 +18,10 @@ describe('Hydration Utilities', () => {
 
       const TestComponent = () => {
         const isClient = useClientOnly()
-        return <div data-testid="client-status">{isClient ? 'client' : 'server'}</div>
+        return React.createElement('div', { 'data-testid': 'client-status' }, isClient ? 'client' : 'server')
       }
 
-      render(<TestComponent />)
+      render(React.createElement(TestComponent))
       expect(screen.getByTestId('client-status')).toHaveTextContent('server')
     })
   })
@@ -31,13 +32,13 @@ describe('Hydration Utilities', () => {
       useState.mockReturnValue([false, jest.fn()])
       useEffect.mockImplementation((fn) => fn())
 
-      const TestComponent = () => (
-        <ClientOnly fallback={<div data-testid="loading">Loading...</div>}>
-          <div data-testid="content">Actual Content</div>
-        </ClientOnly>
+      const TestComponent = () => React.createElement(
+        ClientOnly,
+        { fallback: React.createElement('div', { 'data-testid': 'loading' }, 'Loading...') },
+        React.createElement('div', { 'data-testid': 'content' }, 'Actual Content')
       )
 
-      render(<TestComponent />)
+      render(React.createElement(TestComponent))
       expect(screen.getByTestId('loading')).toBeInTheDocument()
       expect(screen.queryByTestId('content')).not.toBeInTheDocument()
     })
@@ -51,10 +52,10 @@ describe('Hydration Utilities', () => {
 
       const TestComponent = () => {
         const safeValue = useSafeContextValue('test-value')
-        return <div data-testid="safe-value">{safeValue || 'null'}</div>
+        return React.createElement('div', { 'data-testid': 'safe-value' }, safeValue || 'null')
       }
 
-      render(<TestComponent />)
+      render(React.createElement(TestComponent))
       expect(screen.getByTestId('safe-value')).toHaveTextContent('null')
     })
   })

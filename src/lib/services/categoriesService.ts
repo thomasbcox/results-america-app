@@ -1,6 +1,6 @@
 import { getDb } from '../db/index';
-import { categories, statistics } from '../db/schema-postgres';
-import { eq, like, desc, asc } from 'drizzle-orm';
+import { categories, statistics, dataPoints, states } from '../db/schema-postgres';
+import { eq, like, desc, asc, count, sql, and } from 'drizzle-orm';
 import type { 
   ICategoriesService, 
   CategoryData, 
@@ -166,5 +166,261 @@ export class CategoriesService {
         hasPrev: page > 1,
       }
     };
+  }
+
+  // NEW: Critical missing analytics methods for immediate business value
+
+  static async getCategoryStatistics(categoryId: number): Promise<{
+    category: CategoryData;
+    statistics: {
+      totalStatistics: number;
+      activeStatistics: number;
+      statisticsWithData: number;
+      totalDataPoints: number;
+      averageDataPointsPerStatistic: number;
+      yearsWithData: number[];
+      statesWithData: number;
+    };
+  }> {
+    const db = getDb();
+    const category = await this.getCategoryById(categoryId);
+    if (!category) {
+      throw new Error(`Category with id ${categoryId} not found`);
+    }
+
+    // Get statistics in this category
+    const categoryStatistics = await db.select({
+      id: statistics.id,
+      isActive: statistics.isActive,
+    })
+      .from(statistics)
+      .where(eq(statistics.categoryId, categoryId));
+
+    // Get data points for statistics in this category
+    const dataPointsResult = await db.select({
+      statisticId: dataPoints.statisticId,
+      year: dataPoints.year,
+      stateId: dataPoints.stateId,
+    })
+      .from(dataPoints)
+      .innerJoin(statistics, eq(dataPoints.statisticId, statistics.id))
+      .where(eq(statistics.categoryId, categoryId));
+
+    const totalStatistics = categoryStatistics.length;
+    const activeStatistics = categoryStatistics.filter((s: any) => s.isActive).length;
+    const statisticsWithData = new Set(dataPointsResult.map((dp: any) => dp.statisticId)).size;
+    const totalDataPoints = dataPointsResult.length;
+    const averageDataPointsPerStatistic = totalStatistics > 0 ? totalDataPoints / totalStatistics : 0;
+    const yearsWithData = [...new Set(dataPointsResult.map((dp: any) => dp.year))].sort();
+    const statesWithData = new Set(dataPointsResult.map((dp: any) => dp.stateId)).size;
+
+    return {
+      category,
+      statistics: {
+        totalStatistics,
+        activeStatistics,
+        statisticsWithData,
+        totalDataPoints,
+        averageDataPointsPerStatistic: Math.round(averageDataPointsPerStatistic * 100) / 100,
+        yearsWithData,
+        statesWithData,
+      },
+    };
+  }
+
+  static async getCategoryDataCompleteness(categoryId: number): Promise<{
+    category: CategoryData;
+    completeness: {
+      totalStatistics: number;
+      statisticsWithData: number;
+      coveragePercentage: number;
+      averageDataPointsPerStatistic: number;
+      dataQuality: 'complete' | 'partial' | 'minimal';
+      yearsWithData: number[];
+      statesWithData: number;
+    };
+  }> {
+    const db = getDb();
+    const category = await this.getCategoryById(categoryId);
+    if (!category) {
+      throw new Error(`Category with id ${categoryId} not found`);
+    }
+
+    // Get statistics in this category
+    const categoryStatistics = await db.select({
+      id: statistics.id,
+    })
+      .from(statistics)
+      .where(eq(statistics.categoryId, categoryId));
+
+    // Get data points for statistics in this category
+    const dataPointsResult = await db.select({
+      statisticId: dataPoints.statisticId,
+      year: dataPoints.year,
+      stateId: dataPoints.stateId,
+    })
+      .from(dataPoints)
+      .innerJoin(statistics, eq(dataPoints.statisticId, statistics.id))
+      .where(eq(statistics.categoryId, categoryId));
+
+    const totalStatistics = categoryStatistics.length;
+    const statisticsWithData = new Set(dataPointsResult.map((dp: any) => dp.statisticId)).size;
+    const coveragePercentage = totalStatistics > 0 ? (statisticsWithData / totalStatistics) * 100 : 0;
+    const averageDataPointsPerStatistic = totalStatistics > 0 ? dataPointsResult.length / totalStatistics : 0;
+    const yearsWithData = [...new Set(dataPointsResult.map((dp: any) => dp.year))].sort();
+    const statesWithData = new Set(dataPointsResult.map((dp: any) => dp.stateId)).size;
+
+    let dataQuality: 'complete' | 'partial' | 'minimal';
+    if (coveragePercentage >= 90) {
+      dataQuality = 'complete';
+    } else if (coveragePercentage >= 50) {
+      dataQuality = 'partial';
+    } else {
+      dataQuality = 'minimal';
+    }
+
+    return {
+      category,
+      completeness: {
+        totalStatistics,
+        statisticsWithData,
+        coveragePercentage: Math.round(coveragePercentage * 100) / 100,
+        averageDataPointsPerStatistic: Math.round(averageDataPointsPerStatistic * 100) / 100,
+        dataQuality,
+        yearsWithData,
+        statesWithData,
+      },
+    };
+  }
+
+  static async getCategoryTrends(categoryId: number, years: number[]): Promise<{
+    category: CategoryData;
+    trends: Array<{
+      year: number;
+      statisticsWithData: number;
+      totalDataPoints: number;
+      averageDataPointsPerStatistic: number;
+      statesWithData: number;
+    }>;
+  }> {
+    const db = getDb();
+    const category = await this.getCategoryById(categoryId);
+    if (!category) {
+      throw new Error(`Category with id ${categoryId} not found`);
+    }
+
+    const trends = await db.select({
+      year: dataPoints.year,
+      statisticsWithData: sql<number>`COUNT(DISTINCT ${dataPoints.statisticId})`,
+      totalDataPoints: count(),
+      statesWithData: sql<number>`COUNT(DISTINCT ${dataPoints.stateId})`,
+    })
+      .from(dataPoints)
+      .innerJoin(statistics, eq(dataPoints.statisticId, statistics.id))
+      .where(and(eq(statistics.categoryId, categoryId), sql`${dataPoints.year} = ANY(${years})`))
+      .groupBy(dataPoints.year)
+      .orderBy(dataPoints.year);
+
+    return {
+      category,
+      trends: trends.map((trend: any) => ({
+        year: trend.year,
+        statisticsWithData: trend.statisticsWithData || 0,
+        totalDataPoints: trend.totalDataPoints,
+        averageDataPointsPerStatistic: trend.statisticsWithData > 0 ? 
+          trend.totalDataPoints / trend.statisticsWithData : 0,
+        statesWithData: trend.statesWithData || 0,
+      })),
+    };
+  }
+
+  static async getCategoryComparison(categoryIds: number[], year: number): Promise<{
+    categories: CategoryData[];
+    comparison: Array<{
+      categoryId: number;
+      categoryName: string;
+      statisticsCount: number;
+      dataPointsCount: number;
+      statesWithData: number;
+      averageDataPointsPerStatistic: number;
+    }>;
+  }> {
+    const db = getDb();
+    const categories = await Promise.all(categoryIds.map(id => this.getCategoryById(id)));
+    const validCategories = categories.filter(cat => cat !== null) as CategoryData[];
+
+    const comparison = await Promise.all(
+      categoryIds.map(async (categoryId) => {
+        const category = validCategories.find(cat => cat.id === categoryId);
+        if (!category) return null;
+
+        // Get statistics count
+        const statisticsCount = await db.select({ count: count() })
+          .from(statistics)
+          .where(eq(statistics.categoryId, categoryId));
+
+        // Get data points for this category in the specified year
+        const dataPointsResult = await db.select({
+          statisticId: dataPoints.statisticId,
+          stateId: dataPoints.stateId,
+        })
+          .from(dataPoints)
+          .innerJoin(statistics, eq(dataPoints.statisticId, statistics.id))
+          .where(and(eq(statistics.categoryId, categoryId), eq(dataPoints.year, year)));
+
+        const dataPointsCount = dataPointsResult.length;
+        const statesWithData = new Set(dataPointsResult.map((dp: any) => dp.stateId)).size;
+        const averageDataPointsPerStatistic = statisticsCount[0]?.count > 0 ? 
+          dataPointsCount / statisticsCount[0].count : 0;
+
+        return {
+          categoryId,
+          categoryName: category.name,
+          statisticsCount: statisticsCount[0]?.count || 0,
+          dataPointsCount,
+          statesWithData,
+          averageDataPointsPerStatistic: Math.round(averageDataPointsPerStatistic * 100) / 100,
+        };
+      })
+    );
+
+    return {
+      categories: validCategories,
+      comparison: comparison.filter(item => item !== null) as any[],
+    };
+  }
+
+  static async getCategoriesByDataAvailability(): Promise<CategoryData[]> {
+    const db = getDb();
+    const result = await db.select({
+      id: categories.id,
+      name: categories.name,
+      description: categories.description,
+      icon: categories.icon,
+      sortOrder: categories.sortOrder,
+      isActive: categories.isActive,
+      statisticsWithData: sql<number>`COUNT(DISTINCT ${dataPoints.statisticId})`,
+    })
+      .from(categories)
+      .leftJoin(statistics, eq(categories.id, statistics.categoryId))
+      .leftJoin(dataPoints, eq(statistics.id, dataPoints.statisticId))
+      .groupBy(categories.id)
+      .orderBy(desc(sql`COUNT(DISTINCT ${dataPoints.statisticId})`));
+
+    return result.map((category: any) => ({
+      id: category.id,
+      name: category.name,
+      description: category.description,
+      icon: category.icon,
+      sortOrder: category.sortOrder,
+      isActive: category.isActive ?? 1,
+    }));
+  }
+
+  static async getCategoriesByDataQuality(quality: 'mock' | 'real'): Promise<CategoryData[]> {
+    // For now, return all categories since we don't have real data quality tracking
+    // This method provides the interface for future implementation
+    const allCategories = await this.getAllCategories();
+    return allCategories; // Placeholder implementation
   }
 } 
