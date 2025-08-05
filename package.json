@@ -38,6 +38,7 @@
     "seed:prod": "./scripts/seed-production.sh",
     "seed:sqlite": "tsx scripts/production-seed.ts",
     "seed:postgres": "tsx scripts/production-seed-postgres.ts",
+    "seed:vercel": "tsx scripts/vercel-seed.ts",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:external-import": "tsx scripts/test-external-import.ts",
