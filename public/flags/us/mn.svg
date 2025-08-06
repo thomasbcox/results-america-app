@@ -1,5 +1,1 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg width="24" height="16" viewBox="0 0 24 16" xmlns="http://www.w3.org/2000/svg">
-  <rect x="0" y="0" width="24" height="16" fill="#1D4ED8"/>
-  <polygon points="12,2 14,6 18,6 15,9 16,13 12,11 8,13 9,9 6,6 10,6" fill="#FFFFFF"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1000" height="600"><path fill="#52C9E8" d="M0 0h1000v600H0z"/><path fill="#002D5D" d="M0 0h560L390 300l170 300H0Z"/><g fill="#FFF"><g id="b"><path id="a" d="m210 190 v90 l45 20 45-20z" transform="rotate(22.5 210 190)"/><use xlink:href="#a" transform="rotate(180 210, 300)"/></g><use xlink:href="#b" transform="rotate(45 210 300)"/><use xlink:href="#b" transform="rotate(135 210 300)"/><use xlink:href="#b" transform="rotate(270 210 300)"/></g></svg>
