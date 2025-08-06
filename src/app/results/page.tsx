@@ -325,12 +325,11 @@ export default function ResultsPage() {
                                 <label className="text-sm font-medium text-gray-700">Direction:</label>
                                 <select
                                   value={preferenceDirection}
-                                  onChange={(e) => setPreferenceDirection(e.target.value as 'higher' | 'lower' | 'neutral')}
+                                  onChange={(e) => setPreferenceDirection(e.target.value as 'higher' | 'lower')}
                                   className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 >
                                   <option value="higher">Higher is Better</option>
                                   <option value="lower">Lower is Better</option>
-                                  <option value="neutral">Neutral</option>
                                 </select>
                               </div>
 

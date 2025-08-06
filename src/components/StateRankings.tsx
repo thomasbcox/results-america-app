@@ -24,7 +24,7 @@ interface StateRankingsProps {
   year?: number
   order?: 'asc' | 'desc'
   className?: string
-  preferenceDirection?: 'higher' | 'lower' | 'neutral'
+  preferenceDirection?: 'higher' | 'lower'
 }
 
 export default function StateRankings({ 
@@ -47,7 +47,10 @@ export default function StateRankings({
         setLoading(true)
         setError(null)
 
-        const response = await fetch(`/api/statistics/${statisticId}/rankings?year=${year}&order=${order}&limit=${showAll ? 100 : 3}`)
+        // Determine the order based on preference direction
+        const effectiveOrder = preferenceDirection === 'lower' ? 'asc' : 'desc'
+
+        const response = await fetch(`/api/statistics/${statisticId}/rankings?year=${year}&order=${effectiveOrder}&limit=${showAll ? 100 : 3}`)
         
         if (!response.ok) {
           throw new Error('Failed to fetch rankings')
@@ -68,7 +71,7 @@ export default function StateRankings({
     }
 
     fetchRankings()
-  }, [statisticId, year, order, showAll])
+  }, [statisticId, year, order, showAll, preferenceDirection])
 
   if (loading) {
     return (
@@ -125,8 +128,8 @@ export default function StateRankings({
       <div className="flex items-center justify-between mb-3">
         <h4 className="text-sm font-semibold text-gray-900">
           {showAll ? 'All State Rankings:' : 
-            preferenceDirection === 'higher' ? 'Top Performing States:' :
-            preferenceDirection === 'lower' ? 'Best Performing States:' :
+            preferenceDirection === 'higher' ? 'Top Performing States (Highest Values):' :
+            preferenceDirection === 'lower' ? 'Top Performing States (Lowest Values):' :
             'State Rankings:'
           }
         </h4>
