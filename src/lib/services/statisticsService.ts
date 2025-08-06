@@ -24,6 +24,7 @@ export class StatisticsService {
       calculation: statistics.calculation,
       unit: statistics.unit,
       availableSince: statistics.availableSince,
+      preferenceDirection: statistics.preferenceDirection,
       isActive: statistics.isActive,
       categoryId: statistics.categoryId,
       dataSourceId: statistics.dataSourceId,
@@ -46,6 +47,7 @@ export class StatisticsService {
       calculation: result.calculation,
       unit: result.unit,
       availableSince: result.availableSince,
+      preferenceDirection: result.preferenceDirection || 'higher',
       dataQuality: 'mock',
       provenance: undefined,
       isActive: result.isActive ?? 1,
@@ -153,6 +155,7 @@ export class StatisticsService {
       calculation: statistics.calculation,
       unit: statistics.unit,
       availableSince: statistics.availableSince,
+      preferenceDirection: statistics.preferenceDirection,
       isActive: statistics.isActive,
       categoryId: statistics.categoryId,
       dataSourceId: statistics.dataSourceId,
@@ -172,6 +175,7 @@ export class StatisticsService {
       calculation: result.calculation,
       unit: result.unit,
       availableSince: result.availableSince,
+      preferenceDirection: result.preferenceDirection || 'higher',
       dataQuality: 'mock', // Default for normalized schema
       provenance: undefined, // Not available in normalized schema
       isActive: result.isActive ?? 1,
@@ -190,6 +194,7 @@ export class StatisticsService {
     const statistic = result[0];
     return {
       ...statistic,
+      preferenceDirection: statistic.preferenceDirection || 'higher',
       dataQuality: 'mock', // Default for normalized schema
       provenance: undefined, // Not available in normalized schema
       isActive: statistic.isActive ?? 1,
@@ -207,6 +212,7 @@ export class StatisticsService {
       calculation: statistics.calculation,
       unit: statistics.unit,
       availableSince: statistics.availableSince,
+      preferenceDirection: statistics.preferenceDirection,
       isActive: statistics.isActive,
       categoryId: statistics.categoryId,
       dataSourceId: statistics.dataSourceId,
@@ -216,6 +222,7 @@ export class StatisticsService {
 
     return results.map((statistic: any) => ({
       ...statistic,
+      preferenceDirection: statistic.preferenceDirection || 'higher',
       dataQuality: 'mock', // Default for normalized schema
       provenance: undefined, // Not available in normalized schema
       isActive: statistic.isActive ?? 1,

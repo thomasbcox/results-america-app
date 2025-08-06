@@ -127,6 +127,7 @@ export interface StatisticData {
   availableSince: string | null;
   dataQuality: 'mock' | 'real';
   provenance: string | null;
+  preferenceDirection: 'higher' | 'lower' | 'neutral';
   isActive: number;
   categoryName?: string;
   dataSourceName?: string;
@@ -175,6 +176,7 @@ export type CreateStatisticInput = {
   availableSince?: string;
   dataQuality?: 'mock' | 'real';
   provenance?: string;
+  preferenceDirection?: 'higher' | 'lower' | 'neutral';
 };
 
 export type UpdateStatisticInput = Partial<CreateStatisticInput>;
@@ -185,6 +187,7 @@ export type UpdateStatisticData = {
   name?: string;
   description?: string;
   unit?: string;
+  preferenceDirection?: 'higher' | 'lower' | 'neutral';
   isActive?: boolean;
 };
 

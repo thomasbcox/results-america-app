@@ -42,6 +42,7 @@ export const statistics = pgTable('statistics', {
   availableSince: text('available_since'), // When data became available
   dataQuality: text('data_quality', { enum: ['mock', 'real'] }).default('mock'), // Data quality indicator
   provenance: text('provenance'), // Data source and methodology information
+  preferenceDirection: text('preference_direction', { enum: ['higher', 'lower', 'neutral'] }).default('higher'), // Whether higher or lower values are preferred
   isActive: integer('is_active').default(1),
 });
 
