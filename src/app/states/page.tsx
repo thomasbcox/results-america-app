@@ -23,6 +23,12 @@ export default function StateSelection() {
   // Use safe context values to prevent hydration mismatches
   const safeSelectedStates = useSafeContextValue(selectedStates)
 
+  // Helper function to get state name from abbreviation
+  const getStateName = (abbreviation: string) => {
+    const state = states.find(s => s.abbreviation === abbreviation)
+    return state?.name || abbreviation
+  }
+
   useEffect(() => {
     async function fetchStates() {
       try {
@@ -158,11 +164,11 @@ export default function StateSelection() {
                 {showDropdown && (
                   <div className="absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-md mt-1 max-h-60 overflow-y-auto z-10">
                     {states
-                      .filter((state) => !safeSelectedStates?.includes(state.name))
+                      .filter((state) => !safeSelectedStates?.includes(state.abbreviation))
                       .map((state) => (
                         <button
                           key={state.id}
-                          onClick={() => handleStateSelect(state.name)}
+                          onClick={() => handleStateSelect(state.abbreviation)}
                           className="w-full px-4 py-2 text-left hover:bg-gray-100 focus:outline-none focus:bg-gray-100 text-black"
                         >
                           {state.name}
@@ -184,7 +190,7 @@ export default function StateSelection() {
                       key={state}
                       className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-2"
                     >
-                      <span>{state}</span>
+                      <span>{getStateName(state)}</span>
                       <button
                         onClick={() => removeState(state)}
                         className="text-blue-600 hover:text-blue-800"

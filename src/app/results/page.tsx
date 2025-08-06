@@ -7,16 +7,9 @@ import Link from "next/link"
 import AuthStatus from "@/components/AuthStatus"
 import ProgressIndicator from "@/components/ProgressIndicator"
 import DataQualityIndicator from "@/components/DataQualityIndicator"
+import StateFlag from "@/components/StateFlag"
+import StateRankings from "@/components/StateRankings"
 import { ResponsiveContainer, ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts'
-
-// Simple StateFlag component
-const StateFlag = ({ stateName }: { stateName: string }) => {
-  return (
-    <div className="w-6 h-4 bg-blue-600 rounded flex items-center justify-center">
-      <span className="text-white text-xs font-bold">{stateName.substring(0, 2).toUpperCase()}</span>
-    </div>
-  )
-}
 
 // Transform trend data for charts
 const transformTrendDataForCharts = (trendData: any): any[] => {
@@ -281,7 +274,7 @@ export default function ResultsPage() {
                           <div key={stateName} className="bg-white rounded-lg shadow-md overflow-hidden">
                             {/* Card header */}
                             <div className="bg-yellow-400 px-4 py-3 flex items-center gap-3">
-                              <StateFlag stateName={stateName} />
+                              <StateFlag stateCode={stateName} size="medium" />
                             </div>
                             
                             {/* Card content */}
@@ -315,6 +308,16 @@ export default function ResultsPage() {
                                     <Line type="monotone" dataKey="national" stroke="#EF4444" strokeWidth={2} name="National Average" />
                                   </ComposedChart>
                                 </ResponsiveContainer>
+                              </div>
+                              
+                              {/* State Rankings */}
+                              <div className="mb-4">
+                                <StateRankings 
+                                  statisticId={safeSelectedMeasure}
+                                  year={2022}
+                                  order="desc"
+                                  className=""
+                                />
                               </div>
                               
                               {/* Card footer */}

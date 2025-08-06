@@ -74,9 +74,32 @@ export function SelectionProvider({ children }: { children: ReactNode }) {
       const savedMeasure = sessionStorage.getItem('selectedMeasure')
       const savedFavorites = sessionStorage.getItem('favorites')
       
+      // Migration: Check if saved states are full names instead of abbreviations
       if (savedStates) {
-        setSelectedStatesState(JSON.parse(savedStates))
+        try {
+          const parsedStates = JSON.parse(savedStates)
+          if (Array.isArray(parsedStates) && parsedStates.length > 0) {
+            // Check if any state is a full name (longer than 2 characters)
+            const hasFullNames = parsedStates.some((state: string) => state.length > 2)
+            if (hasFullNames) {
+              console.log('🔄 Context: Migrating state selections from full names to abbreviations')
+              // Clear all session data to force user to start fresh
+              sessionStorage.removeItem('selectedStates')
+              sessionStorage.removeItem('selectedCategory')
+              sessionStorage.removeItem('selectedMeasure')
+              // Don't restore the old data - let user start fresh
+            } else {
+              setSelectedStatesState(parsedStates)
+            }
+          } else {
+            setSelectedStatesState(parsedStates)
+          }
+        } catch (e) {
+          console.error('Error parsing saved states:', e)
+          sessionStorage.removeItem('selectedStates')
+        }
       }
+      
       if (savedCategory) {
         setSelectedCategory(savedCategory)
       }

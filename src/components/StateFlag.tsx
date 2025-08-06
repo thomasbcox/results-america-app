@@ -1,4 +1,3 @@
-import Image from 'next/image'
 import { useState } from 'react'
 
 interface StateFlagProps {
@@ -70,14 +69,12 @@ export default function StateFlag({
 
   return (
     <div className={`relative ${sizeClasses[size]} ${className}`}>
-      <Image
+      <img
         src={`/flags/us/${normalizedStateCode}.svg`}
         alt={`Flag of ${stateCode.toUpperCase()}`}
-        width={size === 'small' ? 24 : size === 'medium' ? 32 : 48}
-        height={size === 'small' ? 16 : size === 'medium' ? 20 : 32}
         className="w-full h-full object-cover rounded-sm"
         onError={() => setImageError(true)}
-        priority={false} // Lazy load flags
+        onLoad={() => setImageError(false)}
       />
     </div>
   )
