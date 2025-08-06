@@ -11,6 +11,25 @@ import StateFlag from "@/components/StateFlag"
 import StateRankings from "@/components/StateRankings"
 import { ResponsiveContainer, ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts'
 
+// State abbreviation to full name mapping
+const stateAbbreviationsToNames: Record<string, string> = {
+  'AL': 'Alabama', 'AK': 'Alaska', 'AZ': 'Arizona', 'AR': 'Arkansas', 'CA': 'California',
+  'CO': 'Colorado', 'CT': 'Connecticut', 'DE': 'Delaware', 'FL': 'Florida', 'GA': 'Georgia',
+  'HI': 'Hawaii', 'ID': 'Idaho', 'IL': 'Illinois', 'IN': 'Indiana', 'IA': 'Iowa',
+  'KS': 'Kansas', 'KY': 'Kentucky', 'LA': 'Louisiana', 'ME': 'Maine', 'MD': 'Maryland',
+  'MA': 'Massachusetts', 'MI': 'Michigan', 'MN': 'Minnesota', 'MS': 'Mississippi', 'MO': 'Missouri',
+  'MT': 'Montana', 'NE': 'Nebraska', 'NV': 'Nevada', 'NH': 'New Hampshire', 'NJ': 'New Jersey',
+  'NM': 'New Mexico', 'NY': 'New York', 'NC': 'North Carolina', 'ND': 'North Dakota', 'OH': 'Ohio',
+  'OK': 'Oklahoma', 'OR': 'Oregon', 'PA': 'Pennsylvania', 'RI': 'Rhode Island', 'SC': 'South Carolina',
+  'SD': 'South Dakota', 'TN': 'Tennessee', 'TX': 'Texas', 'UT': 'Utah', 'VT': 'Vermont',
+  'VA': 'Virginia', 'WA': 'Washington', 'WV': 'West Virginia', 'WI': 'Wisconsin', 'WY': 'Wyoming'
+}
+
+// Helper function to convert state abbreviation to full name
+const getStateName = (abbreviation: string): string => {
+  return stateAbbreviationsToNames[abbreviation.toUpperCase()] || abbreviation
+}
+
 // Transform trend data for charts
 const transformTrendDataForCharts = (trendData: any): any[] => {
   if (!trendData) return []
@@ -275,6 +294,9 @@ export default function ResultsPage() {
                             {/* Card header */}
                             <div className="bg-yellow-400 px-4 py-3 flex items-center gap-3">
                               <StateFlag stateCode={stateName} size="medium" />
+                              <span className="text-lg font-semibold text-gray-900">
+                                {getStateName(stateName)}
+                              </span>
                             </div>
                             
                             {/* Card content */}
