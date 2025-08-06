@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react"
 import { useSelection } from "@/lib/context"
 import { ClientOnly, useSafeContextValue } from "@/lib/utils/hydrationUtils"
-import { Share2, Download } from "lucide-react"
+import { Share2, Download, ChevronDown, ChevronUp, RotateCcw } from "lucide-react"
 import Link from "next/link"
 import AuthStatus from "@/components/AuthStatus"
 import ProgressIndicator from "@/components/ProgressIndicator"
@@ -53,6 +53,8 @@ export default function ResultsPage() {
   const [sessionValid, setSessionValid] = useState(false)
   const [trendData, setTrendData] = useState<Record<string, any>>({})
   const [measureDetails, setMeasureDetails] = useState<any>(null)
+  const [preferenceDirection, setPreferenceDirection] = useState<'higher' | 'lower' | 'neutral'>('higher')
+  const [isDetailsExpanded, setIsDetailsExpanded] = useState(false)
 
   // Custom tooltip component
   const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ value: number; dataKey: string; name: string }>; label?: string }) => {
@@ -110,6 +112,9 @@ export default function ResultsPage() {
           description: measureData.description,
           categoryName: measureData.categoryName
         });
+
+        // Set preference direction from database
+        setPreferenceDirection(measureData.preferenceDirection || 'higher');
 
         // Mock trend data for now (will be replaced with real data later)
         const mockTrendData: Record<string, any> = {}
@@ -264,6 +269,87 @@ export default function ResultsPage() {
                     />
                   </div>
 
+                  {/* Metric Header with Details */}
+                  {measureDetails && (
+                    <div className="mb-6 bg-white rounded-lg shadow-md p-6">
+                      {/* Metric Name */}
+                      <div className="flex items-center justify-between mb-4">
+                        <h2 className="text-2xl font-bold text-gray-900">
+                          {measureDetails.name}
+                          {measureDetails.unit && (
+                            <span className="text-lg font-normal text-gray-600 ml-2">
+                              ({measureDetails.unit})
+                            </span>
+                          )}
+                        </h2>
+                        <button
+                          onClick={() => setIsDetailsExpanded(!isDetailsExpanded)}
+                          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+                        >
+                          {isDetailsExpanded ? (
+                            <>
+                              <span className="text-sm">Hide Details</span>
+                              <ChevronUp className="w-4 h-4" />
+                            </>
+                          ) : (
+                            <>
+                              <span className="text-sm">Show Details</span>
+                              <ChevronDown className="w-4 h-4" />
+                            </>
+                          )}
+                        </button>
+                      </div>
+
+                      {/* Collapsible Details Section */}
+                      {isDetailsExpanded && (
+                        <div className="border-t border-gray-200 pt-4">
+                          {/* Metric Description */}
+                          {measureDetails.description && (
+                            <div className="mb-4">
+                              <h3 className="text-lg font-semibold text-gray-900 mb-2">Definition</h3>
+                              <p className="text-gray-700">{measureDetails.description}</p>
+                            </div>
+                          )}
+
+                          {/* Preference Direction Control */}
+                          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                            <div>
+                              <h3 className="text-lg font-semibold text-gray-900 mb-1">Performance Direction</h3>
+                              <p className="text-sm text-gray-600">
+                                Controls how "Top 3" and "All State" rankings are displayed
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-4">
+                              {/* Toggle Control */}
+                              <div className="flex items-center gap-3">
+                                <label className="text-sm font-medium text-gray-700">Direction:</label>
+                                <select
+                                  value={preferenceDirection}
+                                  onChange={(e) => setPreferenceDirection(e.target.value as 'higher' | 'lower' | 'neutral')}
+                                  className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                >
+                                  <option value="higher">Higher is Better</option>
+                                  <option value="lower">Lower is Better</option>
+                                  <option value="neutral">Neutral</option>
+                                </select>
+                              </div>
+
+                              {/* Revert Button */}
+                              <button
+                                onClick={() => setPreferenceDirection(measureDetails.preferenceDirection || 'higher')}
+                                className="flex items-center gap-1 px-3 py-1 text-sm text-gray-600 hover:text-gray-900 transition-colors"
+                                title="Revert to database default"
+                              >
+                                <RotateCcw className="w-4 h-4" />
+                                <span>Reset</span>
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   {/* No data state */}
                   {Object.keys(trendData).length === 0 && (
                     <div className="text-center py-8">
@@ -339,6 +425,7 @@ export default function ResultsPage() {
                                   year={2022}
                                   order="desc"
                                   className=""
+                                  preferenceDirection={preferenceDirection}
                                 />
                               </div>
                               

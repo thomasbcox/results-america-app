@@ -24,13 +24,15 @@ interface StateRankingsProps {
   year?: number
   order?: 'asc' | 'desc'
   className?: string
+  preferenceDirection?: 'higher' | 'lower' | 'neutral'
 }
 
 export default function StateRankings({ 
   statisticId, 
   year = 2022, 
   order = 'desc',
-  className = '' 
+  className = '',
+  preferenceDirection = 'higher'
 }: StateRankingsProps) {
   const [rankingsData, setRankingsData] = useState<RankingsData | null>(null)
   const [loading, setLoading] = useState(false)
@@ -122,7 +124,11 @@ export default function StateRankings({
     <div className={`${className}`}>
       <div className="flex items-center justify-between mb-3">
         <h4 className="text-sm font-semibold text-gray-900">
-          {showAll ? 'All State Rankings:' : 'Top Performing States:'}
+          {showAll ? 'All State Rankings:' : 
+            preferenceDirection === 'higher' ? 'Top Performing States:' :
+            preferenceDirection === 'lower' ? 'Best Performing States:' :
+            'State Rankings:'
+          }
         </h4>
         <button
           onClick={() => setShowAll(!showAll)}

@@ -535,6 +535,7 @@ export class StatisticsService {
     const [statistic] = await db.update(statistics).set(data).where(eq(statistics.id, id)).returning();
     return {
       ...statistic,
+      preferenceDirection: statistic.preferenceDirection || 'higher',
       dataQuality: 'mock', // Default for normalized schema
       provenance: undefined, // Not available in normalized schema
       isActive: statistic.isActive ?? 1,
