@@ -226,64 +226,64 @@ function MeasureSelectionContent() {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {statistics.map((statistic) => (
-                <div
-                  key={statistic.id}
-                  className={`bg-white rounded-lg shadow-md overflow-hidden border-2 transition-all ${safeSelectedMeasure === statistic.id ? 'border-blue-500 shadow-lg' : 'border-transparent hover:border-gray-300'} ${!statistic.hasData ? 'opacity-60' : 'cursor-pointer'}`}
-                  onClick={() => handleMeasureSelect(statistic.id, statistic.hasData || false)}
-                >
-                  <div className="bg-blue-600 px-4 py-3 flex items-center justify-between">
-                    <h3 className="font-bold text-white text-sm">{statistic.raNumber}</h3>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleFavorite(statistic.id);
-                      }}
-                      className={`text-white hover:text-yellow-300 transition-colors ${favorites.includes(statistic.id) ? 'text-yellow-300' : ''}`}
+                    <div
+                      key={statistic.id}
+                      className={`bg-white rounded-lg shadow-md overflow-hidden border-2 transition-all ${safeSelectedMeasure === statistic.id ? 'border-blue-500 shadow-lg' : 'border-transparent hover:border-gray-300'} ${!statistic.hasData ? 'opacity-60' : 'cursor-pointer'}`}
+                      onClick={() => handleMeasureSelect(statistic.id, statistic.hasData || false)}
                     >
-                      <Star className="w-4 h-4" fill={favorites.includes(statistic.id) ? 'currentColor' : 'none'} />
-                    </button>
-                  </div>
-                  <div className="p-4">
-                    <div className="flex items-start justify-between mb-2">
-                      <h4 className="font-semibold text-black">{statistic.name}</h4>
-                      <DataQualityIndicator
-                        dataQuality={statistic.dataQuality || 'mock'}
-                        provenance={statistic.provenance}
-                        sourceUrl={undefined}
-                        showBadge={true}
-                        showIcon={true}
-                        size="sm"
-                      />
-                    </div>
-                    <p className="text-gray-600 text-sm mb-3 line-clamp-3">{statistic.description}</p>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-gray-500">Unit:</span>
-                        <span className="text-black font-medium">{statistic.unit}</span>
+                      <div className="bg-blue-600 px-4 py-3 flex items-center justify-between">
+                        <h3 className="font-bold text-white text-sm">{statistic.raNumber}</h3>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleFavorite(statistic.id);
+                          }}
+                          className={`text-white hover:text-yellow-300 transition-colors ${favorites.includes(statistic.id) ? 'text-yellow-300' : ''}`}
+                        >
+                          <Star className="w-4 h-4" fill={favorites.includes(statistic.id) ? 'currentColor' : 'none'} />
+                        </button>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-500">Category:</span>
-                        <span className="text-black">{statistic.categoryName}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-500">Available:</span>
-                        <span className="text-black">2020-2023 (4 years)</span>
-                      </div>
-                    </div>
-                    {!statistic.hasData && (
-                      <div className="mt-3 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-800">
-                        <div className="flex items-center gap-1">
-                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                          </svg>
-                          No data points available
+                      <div className="p-4">
+                        <div className="flex items-start justify-between mb-2">
+                          <h4 className="font-semibold text-black">{statistic.name}</h4>
+                          <DataQualityIndicator
+                            dataQuality={statistic.dataQuality || 'mock'}
+                            provenance={statistic.provenance}
+                            sourceUrl={undefined}
+                            showBadge={true}
+                            showIcon={true}
+                            size="sm"
+                          />
                         </div>
+                        <p className="text-gray-600 text-sm mb-3 line-clamp-3">{statistic.description}</p>
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between">
+                            <span className="text-gray-500">Unit:</span>
+                            <span className="text-black font-medium">{statistic.unit}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-500">Category:</span>
+                            <span className="text-black">{statistic.categoryName}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-500">Available:</span>
+                            <span className="text-black">2020-2023 (4 years)</span>
+                          </div>
+                        </div>
+                        {!statistic.hasData && (
+                          <div className="mt-3 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-800">
+                            <div className="flex items-center gap-1">
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                              </svg>
+                              No data points available
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
               )}
             </>
           )}
