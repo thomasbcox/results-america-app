@@ -1,5 +1,5 @@
 import { getDb } from '../src/lib/db';
-import { users } from '../src/lib/db/schema';
+import { users } from '../src/lib/db/schema-postgres';
 import { AuthService } from '../src/lib/services/authService';
 
 async function createAdmin() {

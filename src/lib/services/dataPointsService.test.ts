@@ -8,10 +8,12 @@ import type {
   CreateDataPointInput, 
   UpdateDataPointInput 
 } from '../types/service-interfaces';
+import type { DataPointWithJoins } from '../types/database-results';
+import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 
 // Create a test-specific version of DataPointsService
 class TestDataPointsService {
-  static async getDataPointsForState(db: any, stateId: number, year?: number): Promise<DataPointData[]> {
+  static async getDataPointsForState(db: BetterSQLite3Database<typeof import('../db/schema')>, stateId: number, year?: number): Promise<DataPointData[]> {
     const conditions = [eq(dataPoints.stateId, stateId)];
     if (year) {
       conditions.push(eq(dataPoints.year, year));
@@ -32,7 +34,7 @@ class TestDataPointsService {
       .leftJoin(states, eq(dataPoints.stateId, states.id))
       .where(and(...conditions));
 
-    return results.map((result: any) => ({
+    return results.map((result: DataPointWithJoins) => ({
       id: result.id,
       statisticId: result.statisticId,
       stateId: result.stateId,
@@ -44,7 +46,7 @@ class TestDataPointsService {
     }));
   }
 
-  static async getDataPointsForStatistic(db: any, statisticId: number, year?: number): Promise<DataPointData[]> {
+  static async getDataPointsForStatistic(db: BetterSQLite3Database<typeof import('../db/schema')>, statisticId: number, year?: number): Promise<DataPointData[]> {
     const conditions = [eq(dataPoints.statisticId, statisticId)];
     if (year) {
       conditions.push(eq(dataPoints.year, year));
@@ -66,7 +68,7 @@ class TestDataPointsService {
       .where(and(...conditions))
       .orderBy(states.name);
 
-    return results.map((result: any) => ({
+    return results.map((result: DataPointWithJoins) => ({
       id: result.id,
       statisticId: result.statisticId,
       stateId: result.stateId,
@@ -78,7 +80,7 @@ class TestDataPointsService {
     }));
   }
 
-  static async getDataPointsForComparison(db: any, stateIds: number[], statisticIds: number[], year: number): Promise<DataPointData[]> {
+  static async getDataPointsForComparison(db: BetterSQLite3Database<typeof import('../db/schema')>, stateIds: number[], statisticIds: number[], year: number): Promise<DataPointData[]> {
     const results = await db.select({
       id: dataPoints.id,
       statisticId: dataPoints.statisticId,
@@ -112,12 +114,12 @@ class TestDataPointsService {
     }));
   }
 
-  static async createDataPoint(db: any, data: CreateDataPointInput): Promise<DataPointData> {
+  static async createDataPoint(db: BetterSQLite3Database<typeof import('../db/schema')>, data: CreateDataPointInput): Promise<DataPointData> {
     const [dataPoint] = await db.insert(dataPoints).values(data).returning();
     return dataPoint;
   }
 
-  static async updateDataPoint(db: any, id: number, data: UpdateDataPointInput): Promise<DataPointData> {
+  static async updateDataPoint(db: BetterSQLite3Database<typeof import('../db/schema')>, id: number, data: UpdateDataPointInput): Promise<DataPointData> {
     const [dataPoint] = await db.update(dataPoints).set(data).where(eq(dataPoints.id, id)).returning();
     if (!dataPoint) {
       throw new Error(`Data point with id ${id} not found`);
@@ -125,14 +127,14 @@ class TestDataPointsService {
     return dataPoint;
   }
 
-  static async deleteDataPoint(db: any, id: number): Promise<boolean> {
+  static async deleteDataPoint(db: BetterSQLite3Database<typeof import('../db/schema')>, id: number): Promise<boolean> {
     const result = await db.delete(dataPoints).where(eq(dataPoints.id, id)).returning();
     return result.length > 0;
   }
 }
 
 describe('DataPointsService', () => {
-  let testDb: any;
+  let testDb: ReturnType<typeof TestUtils.createAndSeed>;
 
   beforeEach(async () => {
     testDb = await TestUtils.createAndSeed({

@@ -1280,19 +1280,19 @@ Both formats will be automatically converted to CSV.`}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                   <div>
                     <span className="text-gray-600">Total Rows:</span>
-                    <span className="ml-2 font-medium">{errorDetails.stats.totalRows}</span>
+                    <span className="ml-2 font-medium">{String(errorDetails.stats.totalRows)}</span>
                   </div>
                   <div>
                     <span className="text-gray-600">Valid Rows:</span>
-                    <span className="ml-2 font-medium text-green-600">{errorDetails.stats.validRows}</span>
+                    <span className="ml-2 font-medium text-green-600">{String(errorDetails.stats.validRows)}</span>
                   </div>
                   <div>
                     <span className="text-gray-600">Invalid Rows:</span>
-                    <span className="ml-2 font-medium text-red-600">{errorDetails.stats.invalidRows}</span>
+                    <span className="ml-2 font-medium text-red-600">{String(errorDetails.stats.invalidRows)}</span>
                   </div>
                   <div>
                     <span className="text-gray-600">Warnings:</span>
-                    <span className="ml-2 font-medium text-yellow-600">{errorDetails.stats.warnings}</span>
+                    <span className="ml-2 font-medium text-yellow-600">{String(errorDetails.stats.warnings)}</span>
                   </div>
                 </div>
               </div>

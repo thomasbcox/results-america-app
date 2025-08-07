@@ -5,6 +5,16 @@ import { join, dirname } from 'path';
 import { tmpdir } from 'os';
 import { existsSync, unlinkSync, mkdirSync } from 'fs';
 import { v4 as uuidv4 } from 'uuid';
+import type { 
+  DataPointWithJoins, 
+  StatisticWithJoins, 
+  StateWithJoins, 
+  CategoryWithJoins,
+  isDataPointWithJoins,
+  isStatisticWithJoins,
+  isStateWithJoins,
+  isCategoryWithJoins
+} from '../types/database-results';
 
 /**
  * Bulletproof Test Database Infrastructure

@@ -7,6 +7,7 @@ import type {
   CreateStatisticInput, 
   UpdateStatisticInput 
 } from '../types/service-interfaces';
+import type { StatisticWithJoins } from '../types/database-results';
 
 export class StatisticsService {
   static async getAllStatistics(): Promise<StatisticData[]> {
@@ -38,7 +39,7 @@ export class StatisticsService {
         like(statistics.name, `%${searchTerm}%`)
       );
 
-    return results.map((result: any) => ({
+    return results.map((result: StatisticWithJoins) => ({
       id: result.id,
       name: result.name,
       raNumber: result.raNumber,
@@ -104,7 +105,7 @@ export class StatisticsService {
     const totalResult = await db.select({ count: statistics.id }).from(statistics);
     const total = totalResult.length;
 
-    const data = results.map((result: any) => ({
+    const data = results.map((result: StatisticWithJoins) => ({
       id: result.id,
       name: result.name,
       raNumber: result.raNumber,

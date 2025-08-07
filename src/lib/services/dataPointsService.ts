@@ -7,6 +7,7 @@ import type {
   CreateDataPointInput, 
   UpdateDataPointInput 
 } from '../types/service-interfaces';
+import type { DataPointWithJoins } from '../types/database-results';
 
 export class DataPointsService {
   static async getDataPointsForState(stateId: number, year?: number): Promise<DataPointData[]> {
@@ -31,7 +32,7 @@ export class DataPointsService {
       .leftJoin(states, eq(dataPoints.stateId, states.id))
       .where(and(...conditions));
 
-    return results.map((result: any) => ({
+    return results.map((result: DataPointWithJoins) => ({
       id: result.id,
       statisticId: result.statisticId,
       stateId: result.stateId,
@@ -66,7 +67,7 @@ export class DataPointsService {
       .where(and(...conditions))
       .orderBy(states.name);
 
-    return results.map((result: any) => ({
+    return results.map((result: DataPointWithJoins) => ({
       id: result.id,
       statisticId: result.statisticId,
       stateId: result.stateId,

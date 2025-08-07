@@ -147,7 +147,12 @@ export function setupDatabaseTestEnvironment() {
       getDb: () => mockDb,
       db: () => mockDb,
       setTestDb: (db: any) => { mockDb = db; },
-      postgresSchema: {}
+      postgresSchema: {},
+      // Add type safety support
+      createTypedQuery: (queryFn: any, mapper: any, typeName: string) => queryFn,
+      validateDatabaseResult: (result: any, expectedKeys: any[], typeName: string) => true,
+      ensureTypedDatabaseResult: (result: any, typeGuard: any, typeName: string) => result,
+      ensureTypedDatabaseResults: (results: any[], typeGuard: any, typeName: string) => results,
     };
   });
 

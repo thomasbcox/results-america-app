@@ -7,12 +7,13 @@ import type {
   CreateCategoryInput, 
   UpdateCategoryInput 
 } from '../types/service-interfaces';
+import type { CategoryWithJoins } from '../types/database-results';
 
 export class CategoriesService {
   static async getAllCategories(): Promise<CategoryData[]> {
     const db = getDb();
     const result = await db.select().from(categories).orderBy(categories.sortOrder, categories.name);
-    return result.map((category: any) => ({
+    return result.map((category: CategoryWithJoins) => ({
       ...category,
       isActive: category.isActive ?? 1,
     }));
@@ -101,7 +102,7 @@ export class CategoriesService {
       .where(like(categories.name, `%${searchTerm}%`))
       .orderBy(categories.sortOrder, categories.name);
     
-    return result.map((category: any) => ({
+    return result.map((category: CategoryWithJoins) => ({
       ...category,
       isActive: category.isActive ?? 1,
     }));

@@ -11,9 +11,9 @@ jest.mock('@/lib/db/seed');
 
 const mockCreateSuccessResponse = createSuccessResponse as jest.MockedFunction<typeof createSuccessResponse>;
 const mockCreateInternalServerErrorResponse = createInternalServerErrorResponse as jest.MockedFunction<typeof createInternalServerErrorResponse>;
-const mockDrizzle = require('drizzle-orm/postgres-js').drizzle as jest.MockedFunction<typeof require('drizzle-orm/postgres-js').drizzle>;
-const mockPostgres = require('postgres') as jest.MockedFunction<typeof require('postgres')>;
-const mockMigrate = require('drizzle-orm/postgres-js/migrator').migrate as jest.MockedFunction<typeof require('drizzle-orm/postgres-js/migrator').migrate>;
+const mockDrizzle = require('drizzle-orm/postgres-js').drizzle as jest.MockedFunction<any>;
+const mockPostgres = require('postgres') as jest.MockedFunction<any>;
+const mockMigrate = require('drizzle-orm/postgres-js/migrator').migrate as jest.MockedFunction<any>;
 
 describe('Deploy Setup API Route', () => {
   let mockRequest: any;

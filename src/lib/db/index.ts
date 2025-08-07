@@ -36,7 +36,7 @@ const getDatabaseConfig = () => {
 };
 
 // Lazy database connection
-let databaseInstance: any = null;
+let databaseInstance: ReturnType<typeof drizzlePostgres> | null = null;
 let dbInitialized = false;
 
 const initializeDatabase = () => {

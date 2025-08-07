@@ -1,5 +1,5 @@
 import { getDb } from '../src/lib/db/index';
-import { dataPoints, statistics, states, importSessions } from '../src/lib/db/schema';
+import { dataPoints, statistics, states, importSessions } from '../src/lib/db/schema-postgres';
 import { eq } from 'drizzle-orm';
 
 async function addSampleTrendData() {
@@ -8,9 +8,9 @@ async function addSampleTrendData() {
 
   // Create import sessions for each year
   const importSessionData = [
-    { name: 'Sample 2020 Data Import', importDate: '2020-12-31', dataYear: 2020 },
-    { name: 'Sample 2021 Data Import', importDate: '2021-12-31', dataYear: 2021 },
-    { name: 'Sample 2022 Data Import', importDate: '2022-12-31', dataYear: 2022 },
+    { name: 'Sample 2020 Data Import', importDate: new Date('2020-12-31'), dataYear: 2020 },
+    { name: 'Sample 2021 Data Import', importDate: new Date('2021-12-31'), dataYear: 2021 },
+    { name: 'Sample 2022 Data Import', importDate: new Date('2022-12-31'), dataYear: 2022 },
   ];
 
   const importSessionIds = [];

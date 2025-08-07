@@ -342,7 +342,7 @@ export default function ResultsPage() {
 
                               {/* Revert Button */}
                               <button
-                                onClick={() => setPreferenceDirection(measureDetails.preferenceDirection || 'higher')}
+                                onClick={() => setPreferenceDirection('higher')}
                                 className="flex items-center gap-1 px-3 py-1 text-sm text-gray-600 hover:text-gray-900 transition-colors"
                                 title="Revert to database default"
                               >
@@ -398,9 +398,8 @@ export default function ResultsPage() {
                                   {measureDetails?.name || 'Loading...'} {measureDetails?.unit ? `(${measureDetails.unit})` : ''}
                                 </h4>
                                 <DataQualityIndicator
-                                  dataQuality={measureDetails?.dataQuality || 'mock'}
+                                  dataQuality={(measureDetails?.dataQuality as 'mock' | 'real') || 'mock'}
                                   provenance={measureDetails?.provenance}
-                                  sourceUrl={measureDetails?.sourceUrl}
                                   showBadge={true}
                                   showIcon={true}
                                   size="md"

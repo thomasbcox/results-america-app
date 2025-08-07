@@ -15,6 +15,7 @@ import type {
   PaginatedResult,
   FilterOptions
 } from '../types/service-interfaces';
+import type { StateWithJoins } from '../types/database-results';
 
 export class StatesService {
   static async getAllStates(useCache = true): Promise<StateData[]> {
@@ -44,7 +45,7 @@ export class StatesService {
         cache.set('states', result);
       }
       
-      return result.map((state: any) => ({
+      return result.map((state: StateWithJoins) => ({
         ...state,
         isActive: state.isActive ?? 1,
       }));
