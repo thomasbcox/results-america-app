@@ -284,7 +284,7 @@ Florida,2023,1200000`,
         name: 'High School Graduation Rate', 
         description: 'Percentage of students who graduate high school', 
         unit: 'percentage',
-        preferenceDirection: 'higher',
+        preferenceDirection: 'higher' as const,
         isActive: 1
       },
       { 
@@ -293,7 +293,7 @@ Florida,2023,1200000`,
         name: 'College Enrollment Rate', 
         description: 'Percentage of high school graduates who enroll in college', 
         unit: 'percentage',
-        preferenceDirection: 'higher',
+        preferenceDirection: 'higher' as const,
         isActive: 1
       },
       
@@ -304,7 +304,7 @@ Florida,2023,1200000`,
         name: 'Unemployment Rate', 
         description: 'Percentage of labor force that is unemployed', 
         unit: 'percentage',
-        preferenceDirection: 'lower',
+        preferenceDirection: 'lower' as const,
         isActive: 1
       },
       { 
@@ -313,7 +313,7 @@ Florida,2023,1200000`,
         name: 'GDP per Capita', 
         description: 'Gross Domestic Product per person', 
         unit: 'dollars',
-        preferenceDirection: 'higher',
+        preferenceDirection: 'higher' as const,
         isActive: 1
       },
       
@@ -324,7 +324,7 @@ Florida,2023,1200000`,
         name: 'Life Expectancy', 
         description: 'Average life expectancy at birth', 
         unit: 'years',
-        preferenceDirection: 'higher',
+        preferenceDirection: 'higher' as const,
         isActive: 1
       }
     ];
