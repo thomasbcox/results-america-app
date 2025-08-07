@@ -4,6 +4,23 @@
 
 Results America is designed for seamless deployment on Vercel with Neon PostgreSQL. This guide covers the complete deployment process from development to production.
 
+## ⚠️ Current Status Notes
+
+### **Pre-Deployment Issues to Address**
+- **Test Failures**: 175 failing tests out of 512 total (66% pass rate)
+- **API Issues**: Some endpoints returning 400 errors
+- **Database Connections**: Some services have null database connections
+- **Hydration Issues**: Client/server mismatch in some components
+
+### **Recommended Actions Before Deployment**
+1. Fix failing tests to improve code reliability
+2. Resolve API endpoint issues
+3. Fix database connection problems
+4. Address hydration mismatches
+5. Run full test suite before deployment
+
+---
+
 ## 🎯 Deployment Strategy
 
 ### ✅ **Recommended Stack**
@@ -30,6 +47,8 @@ Results America is designed for seamless deployment on Vercel with Neon PostgreS
 - [ ] Environment variables documented
 - [ ] Database migrations ready
 - [ ] Seed data prepared
+- [ ] API endpoints tested
+- [ ] Database connections verified
 
 ### ✅ **Database Setup**
 - [ ] Neon PostgreSQL project created
@@ -284,6 +303,16 @@ curl -X POST https://api.resend.com/emails \
   -d '{"from": "test@yourdomain.com", "to": "test@example.com", "subject": "Test", "html": "<p>Test</p>"}'
 ```
 
+#### **Test Failures**
+```bash
+# Run tests locally
+npm test
+
+# Check specific test files
+npm test -- --testPathPattern=data-points
+npm test -- --testPathPattern=aggregation
+```
+
 ### **Performance Optimization**
 
 1. **Database Optimization**
@@ -344,6 +373,7 @@ curl -X POST https://api.resend.com/emails \
 - **Security Updates**: Keep dependencies updated
 - **Database Maintenance**: Monitor performance
 - **Backup Verification**: Test restore procedures
+- **Test Suite**: Ensure all tests pass regularly
 
 ### **Monitoring Alerts**
 - **Uptime Monitoring**: Set up alerts
@@ -363,4 +393,4 @@ curl -X POST https://api.resend.com/emails \
 
 **Last Updated**: January 2025  
 **Version**: 0.1.0  
-**Status**: Production-ready deployment guide 
+**Status**: Production-ready deployment guide with current issues noted 

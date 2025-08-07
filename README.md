@@ -2,6 +2,27 @@
 
 A data transparency platform that provides state-level statistics with complete provenance tracking and trust-building features.
 
+## ⚠️ Current Status
+
+**Version**: 0.1.0  
+**Status**: Core functionality complete, test issues need resolution  
+**Test Coverage**: 66% pass rate (337/512 tests passing)
+
+### **Key Features Implemented**
+- ✅ Complete service layer architecture with analytics capabilities
+- ✅ Comprehensive CSV import system with staging and rollback
+- ✅ Admin dashboard with data management
+- ✅ User authentication with magic links
+- ✅ Database schema with PostgreSQL/Neon and SQLite testing
+
+### **Known Issues**
+- ⚠️ 175 failing tests need to be fixed
+- ⚠️ Some API endpoints returning 400 errors
+- ⚠️ Database connection issues in some services
+- ⚠️ Hydration mismatches in frontend components
+
+**For detailed status information, see [CURRENT_STATUS_REPORT.md](./CURRENT_STATUS_REPORT.md)**
+
 ## 🚀 Quick Start
 
 ### Prerequisites
@@ -40,6 +61,28 @@ npm run dev
 The application will be available at:
 - **Local**: http://localhost:3050
 - **Network**: http://your-ip:3050
+
+## 🧪 Testing
+
+### Current Test Status
+```bash
+# Run all tests
+npm test
+
+# Test results: 512 total, 337 passing, 175 failing
+```
+
+### Test Issues to Address
+- Database connection problems in service tests
+- API route function import errors
+- Parameter validation issues in data-points API
+- Hydration mismatch issues in frontend tests
+
+### Recommended Test Fixes
+1. Fix database connection issues in service tests
+2. Resolve API route function import errors
+3. Address parameter validation in data-points API
+4. Fix hydration mismatch issues
 
 ## 🏗️ Project Structure
 
@@ -145,97 +188,107 @@ See [API_RESPONSE_STRUCTURE.md](./API_RESPONSE_STRUCTURE.md) for detailed docume
 - `GET /api/auth/verify` - Verify magic link
 - `POST /api/auth/logout` - Logout
 
-## 🧪 Testing
-
-```bash
-# Run all tests
-npm test
-
-# Run specific test suites
-npm test -- --testPathPattern="states|categories|statistics"
-
-# Run tests in watch mode
-npm run test:watch
-```
-
-### Test Coverage
-- ✅ API route tests (states, categories, statistics)
-- ✅ Service layer tests
-- ✅ Database integration tests
-- ✅ Authentication tests
-
 ## 🚀 Deployment
 
-### Vercel Deployment
-```bash
-# Build for production
-npm run build
+### Pre-Deployment Checklist
+- [ ] Fix all failing tests
+- [ ] Verify all API endpoints return 200 status
+- [ ] Test database connections in all services
+- [ ] Resolve hydration mismatches
+- [ ] Run full integration tests
 
-# Deploy to Vercel
-vercel --prod
-```
+### Deployment Options
+- **Vercel**: Recommended for automatic deployments
+- **Neon PostgreSQL**: Database hosting
+- **Resend**: Email service for magic links
 
-### Environment Variables for Production
-```env
-DATABASE_URL=postgresql://username:password@host/database?sslmode=require
-NODE_ENV=production
-```
+For detailed deployment instructions, see [DEPLOYMENT.md](./DEPLOYMENT.md)
+
+## 📊 Analytics Features
+
+### Implemented Analytics
+- **Trend Analysis**: Year-over-year changes with percentage calculations
+- **State Comparisons**: Rankings, percentiles, national averages
+- **Statistical Analysis**: Mean, median, correlation coefficients
+- **Data Quality**: Completeness metrics, coverage percentages
+- **Export Functionality**: JSON, CSV, and PDF export formats
+
+### Service Layer Architecture
+- **DataPointsService**: Core data point operations with 8+ analytics methods
+- **StatisticsService**: Statistics management with 7+ analytics methods
+- **CategoriesService**: Category management with 6+ analytics methods
+- **AnalyticsService**: Dedicated analytics service with 8 comprehensive methods
+- **AdminService**: System administration and user management
 
 ## 📚 Documentation
 
-- [Admin Guide](./ADMIN_GUIDE.md) - Admin dashboard and system management
-- [CSV Import System](./CSV_IMPORT_SYSTEM.md) - Complete CSV import workflow documentation
-- [Database Setup](./DATABASE_SETUP.md) - Database configuration and migration
-- [Roadmap](./ROADMAP.md) - Development roadmap and phases
-- [User Authentication](./USER_AUTHENTICATION.md) - Authentication system details
-- [Session Status Guide](./docs/SESSION_STATUS_GUIDE.md) - Import session status system and management
+### Current Documentation
+- [CURRENT_STATUS_REPORT.md](./CURRENT_STATUS_REPORT.md) - Detailed project status
+- [ROADMAP.md](./ROADMAP.md) - Development roadmap and phases
+- [DEPLOYMENT.md](./DEPLOYMENT.md) - Deployment guide
+- [DATABASE_SETUP.md](./DATABASE_SETUP.md) - Database setup instructions
+- [CSV_IMPORT_SYSTEM.md](./CSV_IMPORT_SYSTEM.md) - CSV import system guide
 
-## 🔧 Development
+### API Documentation
+- API endpoints are documented in the codebase
+- Response structures are defined in TypeScript interfaces
+- Test files provide usage examples
 
-### Available Scripts
-```bash
-npm run dev              # Start development server
-npm run build            # Build for production
-npm run start            # Start production server
-npm run lint             # Run ESLint
-npm run test             # Run tests
-npm run db:studio        # Open database studio
-npm run db:seed          # Seed database
-npm run deploy:seed      # Deploy seed data
-```
+## 🤝 Contributing
 
-### Database Commands
-```bash
-npm run db:generate      # Generate new migration
-npm run db:migrate       # Run migrations
-npm run db:setup:dev     # Setup development database
-npm run db:setup:prod    # Setup production database
-```
+### Development Guidelines
+1. **Test Coverage**: Ensure all new code has tests
+2. **Type Safety**: Use TypeScript strict mode
+3. **Service Layer**: Follow the established service pattern
+4. **Error Handling**: Implement proper error handling
+5. **Documentation**: Update documentation for new features
 
-## 🐛 Troubleshooting
+### Code Quality Standards
+- TypeScript strict mode enabled
+- ESLint and Prettier configuration
+- Comprehensive test coverage (target: >90%)
+- Systematic debugging guidelines
 
-### Common Issues
+## 📈 Roadmap
 
-**Database Connection Issues**
-- Verify `DATABASE_URL` in `.env`
-- Check Neon database status
-- Ensure SSL is enabled for Neon
+### Current Phase: Core Analytics & Reporting ✅
+- Complete service layer architecture
+- Comprehensive analytics capabilities
+- Data import and management system
+- Admin dashboard and user interface
 
-**API Errors**
-- Check server logs for detailed error messages
-- Verify database schema matches migrations
-- Test individual API endpoints
+### Next Phase: Advanced Analytics & Visualization
+- Predictive analytics and machine learning
+- Advanced visualization features
+- Custom dashboards and reporting
+- Performance optimizations
 
-**Authentication Issues**
-- Clear browser cookies
-- Check magic link expiration (15 minutes)
-- Verify email delivery
+For detailed roadmap information, see [ROADMAP.md](./ROADMAP.md)
 
-## 📄 License
+## 🐛 Known Issues
 
-This project is part of the Results America initiative.
+### High Priority
+- Test failures affecting code reliability
+- API endpoint errors (400 status codes)
+- Database connection issues in some services
+- Hydration mismatches in frontend components
+
+### Medium Priority
+- Performance optimization for large datasets
+- Enhanced error handling and user feedback
+- Improved test infrastructure
+- Documentation updates
+
+## 📞 Support
+
+For issues and questions:
+1. Check the [CURRENT_STATUS_REPORT.md](./CURRENT_STATUS_REPORT.md) for known issues
+2. Review the [DEPLOYMENT.md](./DEPLOYMENT.md) for deployment issues
+3. Examine test files for usage examples
+4. Check API route implementations for endpoint details
 
 ---
 
 **Last Updated**: January 2025  
-**Version**: 0.1.0 
+**Version**: 0.1.0  
+**Status**: Core functionality complete, test issues need resolution 

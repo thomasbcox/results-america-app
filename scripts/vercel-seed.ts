@@ -27,6 +27,7 @@ interface SeedResult {
     dataSourcesInserted: number;
     adminUserCreated: boolean;
     templatesInserted: number;
+    statisticsInserted: number;
   };
 }
 
@@ -60,7 +61,8 @@ export async function seedVercelDatabase(): Promise<SeedResult> {
       categoriesInserted: 0,
       dataSourcesInserted: 0,
       adminUserCreated: false,
-      templatesInserted: 0
+      templatesInserted: 0,
+      statisticsInserted: 0
     }
   };
 
@@ -264,6 +266,78 @@ Florida,2023,1200000`,
     }
     console.log(`   ✅ ${result.details.templatesInserted} templates inserted`);
 
+    // PHASE 4: Essential Statistics
+    console.log('📈 Seeding essential statistics...');
+    
+    // Get category and data source IDs
+    const categoriesResult = await db.select().from(schema.categories);
+    const dataSourcesResult = await db.select().from(schema.dataSources);
+    
+    const categoryMap = new Map(categoriesResult.map(c => [c.name, c.id]));
+    const sourceMap = new Map(dataSourcesResult.map(s => [s.name, s.id]));
+
+    const statisticsData = [
+      // Education Statistics
+      { 
+        categoryId: categoryMap.get('Education')!, 
+        dataSourceId: sourceMap.get('US Census Bureau')!, 
+        name: 'High School Graduation Rate', 
+        description: 'Percentage of students who graduate high school', 
+        unit: 'percentage',
+        preferenceDirection: 'higher',
+        isActive: 1
+      },
+      { 
+        categoryId: categoryMap.get('Education')!, 
+        dataSourceId: sourceMap.get('US Census Bureau')!, 
+        name: 'College Enrollment Rate', 
+        description: 'Percentage of high school graduates who enroll in college', 
+        unit: 'percentage',
+        preferenceDirection: 'higher',
+        isActive: 1
+      },
+      
+      // Economy Statistics
+      { 
+        categoryId: categoryMap.get('Economy')!, 
+        dataSourceId: sourceMap.get('Bureau of Labor Statistics')!, 
+        name: 'Unemployment Rate', 
+        description: 'Percentage of labor force that is unemployed', 
+        unit: 'percentage',
+        preferenceDirection: 'lower',
+        isActive: 1
+      },
+      { 
+        categoryId: categoryMap.get('Economy')!, 
+        dataSourceId: sourceMap.get('Bureau of Economic Analysis')!, 
+        name: 'GDP per Capita', 
+        description: 'Gross Domestic Product per person', 
+        unit: 'dollars',
+        preferenceDirection: 'higher',
+        isActive: 1
+      },
+      
+      // Health Statistics
+      { 
+        categoryId: categoryMap.get('Health')!, 
+        dataSourceId: sourceMap.get('CDC')!, 
+        name: 'Life Expectancy', 
+        description: 'Average life expectancy at birth', 
+        unit: 'years',
+        preferenceDirection: 'higher',
+        isActive: 1
+      }
+    ];
+
+    for (const stat of statisticsData) {
+      const existing = await db.select().from(schema.statistics).where(eq(schema.statistics.name, stat.name)).limit(1);
+      if (existing.length === 0) {
+        await db.insert(schema.statistics).values(stat);
+        result.details.statisticsInserted++;
+      }
+    }
+    console.log(`   ✅ ${result.details.statisticsInserted} statistics inserted`);
+
     console.log('🎉 Vercel production seeding completed successfully!');
     return result;
 
@@ -288,6 +362,7 @@ if (require.main === module) {
         console.log(`   Categories: ${result.details.categoriesInserted} inserted`);
         console.log(`   Data Sources: ${result.details.dataSourcesInserted} inserted`);
         console.log(`   Templates: ${result.details.templatesInserted} inserted`);
+        console.log(`   Statistics: ${result.details.statisticsInserted} inserted`);
         console.log(`   Admin User: ${result.details.adminUserCreated ? 'created' : 'already exists'}`);
         console.log('\n👤 Admin Login: admin@resultsamerica.org');
         console.log('📋 Next: Visit /auth/login and use magic link authentication');
