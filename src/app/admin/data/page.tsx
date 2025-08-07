@@ -37,13 +37,13 @@ interface CSVImportTemplate {
       type: 'string' | 'number' | 'date' | 'boolean';
       required: boolean;
       mapping?: string;
-      validation?: any;
+      validation?: Record<string, unknown>;
     }[];
     expectedHeaders: string[];
     flexibleColumns?: boolean;
     multiYearSupport?: boolean;
   };
-  validationRules: any;
+  validationRules: Record<string, unknown>;
   sampleData: string;
 }
 
@@ -111,7 +111,7 @@ export default function AdminDataPage() {
     importId: number | null;
     errors: string[];
     warnings: string[];
-    stats: any;
+    stats: Record<string, unknown>;
   }>({
     show: false,
     importId: null,

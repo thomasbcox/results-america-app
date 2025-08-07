@@ -31,7 +31,7 @@ const getStateName = (abbreviation: string): string => {
 }
 
 // Transform trend data for charts
-const transformTrendDataForCharts = (trendData: any): any[] => {
+const transformTrendDataForCharts = (trendData: Record<string, number>): Array<{year: string; value: number; national: number}> => {
   if (!trendData) return []
   return Object.entries(trendData).map(([year, value]) => ({
     year,
@@ -51,8 +51,15 @@ export default function ResultsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [sessionValid, setSessionValid] = useState(false)
-  const [trendData, setTrendData] = useState<Record<string, any>>({})
-  const [measureDetails, setMeasureDetails] = useState<any>(null)
+  const [trendData, setTrendData] = useState<Record<string, Record<string, number>>>({})
+  const [measureDetails, setMeasureDetails] = useState<{
+    name: string;
+    unit: string;
+    dataQuality: string;
+    provenance?: string;
+    description?: string;
+    categoryName?: string;
+  } | null>(null)
   const [preferenceDirection, setPreferenceDirection] = useState<'higher' | 'lower' | 'neutral'>('higher')
   const [isDetailsExpanded, setIsDetailsExpanded] = useState(false)
 
@@ -117,7 +124,7 @@ export default function ResultsPage() {
         setPreferenceDirection(measureData.preferenceDirection || 'higher');
 
         // Mock trend data for now (will be replaced with real data later)
-        const mockTrendData: Record<string, any> = {}
+        const mockTrendData: Record<string, Record<string, number>> = {}
         safeSelectedStates.forEach(state => {
           mockTrendData[state.toLowerCase()] = {
             '2020': Math.floor(Math.random() * 100),
