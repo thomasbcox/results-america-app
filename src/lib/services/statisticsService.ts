@@ -137,13 +137,40 @@ export class StatisticsService {
   }
 
   static async getStatisticsWithAvailability(): Promise<StatisticData[]> {
-    // For now, return all statistics with a hasData flag
-    const results = await this.getAllStatisticsWithSources();
+    const db = getDb();
     
-    return results.map(statistic => ({
-      ...statistic,
-      hasData: true, // Assume all statistics have data for now
-    }));
+    // Handle case where database connection fails
+    if (!db) {
+      console.warn('Database connection not available, returning empty statistics array');
+      return [];
+    }
+    
+    try {
+      // Get all statistics with sources
+      const results = await this.getAllStatisticsWithSources();
+      
+      // Check which statistics have data points
+      const statisticsWithData = await db.select({
+        statisticId: dataPoints.statisticId,
+      })
+        .from(dataPoints)
+        .groupBy(dataPoints.statisticId);
+      
+      const statisticsWithDataIds = new Set(statisticsWithData.map(r => r.statisticId));
+      
+      return results.map(statistic => ({
+        ...statistic,
+        hasData: statisticsWithDataIds.has(statistic.id),
+      }));
+    } catch (error) {
+      console.error('Error checking statistics availability:', error);
+      // Return statistics with hasData: false if we can't check
+      const results = await this.getAllStatisticsWithSources();
+      return results.map(statistic => ({
+        ...statistic,
+        hasData: false,
+      }));
+    }
   }
 
   static async getAllStatisticsWithSources(): Promise<StatisticData[]> {

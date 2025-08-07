@@ -182,11 +182,53 @@ function MeasureSelectionContent() {
             </div>
           )}
           {!loading && !error && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {statistics.map((statistic) => (
+            <>
+              {statistics.length === 0 ? (
+                <div className="text-center py-8">
+                  <div className="max-w-md mx-auto bg-blue-50 border border-blue-200 rounded-lg p-6">
+                    <div className="flex items-center justify-center mb-4">
+                      <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                      </svg>
+                    </div>
+                    <h3 className="text-lg font-semibold text-blue-900 mb-2">No Measures Available</h3>
+                    <p className="text-blue-700 mb-4">No measures are available for this category at this time.</p>
+                    <div className="text-sm text-blue-600">
+                      <p>This may be because:</p>
+                      <ul className="list-disc list-inside mt-2 space-y-1">
+                        <li>No measures have been added to this category yet</li>
+                        <li>The database needs to be populated with measure data</li>
+                        <li>There are no active measures in this category</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              ) : statistics.every(s => !s.hasData) ? (
+                <div className="text-center py-8">
+                  <div className="max-w-md mx-auto bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+                    <div className="flex items-center justify-center mb-4">
+                      <svg className="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                      </svg>
+                    </div>
+                    <h3 className="text-lg font-semibold text-yellow-900 mb-2">Measures Available but No Data</h3>
+                    <p className="text-yellow-700 mb-4">Measures are defined but no data points have been added yet.</p>
+                    <div className="text-sm text-yellow-600">
+                      <p>This means:</p>
+                      <ul className="list-disc list-inside mt-2 space-y-1">
+                        <li>Measures exist in the system</li>
+                        <li>No actual data values have been imported yet</li>
+                        <li>You can still view measure definitions</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {statistics.map((statistic) => (
                 <div
                   key={statistic.id}
-                  className={`bg-white rounded-lg shadow-md overflow-hidden border-2 transition-all cursor-pointer ${safeSelectedMeasure === statistic.id ? 'border-blue-500 shadow-lg' : 'border-transparent hover:border-gray-300'} ${!statistic.hasData ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  className={`bg-white rounded-lg shadow-md overflow-hidden border-2 transition-all ${safeSelectedMeasure === statistic.id ? 'border-blue-500 shadow-lg' : 'border-transparent hover:border-gray-300'} ${!statistic.hasData ? 'opacity-60' : 'cursor-pointer'}`}
                   onClick={() => handleMeasureSelect(statistic.id, statistic.hasData || false)}
                 >
                   <div className="bg-blue-600 px-4 py-3 flex items-center justify-between">
@@ -230,13 +272,20 @@ function MeasureSelectionContent() {
                     </div>
                     {!statistic.hasData && (
                       <div className="mt-3 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-800">
-                        No data available for selected states
+                        <div className="flex items-center gap-1">
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                          </svg>
+                          No data points available
+                        </div>
                       </div>
                     )}
                   </div>
                 </div>
               ))}
             </div>
+              )}
+            </>
           )}
           <ClientOnly fallback={<div className="mt-8 h-12"></div>}>
             {safeSelectedMeasure && !showStateWarning && (
