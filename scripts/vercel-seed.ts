@@ -273,8 +273,8 @@ Florida,2023,1200000`,
     const categoriesResult = await db.select().from(schema.categories);
     const dataSourcesResult = await db.select().from(schema.dataSources);
     
-    const categoryMap = new Map(categoriesResult.map(c => [c.name, c.id]));
-    const sourceMap = new Map(dataSourcesResult.map(s => [s.name, s.id]));
+    const categoryMap = new Map(categoriesResult.map((c: { name: string; id: number }) => [c.name, c.id]));
+    const sourceMap = new Map(dataSourcesResult.map((s: { name: string; id: number }) => [s.name, s.id]));
 
     const statisticsData = [
       // Education Statistics
