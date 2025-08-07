@@ -1,12 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
-import { setupTestDatabase, clearTestData, getTestDb, seedTestData } from '../test-setup';
-import { categories, dataSources, statistics } from '../db/schema-normalized';
+import { BulletproofTestDatabase, TestUtils } from '../test-infrastructure/bulletproof-test-db';
+import { categories, dataSources, statistics } from '../db/schema';
 import { eq } from 'drizzle-orm';
 
 // Create a test-specific version of StatisticsService
 class TestStatisticsService {
-  static async getAllStatisticsWithSources(): Promise<any[]> {
-    const db = getTestDb();
+  static async getAllStatisticsWithSources(db: any): Promise<any[]> {
     const result = await db.select({
       id: statistics.id,
       raNumber: statistics.raNumber,
@@ -47,8 +46,7 @@ class TestStatisticsService {
     }));
   }
 
-  static async getStatisticById(id: number): Promise<any | null> {
-    const db = getTestDb();
+  static async getStatisticById(db: any, id: number): Promise<any | null> {
     const result = await db.select().from(statistics).where(eq(statistics.id, id)).limit(1);
     if (result.length === 0) return null;
     
@@ -59,8 +57,7 @@ class TestStatisticsService {
     };
   }
 
-  static async createStatistic(data: any): Promise<any> {
-    const db = getTestDb();
+  static async createStatistic(db: any, data: any): Promise<any> {
     const [statistic] = await db.insert(statistics).values(data).returning();
     return {
       ...statistic,
@@ -68,8 +65,7 @@ class TestStatisticsService {
     };
   }
 
-  static async updateStatistic(id: number, data: any): Promise<any> {
-    const db = getTestDb();
+  static async updateStatistic(db: any, id: number, data: any): Promise<any> {
     const [statistic] = await db.update(statistics).set(data).where(eq(statistics.id, id)).returning();
     if (!statistic) {
       throw new Error(`Statistic with id ${id} not found`);
@@ -80,33 +76,42 @@ class TestStatisticsService {
     };
   }
 
-  static async deleteStatistic(id: number): Promise<boolean> {
-    const db = getTestDb();
+  static async deleteStatistic(db: any, id: number): Promise<boolean> {
     const result = await db.delete(statistics).where(eq(statistics.id, id)).returning();
     return result.length > 0;
   }
 }
 
 describe('statisticsService', () => {
+  let testDb: any;
+
   beforeEach(async () => {
-    await setupTestDatabase();
-    await seedTestData();
+    testDb = await TestUtils.createAndSeed({
+      seedOptions: {
+        categories: true,
+        dataSources: true,
+        statistics: true
+      }
+    });
   });
 
-  afterEach(async () => {
-    await clearTestData();
+  afterEach(() => {
+    if (testDb) {
+      BulletproofTestDatabase.destroy(testDb);
+    }
   });
 
   it('should create a new statistic', async () => {
+    const db = testDb.db;
+    
     // Get existing category and data source from seeded data
-    const db = getTestDb();
     const existingCategories = await db.select().from(categories);
     const existingDataSources = await db.select().from(dataSources);
     
     const categoryId = existingCategories[0].id;
     const dataSourceId = existingDataSources[0].id;
 
-    const created = await TestStatisticsService.createStatistic({
+    const created = await TestStatisticsService.createStatistic(db, {
       name: 'Test Stat',
       raNumber: '9999',
       categoryId,
@@ -122,21 +127,23 @@ describe('statisticsService', () => {
   });
 
   it('should get all statistics with sources', async () => {
-    const all = await TestStatisticsService.getAllStatisticsWithSources();
+    const db = testDb.db;
+    const all = await TestStatisticsService.getAllStatisticsWithSources(db);
     expect(Array.isArray(all)).toBe(true);
     expect(all.length).toBeGreaterThan(0);
   });
 
   it('should get a statistic by id', async () => {
+    const db = testDb.db;
+    
     // Get existing category and data source from seeded data
-    const db = getTestDb();
     const existingCategories = await db.select().from(categories);
     const existingDataSources = await db.select().from(dataSources);
     
     const categoryId = existingCategories[0].id;
     const dataSourceId = existingDataSources[0].id;
 
-    const created = await TestStatisticsService.createStatistic({
+    const created = await TestStatisticsService.createStatistic(db, {
       name: 'Test Stat',
       raNumber: '9999',
       categoryId,
@@ -145,21 +152,22 @@ describe('statisticsService', () => {
       unit: 'test',
     });
 
-    const statistic = await TestStatisticsService.getStatisticById(created.id);
+    const statistic = await TestStatisticsService.getStatisticById(db, created.id);
     expect(statistic).toBeDefined();
     expect(statistic?.name).toBe('Test Stat');
   });
 
   it('should update a statistic', async () => {
+    const db = testDb.db;
+    
     // Get existing category and data source from seeded data
-    const db = getTestDb();
     const existingCategories = await db.select().from(categories);
     const existingDataSources = await db.select().from(dataSources);
     
     const categoryId = existingCategories[0].id;
     const dataSourceId = existingDataSources[0].id;
 
-    const created = await TestStatisticsService.createStatistic({
+    const created = await TestStatisticsService.createStatistic(db, {
       name: 'Test Stat',
       raNumber: '9999',
       categoryId,
@@ -168,7 +176,7 @@ describe('statisticsService', () => {
       unit: 'test',
     });
 
-    const updated = await TestStatisticsService.updateStatistic(created.id, {
+    const updated = await TestStatisticsService.updateStatistic(db, created.id, {
       name: 'Updated Stat',
       description: 'Updated Description',
     });
@@ -176,15 +184,16 @@ describe('statisticsService', () => {
   });
 
   it('should delete a statistic', async () => {
+    const db = testDb.db;
+    
     // Get existing category and data source from seeded data
-    const db = getTestDb();
     const existingCategories = await db.select().from(categories);
     const existingDataSources = await db.select().from(dataSources);
     
     const categoryId = existingCategories[0].id;
     const dataSourceId = existingDataSources[0].id;
 
-    const created = await TestStatisticsService.createStatistic({
+    const created = await TestStatisticsService.createStatistic(db, {
       name: 'Test Stat',
       raNumber: '9999',
       categoryId,
@@ -193,10 +202,10 @@ describe('statisticsService', () => {
       unit: 'test',
     });
 
-    const deleted = await TestStatisticsService.deleteStatistic(created.id);
+    const deleted = await TestStatisticsService.deleteStatistic(db, created.id);
     expect(deleted).toBe(true);
 
-    const statistic = await TestStatisticsService.getStatisticById(created.id);
+    const statistic = await TestStatisticsService.getStatisticById(db, created.id);
     expect(statistic).toBeNull();
   });
 }); 

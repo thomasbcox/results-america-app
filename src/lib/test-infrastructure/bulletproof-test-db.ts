@@ -361,6 +361,7 @@ export class BulletproofTestDatabase {
         available_since TEXT,
         data_quality TEXT DEFAULT 'mock',
         provenance TEXT,
+        preference_direction TEXT DEFAULT 'higher',
         is_active INTEGER DEFAULT 1,
         FOREIGN KEY (category_id) REFERENCES categories(id),
         FOREIGN KEY (data_source_id) REFERENCES data_sources(id)
@@ -573,23 +574,40 @@ export class BulletproofTestDatabase {
       -- User suggestions table
       CREATE TABLE IF NOT EXISTS user_suggestions (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER NOT NULL,
+        user_id INTEGER,
+        email TEXT NOT NULL,
         title TEXT NOT NULL,
-        description TEXT,
-        category_id INTEGER,
-        data_source_id INTEGER,
+        description TEXT NOT NULL,
+        category TEXT,
         status TEXT NOT NULL DEFAULT 'pending',
+        admin_notes TEXT,
         created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
         updated_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
-        FOREIGN KEY (user_id) REFERENCES users(id),
-        FOREIGN KEY (category_id) REFERENCES categories(id),
-        FOREIGN KEY (data_source_id) REFERENCES data_sources(id)
+        FOREIGN KEY (user_id) REFERENCES users(id)
       );
     `;
 
     // Execute schema creation
     sqlite.exec(createTablesSQL);
     log('Database schema created successfully');
+
+    // Create indexes for performance
+    const createIndexesSQL = `
+      -- Index for preference_direction queries
+      CREATE INDEX IF NOT EXISTS idx_statistics_preference_direction ON statistics(preference_direction);
+      
+      -- Index for category queries
+      CREATE INDEX IF NOT EXISTS idx_statistics_category_id ON statistics(category_id);
+      
+      -- Index for data source queries
+      CREATE INDEX IF NOT EXISTS idx_statistics_data_source_id ON statistics(data_source_id);
+      
+      -- Index for active statistics
+      CREATE INDEX IF NOT EXISTS idx_statistics_is_active ON statistics(is_active);
+    `;
+    
+    sqlite.exec(createIndexesSQL);
+    log('Database indexes created successfully');
   }
 
   /**
@@ -654,12 +672,12 @@ export class BulletproofTestDatabase {
    */
   private static async seedStatistics(testDb: TestDatabase): Promise<void> {
     const statistics = [
-      { categoryId: 1, dataSourceId: 1, name: 'High School Graduation Rate', description: 'Percentage of students who graduate high school', unit: 'percentage', isActive: 1 },
-      { categoryId: 1, dataSourceId: 1, name: 'College Enrollment Rate', description: 'Percentage of high school graduates who enroll in college', unit: 'percentage', isActive: 1 },
-      { categoryId: 2, dataSourceId: 2, name: 'Life Expectancy', description: 'Average life expectancy at birth', unit: 'years', isActive: 1 },
-      { categoryId: 2, dataSourceId: 2, name: 'Infant Mortality Rate', description: 'Deaths per 1,000 live births', unit: 'per 1,000', isActive: 1 },
-      { categoryId: 3, dataSourceId: 3, name: 'Unemployment Rate', description: 'Percentage of labor force that is unemployed', unit: 'percentage', isActive: 1 },
-      { categoryId: 3, dataSourceId: 3, name: 'Median Household Income', description: 'Median annual household income', unit: 'dollars', isActive: 1 }
+      { categoryId: 1, dataSourceId: 1, name: 'High School Graduation Rate', description: 'Percentage of students who graduate high school', unit: 'percentage', preferenceDirection: 'higher', isActive: 1 },
+      { categoryId: 1, dataSourceId: 1, name: 'College Enrollment Rate', description: 'Percentage of high school graduates who enroll in college', unit: 'percentage', preferenceDirection: 'higher', isActive: 1 },
+      { categoryId: 2, dataSourceId: 2, name: 'Life Expectancy', description: 'Average life expectancy at birth', unit: 'years', preferenceDirection: 'higher', isActive: 1 },
+      { categoryId: 2, dataSourceId: 2, name: 'Infant Mortality Rate', description: 'Deaths per 1,000 live births', unit: 'per 1,000', preferenceDirection: 'lower', isActive: 1 },
+      { categoryId: 3, dataSourceId: 3, name: 'Unemployment Rate', description: 'Percentage of labor force that is unemployed', unit: 'percentage', preferenceDirection: 'lower', isActive: 1 },
+      { categoryId: 3, dataSourceId: 3, name: 'Median Household Income', description: 'Median annual household income', unit: 'dollars', preferenceDirection: 'higher', isActive: 1 }
     ];
 
     await testDb.db.insert(schema.statistics).values(statistics);

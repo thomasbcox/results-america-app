@@ -1,0 +1,1 @@
+ALTER TABLE "statistics" ADD COLUMN "preference_direction" text DEFAULT 'higher';

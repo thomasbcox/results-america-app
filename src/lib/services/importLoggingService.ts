@@ -1,5 +1,5 @@
 import { getDb } from '@/lib/db';
-import { importLogs, importValidationSummary, csvImports } from '@/lib/db/schema-postgres';
+import { importLogs, importValidationSummary, csvImports } from '@/lib/db/schema';
 import { eq, and, desc } from 'drizzle-orm';
 
 export interface ValidationError {

@@ -1,0 +1,1248 @@
+{
+  "version": "6",
+  "dialect": "sqlite",
+  "tables": {
+    "categories": {
+      "name": "categories",
+      "schema": {},
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoIncrement": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "notNull": true,
+          "unique": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text"
+        },
+        "icon": {
+          "name": "icon",
+          "type": "text"
+        },
+        "sortOrder": {
+          "name": "sort_order",
+          "type": "integer",
+          "default": 0
+        },
+        "isActive": {
+          "name": "is_active",
+          "type": "integer",
+          "default": 1
+        }
+      }
+    },
+    "csv_import_metadata": {
+      "name": "csv_import_metadata",
+      "schema": {},
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoIncrement": true
+        },
+        "csvImportId": {
+          "name": "csv_import_id",
+          "type": "integer",
+          "notNull": true
+        },
+        "key": {
+          "name": "key",
+          "type": "text",
+          "notNull": true
+        },
+        "value": {
+          "name": "value",
+          "type": "text",
+          "notNull": true
+        },
+        "dataType": {
+          "name": "data_type",
+          "type": "text",
+          "default": "string",
+          "notNull": true
+        },
+        "isRequired": {
+          "name": "is_required",
+          "type": "integer",
+          "default": 0,
+          "notNull": true
+        },
+        "validationRule": {
+          "name": "validation_rule",
+          "type": "text"
+        }
+      },
+      "foreignKeys": [
+        {
+          "name": "csv_import_metadata_csv_import_id_csv_imports_id_fk",
+          "tableName": "csv_import_metadata",
+          "columnNames": ["csv_import_id"],
+          "referencedTableName": "csv_imports",
+          "referencedColumnNames": ["id"],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        }
+      ],
+      "indexes": {
+        "idx_csv_import_metadata_unique": {
+          "name": "idx_csv_import_metadata_unique",
+          "tableName": "csv_import_metadata",
+          "columnNames": ["csv_import_id", "key"],
+          "isUnique": true
+        }
+      }
+    },
+    "csv_import_staging": {
+      "name": "csv_import_staging",
+      "schema": {},
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoIncrement": true
+        },
+        "csvImportId": {
+          "name": "csv_import_id",
+          "type": "integer",
+          "notNull": true
+        },
+        "rowNumber": {
+          "name": "row_number",
+          "type": "integer",
+          "notNull": true
+        },
+        "stateName": {
+          "name": "state_name",
+          "type": "text"
+        },
+        "stateId": {
+          "name": "state_id",
+          "type": "integer"
+        },
+        "year": {
+          "name": "year",
+          "type": "integer"
+        },
+        "statisticName": {
+          "name": "statistic_name",
+          "type": "text"
+        },
+        "statisticId": {
+          "name": "statistic_id",
+          "type": "integer"
+        },
+        "value": {
+          "name": "value",
+          "type": "real"
+        },
+        "rawData": {
+          "name": "raw_data",
+          "type": "text",
+          "notNull": true
+        },
+        "validationStatus": {
+          "name": "validation_status",
+          "type": "text",
+          "default": "pending",
+          "notNull": true
+        },
+        "validationErrors": {
+          "name": "validation_errors",
+          "type": "text"
+        },
+        "isProcessed": {
+          "name": "is_processed",
+          "type": "integer",
+          "default": 0,
+          "notNull": true
+        },
+        "processedAt": {
+          "name": "processed_at",
+          "type": "integer"
+        }
+      },
+      "foreignKeys": [
+        {
+          "name": "csv_import_staging_csv_import_id_csv_imports_id_fk",
+          "tableName": "csv_import_staging",
+          "columnNames": ["csv_import_id"],
+          "referencedTableName": "csv_imports",
+          "referencedColumnNames": ["id"],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        },
+        {
+          "name": "csv_import_staging_state_id_states_id_fk",
+          "tableName": "csv_import_staging",
+          "columnNames": ["state_id"],
+          "referencedTableName": "states",
+          "referencedColumnNames": ["id"],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        },
+        {
+          "name": "csv_import_staging_statistic_id_statistics_id_fk",
+          "tableName": "csv_import_staging",
+          "columnNames": ["statistic_id"],
+          "referencedTableName": "statistics",
+          "referencedColumnNames": ["id"],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        }
+      ],
+      "indexes": {
+        "idx_csv_import_staging_import": {
+          "name": "idx_csv_import_staging_import",
+          "tableName": "csv_import_staging",
+          "columnNames": ["csv_import_id"]
+        },
+        "idx_csv_import_staging_row": {
+          "name": "idx_csv_import_staging_row",
+          "tableName": "csv_import_staging",
+          "columnNames": ["csv_import_id", "row_number"]
+        }
+      }
+    },
+    "csv_import_templates": {
+      "name": "csv_import_templates",
+      "schema": {},
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoIncrement": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text"
+        },
+        "categoryId": {
+          "name": "category_id",
+          "type": "integer"
+        },
+        "dataSourceId": {
+          "name": "data_source_id",
+          "type": "integer"
+        },
+        "templateSchema": {
+          "name": "template_schema",
+          "type": "text",
+          "notNull": true
+        },
+        "validationRules": {
+          "name": "validation_rules",
+          "type": "text"
+        },
+        "sampleData": {
+          "name": "sample_data",
+          "type": "text"
+        },
+        "isActive": {
+          "name": "is_active",
+          "type": "integer",
+          "default": 1
+        },
+        "createdBy": {
+          "name": "created_by",
+          "type": "integer",
+          "notNull": true
+        },
+        "createdAt": {
+          "name": "created_at",
+          "type": "integer",
+          "default": "CURRENT_TIMESTAMP",
+          "notNull": true
+        },
+        "updatedAt": {
+          "name": "updated_at",
+          "type": "integer",
+          "default": "CURRENT_TIMESTAMP",
+          "notNull": true
+        }
+      },
+      "foreignKeys": [
+        {
+          "name": "csv_import_templates_category_id_categories_id_fk",
+          "tableName": "csv_import_templates",
+          "columnNames": ["category_id"],
+          "referencedTableName": "categories",
+          "referencedColumnNames": ["id"],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        },
+        {
+          "name": "csv_import_templates_data_source_id_data_sources_id_fk",
+          "tableName": "csv_import_templates",
+          "columnNames": ["data_source_id"],
+          "referencedTableName": "data_sources",
+          "referencedColumnNames": ["id"],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        },
+        {
+          "name": "csv_import_templates_created_by_users_id_fk",
+          "tableName": "csv_import_templates",
+          "columnNames": ["created_by"],
+          "referencedTableName": "users",
+          "referencedColumnNames": ["id"],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        }
+      ],
+      "indexes": {
+        "csv_import_templates_name_unique": {
+          "name": "csv_import_templates_name_unique",
+          "tableName": "csv_import_templates",
+          "columnNames": ["name"],
+          "isUnique": true
+        }
+      }
+    },
+    "csv_import_validation": {
+      "name": "csv_import_validation",
+      "schema": {},
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoIncrement": true
+        },
+        "csvImportId": {
+          "name": "csv_import_id",
+          "type": "integer",
+          "notNull": true
+        },
+        "validationType": {
+          "name": "validation_type",
+          "type": "text",
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "default": "pending",
+          "notNull": true
+        },
+        "message": {
+          "name": "message",
+          "type": "text"
+        },
+        "details": {
+          "name": "details",
+          "type": "text"
+        },
+        "startedAt": {
+          "name": "started_at",
+          "type": "integer",
+          "default": "CURRENT_TIMESTAMP",
+          "notNull": true
+        },
+        "completedAt": {
+          "name": "completed_at",
+          "type": "integer"
+        },
+        "errorCount": {
+          "name": "error_count",
+          "type": "integer",
+          "default": 0
+        },
+        "warningCount": {
+          "name": "warning_count",
+          "type": "integer",
+          "default": 0
+        }
+      },
+      "foreignKeys": [
+        {
+          "name": "csv_import_validation_csv_import_id_csv_imports_id_fk",
+          "tableName": "csv_import_validation",
+          "columnNames": ["csv_import_id"],
+          "referencedTableName": "csv_imports",
+          "referencedColumnNames": ["id"],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        }
+      ]
+    },
+    "csv_imports": {
+      "name": "csv_imports",
+      "schema": {},
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoIncrement": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text"
+        },
+        "filename": {
+          "name": "filename",
+          "type": "text",
+          "notNull": true
+        },
+        "fileSize": {
+          "name": "file_size",
+          "type": "integer",
+          "notNull": true
+        },
+        "fileHash": {
+          "name": "file_hash",
+          "type": "text",
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "default": "uploaded",
+          "notNull": true
+        },
+        "uploadedBy": {
+          "name": "uploaded_by",
+          "type": "integer",
+          "notNull": true
+        },
+        "uploadedAt": {
+          "name": "uploaded_at",
+          "type": "integer",
+          "default": "CURRENT_TIMESTAMP",
+          "notNull": true
+        },
+        "validatedAt": {
+          "name": "validated_at",
+          "type": "integer"
+        },
+        "publishedAt": {
+          "name": "published_at",
+          "type": "integer"
+        },
+        "errorMessage": {
+          "name": "error_message",
+          "type": "text"
+        },
+        "metadata": {
+          "name": "metadata",
+          "type": "text"
+        },
+        "isActive": {
+          "name": "is_active",
+          "type": "integer",
+          "default": 1
+        },
+        "duplicateOf": {
+          "name": "duplicate_of",
+          "type": "integer"
+        },
+        "totalRows": {
+          "name": "total_rows",
+          "type": "integer"
+        },
+        "validRows": {
+          "name": "valid_rows",
+          "type": "integer"
+        },
+        "errorRows": {
+          "name": "error_rows",
+          "type": "integer"
+        },
+        "processingTimeMs": {
+          "name": "processing_time_ms",
+          "type": "integer"
+        }
+      },
+      "foreignKeys": [
+        {
+          "name": "csv_imports_uploaded_by_users_id_fk",
+          "tableName": "csv_imports",
+          "columnNames": ["uploaded_by"],
+          "referencedTableName": "users",
+          "referencedColumnNames": ["id"],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        }
+      ]
+    },
+    "data_points": {
+      "name": "data_points",
+      "schema": {},
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoIncrement": true
+        },
+        "importSessionId": {
+          "name": "import_session_id",
+          "type": "integer",
+          "notNull": true
+        },
+        "year": {
+          "name": "year",
+          "type": "integer",
+          "notNull": true
+        },
+        "stateId": {
+          "name": "state_id",
+          "type": "integer",
+          "notNull": true
+        },
+        "statisticId": {
+          "name": "statistic_id",
+          "type": "integer",
+          "notNull": true
+        },
+        "value": {
+          "name": "value",
+          "type": "real",
+          "notNull": true
+        }
+      },
+      "foreignKeys": [
+        {
+          "name": "data_points_import_session_id_import_sessions_id_fk",
+          "tableName": "data_points",
+          "columnNames": ["import_session_id"],
+          "referencedTableName": "import_sessions",
+          "referencedColumnNames": ["id"],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        },
+        {
+          "name": "data_points_state_id_states_id_fk",
+          "tableName": "data_points",
+          "columnNames": ["state_id"],
+          "referencedTableName": "states",
+          "referencedColumnNames": ["id"],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        },
+        {
+          "name": "data_points_statistic_id_statistics_id_fk",
+          "tableName": "data_points",
+          "columnNames": ["statistic_id"],
+          "referencedTableName": "statistics",
+          "referencedColumnNames": ["id"],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        }
+      ]
+    },
+    "data_sources": {
+      "name": "data_sources",
+      "schema": {},
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoIncrement": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "notNull": true,
+          "unique": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text"
+        },
+        "url": {
+          "name": "url",
+          "type": "text"
+        },
+        "isActive": {
+          "name": "is_active",
+          "type": "integer",
+          "default": 1
+        }
+      }
+    },
+    "import_logs": {
+      "name": "import_logs",
+      "schema": {},
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoIncrement": true
+        },
+        "csvImportId": {
+          "name": "csv_import_id",
+          "type": "integer",
+          "notNull": true
+        },
+        "logLevel": {
+          "name": "log_level",
+          "type": "text",
+          "notNull": true
+        },
+        "rowNumber": {
+          "name": "row_number",
+          "type": "integer"
+        },
+        "fieldName": {
+          "name": "field_name",
+          "type": "text"
+        },
+        "fieldValue": {
+          "name": "field_value",
+          "type": "text"
+        },
+        "expectedValue": {
+          "name": "expected_value",
+          "type": "text"
+        },
+        "failureCategory": {
+          "name": "failure_category",
+          "type": "text",
+          "notNull": true
+        },
+        "message": {
+          "name": "message",
+          "type": "text",
+          "notNull": true
+        },
+        "details": {
+          "name": "details",
+          "type": "text"
+        },
+        "timestamp": {
+          "name": "timestamp",
+          "type": "integer",
+          "default": "CURRENT_TIMESTAMP",
+          "notNull": true
+        }
+      },
+      "foreignKeys": [
+        {
+          "name": "import_logs_csv_import_id_csv_imports_id_fk",
+          "tableName": "import_logs",
+          "columnNames": ["csv_import_id"],
+          "referencedTableName": "csv_imports",
+          "referencedColumnNames": ["id"],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        }
+      ]
+    },
+    "import_sessions": {
+      "name": "import_sessions",
+      "schema": {},
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoIncrement": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text"
+        },
+        "dataSourceId": {
+          "name": "data_source_id",
+          "type": "integer"
+        },
+        "importDate": {
+          "name": "import_date",
+          "type": "text",
+          "default": "CURRENT_TIMESTAMP"
+        },
+        "dataYear": {
+          "name": "data_year",
+          "type": "integer"
+        },
+        "recordCount": {
+          "name": "record_count",
+          "type": "integer"
+        },
+        "isActive": {
+          "name": "is_active",
+          "type": "integer",
+          "default": 1
+        }
+      },
+      "foreignKeys": [
+        {
+          "name": "import_sessions_data_source_id_data_sources_id_fk",
+          "tableName": "import_sessions",
+          "columnNames": ["data_source_id"],
+          "referencedTableName": "data_sources",
+          "referencedColumnNames": ["id"],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        }
+      ]
+    },
+    "import_validation_summary": {
+      "name": "import_validation_summary",
+      "schema": {},
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoIncrement": true
+        },
+        "csvImportId": {
+          "name": "csv_import_id",
+          "type": "integer",
+          "notNull": true
+        },
+        "totalRows": {
+          "name": "total_rows",
+          "type": "integer",
+          "notNull": true
+        },
+        "validRows": {
+          "name": "valid_rows",
+          "type": "integer",
+          "notNull": true
+        },
+        "errorRows": {
+          "name": "error_rows",
+          "type": "integer",
+          "notNull": true
+        },
+        "failureBreakdown": {
+          "name": "failure_breakdown",
+          "type": "text"
+        },
+        "validationTimeMs": {
+          "name": "validation_time_ms",
+          "type": "integer"
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "notNull": true
+        },
+        "completedAt": {
+          "name": "completed_at",
+          "type": "integer",
+          "default": "CURRENT_TIMESTAMP",
+          "notNull": true
+        }
+      },
+      "foreignKeys": [
+        {
+          "name": "import_validation_summary_csv_import_id_csv_imports_id_fk",
+          "tableName": "import_validation_summary",
+          "columnNames": ["csv_import_id"],
+          "referencedTableName": "csv_imports",
+          "referencedColumnNames": ["id"],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        }
+      ]
+    },
+    "magic_links": {
+      "name": "magic_links",
+      "schema": {},
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoIncrement": true
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "notNull": true
+        },
+        "token": {
+          "name": "token",
+          "type": "text",
+          "notNull": true
+        },
+        "expiresAt": {
+          "name": "expires_at",
+          "type": "integer",
+          "notNull": true
+        },
+        "usedAt": {
+          "name": "used_at",
+          "type": "integer"
+        },
+        "createdAt": {
+          "name": "created_at",
+          "type": "integer",
+          "default": "CURRENT_TIMESTAMP",
+          "notNull": true
+        }
+      }
+    },
+    "national_averages": {
+      "name": "national_averages",
+      "schema": {},
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoIncrement": true
+        },
+        "statisticId": {
+          "name": "statistic_id",
+          "type": "integer",
+          "notNull": true
+        },
+        "year": {
+          "name": "year",
+          "type": "integer",
+          "notNull": true
+        },
+        "value": {
+          "name": "value",
+          "type": "real",
+          "notNull": true
+        },
+        "calculationMethod": {
+          "name": "calculation_method",
+          "type": "text",
+          "notNull": true,
+          "default": "arithmetic_mean"
+        },
+        "stateCount": {
+          "name": "state_count",
+          "type": "integer",
+          "notNull": true
+        },
+        "lastCalculated": {
+          "name": "last_calculated",
+          "type": "integer",
+          "notNull": true,
+          "default": "CURRENT_TIMESTAMP"
+        }
+      },
+      "foreignKeys": [
+        {
+          "name": "national_averages_statistic_id_statistics_id_fk",
+          "tableName": "national_averages",
+          "columnNames": ["statistic_id"],
+          "referencedTableName": "statistics",
+          "referencedColumnNames": ["id"],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        }
+      ],
+      "indexes": {
+        "idx_national_average_unique": {
+          "name": "idx_national_average_unique",
+          "tableName": "national_averages",
+          "columnNames": ["statistic_id", "year"],
+          "isUnique": true
+        }
+      }
+    },
+    "sessions": {
+      "name": "sessions",
+      "schema": {},
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoIncrement": true
+        },
+        "userId": {
+          "name": "user_id",
+          "type": "integer",
+          "notNull": true
+        },
+        "token": {
+          "name": "token",
+          "type": "text",
+          "notNull": true
+        },
+        "expiresAt": {
+          "name": "expires_at",
+          "type": "integer",
+          "notNull": true
+        },
+        "createdAt": {
+          "name": "created_at",
+          "type": "integer",
+          "default": "CURRENT_TIMESTAMP",
+          "notNull": true
+        }
+      },
+      "foreignKeys": [
+        {
+          "name": "sessions_user_id_users_id_fk",
+          "tableName": "sessions",
+          "columnNames": ["user_id"],
+          "referencedTableName": "users",
+          "referencedColumnNames": ["id"],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        }
+      ],
+      "indexes": {
+        "sessions_token_unique": {
+          "name": "sessions_token_unique",
+          "tableName": "sessions",
+          "columnNames": ["token"],
+          "isUnique": true
+        }
+      }
+    },
+    "states": {
+      "name": "states",
+      "schema": {},
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoIncrement": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "notNull": true,
+          "unique": true
+        },
+        "abbreviation": {
+          "name": "abbreviation",
+          "type": "text",
+          "notNull": true,
+          "unique": true
+        },
+        "isActive": {
+          "name": "is_active",
+          "type": "integer",
+          "default": 1
+        }
+      }
+    },
+    "statistics": {
+      "name": "statistics",
+      "schema": {},
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoIncrement": true
+        },
+        "raNumber": {
+          "name": "ra_number",
+          "type": "text"
+        },
+        "categoryId": {
+          "name": "category_id",
+          "type": "integer",
+          "notNull": true
+        },
+        "dataSourceId": {
+          "name": "data_source_id",
+          "type": "integer"
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text"
+        },
+        "subMeasure": {
+          "name": "sub_measure",
+          "type": "text"
+        },
+        "calculation": {
+          "name": "calculation",
+          "type": "text"
+        },
+        "unit": {
+          "name": "unit",
+          "type": "text",
+          "notNull": true
+        },
+        "availableSince": {
+          "name": "available_since",
+          "type": "text"
+        },
+        "dataQuality": {
+          "name": "data_quality",
+          "type": "text",
+          "default": "mock"
+        },
+        "provenance": {
+          "name": "provenance",
+          "type": "text"
+        },
+        "preferenceDirection": {
+          "name": "preference_direction",
+          "type": "text",
+          "default": "higher"
+        },
+        "isActive": {
+          "name": "is_active",
+          "type": "integer",
+          "default": 1
+        }
+      },
+      "foreignKeys": [
+        {
+          "name": "statistics_category_id_categories_id_fk",
+          "tableName": "statistics",
+          "columnNames": ["category_id"],
+          "referencedTableName": "categories",
+          "referencedColumnNames": ["id"],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        },
+        {
+          "name": "statistics_data_source_id_data_sources_id_fk",
+          "tableName": "statistics",
+          "columnNames": ["data_source_id"],
+          "referencedTableName": "data_sources",
+          "referencedColumnNames": ["id"],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        }
+      ],
+      "indexes": {
+        "idx_statistics_preference_direction": {
+          "name": "idx_statistics_preference_direction",
+          "tableName": "statistics",
+          "columnNames": ["preference_direction"]
+        }
+      }
+    },
+    "user_favorites": {
+      "name": "user_favorites",
+      "schema": {},
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoIncrement": true
+        },
+        "userId": {
+          "name": "user_id",
+          "type": "integer",
+          "notNull": true
+        },
+        "statisticId": {
+          "name": "statistic_id",
+          "type": "integer",
+          "notNull": true
+        },
+        "createdAt": {
+          "name": "created_at",
+          "type": "integer",
+          "default": "CURRENT_TIMESTAMP",
+          "notNull": true
+        }
+      },
+      "foreignKeys": [
+        {
+          "name": "user_favorites_user_id_users_id_fk",
+          "tableName": "user_favorites",
+          "columnNames": ["user_id"],
+          "referencedTableName": "users",
+          "referencedColumnNames": ["id"],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        },
+        {
+          "name": "user_favorites_statistic_id_statistics_id_fk",
+          "tableName": "user_favorites",
+          "columnNames": ["statistic_id"],
+          "referencedTableName": "statistics",
+          "referencedColumnNames": ["id"],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        }
+      ],
+      "indexes": {
+        "idx_user_favorites_unique": {
+          "name": "idx_user_favorites_unique",
+          "tableName": "user_favorites",
+          "columnNames": ["user_id", "statistic_id"],
+          "isUnique": true
+        }
+      }
+    },
+    "user_suggestions": {
+      "name": "user_suggestions",
+      "schema": {},
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoIncrement": true
+        },
+        "userId": {
+          "name": "user_id",
+          "type": "integer"
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "notNull": true
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "default": "pending",
+          "notNull": true
+        },
+        "adminNotes": {
+          "name": "admin_notes",
+          "type": "text"
+        },
+        "createdAt": {
+          "name": "created_at",
+          "type": "integer",
+          "default": "CURRENT_TIMESTAMP",
+          "notNull": true
+        },
+        "updatedAt": {
+          "name": "updated_at",
+          "type": "integer",
+          "default": "CURRENT_TIMESTAMP",
+          "notNull": true
+        }
+      },
+      "foreignKeys": [
+        {
+          "name": "user_suggestions_user_id_users_id_fk",
+          "tableName": "user_suggestions",
+          "columnNames": ["user_id"],
+          "referencedTableName": "users",
+          "referencedColumnNames": ["id"],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        }
+      ]
+    },
+    "users": {
+      "name": "users",
+      "schema": {},
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoIncrement": true
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "notNull": true,
+          "unique": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text"
+        },
+        "role": {
+          "name": "role",
+          "type": "text",
+          "notNull": true,
+          "default": "user"
+        },
+        "isActive": {
+          "name": "is_active",
+          "notNull": true,
+          "type": "integer",
+          "default": 1
+        },
+        "emailVerified": {
+          "name": "email_verified",
+          "notNull": true,
+          "type": "integer",
+          "default": 0
+        },
+        "createdAt": {
+          "name": "created_at",
+          "notNull": true,
+          "type": "integer",
+          "default": "CURRENT_TIMESTAMP"
+        },
+        "updatedAt": {
+          "name": "updated_at",
+          "notNull": true,
+          "type": "integer",
+          "default": "CURRENT_TIMESTAMP"
+        }
+      },
+      "indexes": {
+        "idx_users_email": {
+          "name": "idx_users_email",
+          "tableName": "users",
+          "columnNames": ["email"],
+          "isUnique": true
+        }
+      }
+    }
+  }
+} 

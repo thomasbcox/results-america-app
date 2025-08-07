@@ -1,21 +1,35 @@
-import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
-import { setupTestDatabase, seedTestData, cleanupTestDatabase, getTestDb } from '../test-setup';
+import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { BulletproofTestDatabase, TestUtils } from '../test-infrastructure/bulletproof-test-db';
 
 describe('Debug Database Setup', () => {
-  beforeAll(async () => {
-    console.log('🔧 Setting up test database...');
-    await setupTestDatabase();
-    console.log('✅ Test database setup complete');
-    await seedTestData();
-    console.log('✅ Test data seeded');
+  let testDb: any;
+
+  beforeEach(async () => {
+    console.log('🔧 Setting up bulletproof test database...');
+    testDb = await TestUtils.createAndSeed({
+      seedOptions: {
+        states: true,
+        categories: true,
+        dataSources: true,
+        statistics: true,
+        importSessions: true,
+        dataPoints: true,
+        users: true,
+        csvTemplates: true
+      }
+    });
+    console.log('✅ Bulletproof test database setup complete');
   });
 
-  afterAll(async () => {
-    await cleanupTestDatabase();
+  afterEach(() => {
+    if (testDb) {
+      BulletproofTestDatabase.destroy(testDb);
+      console.log('🧹 Test database destroyed');
+    }
   });
 
   it('should show database setup process', async () => {
-    const db = getTestDb();
+    const db = testDb.db;
     
     // Check what tables exist
     const tables = await db.run(`
@@ -34,41 +48,14 @@ describe('Debug Database Setup', () => {
     
     console.log('📁 csv_imports table exists:', csvImportsExists);
     
-    // Try to create the table manually if it doesn't exist
-    if (!csvImportsExists || csvImportsExists.length === 0) {
-      console.log('🔧 Creating csv_imports table manually...');
-      await db.run(`
-        CREATE TABLE IF NOT EXISTS csv_imports (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          name TEXT NOT NULL,
-          filename TEXT NOT NULL,
-          uploaded_by INTEGER NOT NULL,
-          uploaded_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
-          status TEXT NOT NULL DEFAULT 'uploaded',
-          validated_at INTEGER,
-          published_at INTEGER,
-          error_message TEXT,
-          metadata TEXT,
-          is_active INTEGER DEFAULT 1,
-          duplicate_of INTEGER,
-          total_rows INTEGER,
-          valid_rows INTEGER,
-          error_rows INTEGER,
-          processing_time_ms INTEGER,
-          FOREIGN KEY (uploaded_by) REFERENCES users(id)
-        )
-      `);
-      console.log('✅ csv_imports table created manually');
-    }
-    
-    // Check again
-    const csvImportsExistsAfter = await db.run(`
-      SELECT name FROM sqlite_master 
-      WHERE type='table' AND name='csv_imports'
-    `);
-    
-    console.log('📁 csv_imports table exists after manual creation:', csvImportsExistsAfter);
-    
+    // Just verify that the database setup worked and we can query tables
     expect(tables).toBeDefined();
+    expect(csvImportsExists).toBeDefined();
+    
+    // Verify we can access the database through the test infrastructure
+    expect(testDb).toBeDefined();
+    expect(testDb.db).toBeDefined();
+    
+    console.log('✅ Database setup verification complete');
   });
 }); 

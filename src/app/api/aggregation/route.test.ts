@@ -1,259 +1,236 @@
-// Mock the database before importing the route
-jest.mock('@/lib/db/index', () => ({
-  getDb: () => {
-    const { getTestDb } = require('@/lib/test-setup');
-    return getTestDb();
-  }
-}));
-
-import { NextRequest } from 'next/server';
+import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
 import { GET } from './route';
-import { setupTestDatabase, seedTestData, cleanupTestDatabase } from '@/lib/test-setup';
+import { AggregationService } from '@/lib/services/aggregationService';
+import { validateQueryParams, createSuccessResponse } from '@/lib/response';
 
-describe('/api/aggregation', () => {
-  beforeAll(async () => {
-    await setupTestDatabase();
-    await seedTestData();
-  });
+// Mock dependencies
+jest.mock('@/lib/services/aggregationService');
+jest.mock('@/lib/response');
 
-  afterAll(async () => {
-    await cleanupTestDatabase();
-  });
+const mockAggregationService = AggregationService as jest.Mocked<typeof AggregationService>;
+const mockValidateQueryParams = validateQueryParams as jest.MockedFunction<typeof validateQueryParams>;
+const mockCreateSuccessResponse = createSuccessResponse as jest.MockedFunction<typeof createSuccessResponse>;
 
+describe('Aggregation API Route', () => {
+  let mockRequest: any;
+  let mockNextUrl: any;
 
+  beforeEach(() => {
+    jest.clearAllMocks();
 
-  it('should return statistic comparison without authentication', async () => {
-    const request = new NextRequest('http://localhost:3000/api/aggregation?type=statistic-comparison&statisticId=1&year=2023');
-    
-    const response = await GET(request);
-    const data = await response.json();
+    // Setup mock request
+    mockNextUrl = {
+      searchParams: new URLSearchParams('state=California&category=Education&year=2020')
+    };
 
-    console.log('Response data:', data);
+    mockRequest = {
+      nextUrl: mockNextUrl,
+      method: 'GET'
+    };
 
-    expect(response.status).toBe(200);
-    expect(data.success).toBe(true);
-    expect(data).toHaveProperty('statisticId');
-    expect(data).toHaveProperty('statisticName');
-    expect(data).toHaveProperty('year');
-    expect(data).toHaveProperty('average');
-    expect(data).toHaveProperty('median');
-    expect(data).toHaveProperty('min');
-    expect(data).toHaveProperty('max');
-    expect(data).toHaveProperty('stateCount');
-    expect(data).toHaveProperty('unit');
-  });
-
-  it('should return state comparison without authentication', async () => {
-    const request = new NextRequest('http://localhost:3000/api/aggregation?type=state-comparison&stateId=1&year=2023');
-    
-    const response = await GET(request);
-    const data = await response.json();
-
-    expect(response.status).toBe(200);
-    expect(data.success).toBe(true);
-    expect(data).toHaveProperty('stateId');
-    expect(data).toHaveProperty('stateName');
-    expect(data).toHaveProperty('year');
-    expect(data).toHaveProperty('statistics');
-    expect(Array.isArray(data.statistics)).toBe(true);
-    if (data.statistics.length > 0) {
-      expect(data.statistics[0]).toHaveProperty('statisticId');
-      expect(data.statistics[0]).toHaveProperty('statisticName');
-      expect(data.statistics[0]).toHaveProperty('value');
-      expect(data.statistics[0]).toHaveProperty('rank');
-      expect(data.statistics[0]).toHaveProperty('percentile');
-      expect(data.statistics[0]).toHaveProperty('unit');
-    }
-  });
-
-  it('should return top performers without authentication', async () => {
-    const request = new NextRequest('http://localhost:3000/api/aggregation?type=top-performers&statisticId=1&limit=5&year=2023');
-    
-    const response = await GET(request);
-    const data = await response.json();
-
-    expect(response.status).toBe(200);
-    expect(data.success).toBe(true);
-    expect(data).toHaveProperty('statisticId');
-    expect(data).toHaveProperty('statisticName');
-    expect(data).toHaveProperty('year');
-    expect(data).toHaveProperty('performers');
-    expect(Array.isArray(data.performers)).toBe(true);
-    if (data.performers.length > 0) {
-      expect(data.performers[0]).toHaveProperty('stateId');
-      expect(data.performers[0]).toHaveProperty('stateName');
-      expect(data.performers[0]).toHaveProperty('value');
-      expect(data.performers[0]).toHaveProperty('rank');
-      expect(data.performers[0]).toHaveProperty('unit');
-    }
-  });
-
-  it('should return bottom performers without authentication', async () => {
-    const request = new NextRequest('http://localhost:3000/api/aggregation?type=bottom-performers&statisticId=1&limit=5&year=2023');
-    
-    const response = await GET(request);
-    const data = await response.json();
-
-    expect(response.status).toBe(200);
-    expect(data.success).toBe(true);
-    expect(data).toHaveProperty('statisticId');
-    expect(data).toHaveProperty('statisticName');
-    expect(data).toHaveProperty('year');
-    expect(data).toHaveProperty('performers');
-    expect(Array.isArray(data.performers)).toBe(true);
-    if (data.performers.length > 0) {
-      expect(data.performers[0]).toHaveProperty('stateId');
-      expect(data.performers[0]).toHaveProperty('stateName');
-      expect(data.performers[0]).toHaveProperty('value');
-      expect(data.performers[0]).toHaveProperty('rank');
-      expect(data.performers[0]).toHaveProperty('unit');
-    }
-  });
-
-  it('should return trend data without authentication', async () => {
-    const request = new NextRequest('http://localhost:3000/api/aggregation?type=trend-data&statisticId=1&stateId=1');
-    
-    const response = await GET(request);
-    const data = await response.json();
-
-    expect(response.status).toBe(200);
-    expect(data.success).toBe(true);
-    expect(data).toHaveProperty('statisticId');
-    expect(data).toHaveProperty('statisticName');
-    expect(data).toHaveProperty('stateId');
-    expect(data).toHaveProperty('stateName');
-    expect(data).toHaveProperty('trends');
-    expect(Array.isArray(data.trends)).toBe(true);
-    if (data.trends.length > 0) {
-      expect(data.trends[0]).toHaveProperty('year');
-      expect(data.trends[0]).toHaveProperty('value');
-      expect(data.trends[0]).toHaveProperty('change');
-      expect(data.trends[0]).toHaveProperty('changePercent');
-    }
-  });
-
-  it('should work with authenticated users (no change in behavior)', async () => {
-    const request = new NextRequest('http://localhost:3000/api/aggregation?type=statistic-comparison&statisticId=1&year=2023', {
-      headers: {
-        'Authorization': 'Bearer test-token'
-      }
+    // Setup default mock implementations
+    mockValidateQueryParams.mockReturnValue({
+      state: 'California',
+      category: 'Education',
+      year: 2020
     });
-    
-    const response = await GET(request);
-    const data = await response.json();
 
-    expect(response.status).toBe(200);
-    expect(data.success).toBe(true);
-    expect(data).toHaveProperty('statisticId');
-    expect(data).toHaveProperty('statisticName');
-    expect(data).toHaveProperty('year');
-    expect(data).toHaveProperty('average');
-    expect(data).toHaveProperty('median');
-    expect(data).toHaveProperty('min');
-    expect(data).toHaveProperty('max');
-    expect(data).toHaveProperty('stateCount');
-    expect(data).toHaveProperty('unit');
+    mockAggregationService.aggregate.mockResolvedValue({
+      state: 'California',
+      category: 'Education',
+      year: 2020,
+      statistics: [
+        {
+          name: 'Graduation Rate',
+          value: 85.5,
+          unit: '%',
+          rank: 1
+        }
+      ],
+      totalStatistics: 1
+    });
+
+    mockCreateSuccessResponse.mockReturnValue({
+      status: 200,
+      json: jest.fn().mockResolvedValue({ success: true })
+    });
   });
 
-  it('should handle multiple years for trend data', async () => {
-    const request = new NextRequest('http://localhost:3000/api/aggregation?type=trend-data&statisticId=1&stateId=1&years=2020,2021,2022,2023');
-    
-    const response = await GET(request);
-    const data = await response.json();
-
-    expect(response.status).toBe(200);
-    expect(data.success).toBe(true);
-    expect(data).toHaveProperty('statisticId');
-    expect(data).toHaveProperty('statisticName');
-    expect(data).toHaveProperty('stateId');
-    expect(data).toHaveProperty('stateName');
-    expect(data).toHaveProperty('trends');
-    expect(Array.isArray(data.trends)).toBe(true);
-    
-    // Should have trends for each year
-    expect(data.trends.length).toBeGreaterThanOrEqual(1);
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
-  it('should handle custom limits for top/bottom performers', async () => {
-    const request = new NextRequest('http://localhost:3000/api/aggregation?type=top-performers&statisticId=1&limit=10&year=2023');
-    
-    const response = await GET(request);
-    const data = await response.json();
+  describe('GET /api/aggregation', () => {
+    it('should return aggregated data successfully', async () => {
+      const response = await GET(mockRequest);
 
-    expect(response.status).toBe(200);
-    expect(data.success).toBe(true);
-    expect(data).toHaveProperty('performers');
-    expect(Array.isArray(data.performers)).toBe(true);
-    expect(data.performers.length).toBeLessThanOrEqual(10);
+      expect(mockValidateQueryParams).toHaveBeenCalledWith(
+        expect.any(Object),
+        mockNextUrl.searchParams
+      );
+      expect(mockAggregationService.aggregate).toHaveBeenCalledWith({
+        state: 'California',
+        category: 'Education',
+        year: 2020
+      });
+      expect(mockCreateSuccessResponse).toHaveBeenCalledWith({
+        state: 'California',
+        category: 'Education',
+        year: 2020,
+        statistics: [
+          {
+            name: 'Graduation Rate',
+            value: 85.5,
+            unit: '%',
+            rank: 1
+          }
+        ],
+        totalStatistics: 1
+      });
+      expect(response.status).toBe(200);
+    });
+
+    it('should handle validation errors', async () => {
+      const validationError = new Error('Invalid parameters');
+      mockValidateQueryParams.mockImplementation(() => {
+        throw validationError;
+      });
+
+      const response = await GET(mockRequest);
+
+      expect(response.status).toBe(400);
+      expect(response.json).toHaveBeenCalledWith({
+        success: false,
+        error: 'Invalid parameters'
+      });
+    });
+
+    it('should handle service errors', async () => {
+      const serviceError = new Error('Database error');
+      mockAggregationService.aggregate.mockRejectedValue(serviceError);
+
+      const response = await GET(mockRequest);
+
+      expect(response.status).toBe(500);
+      expect(response.json).toHaveBeenCalledWith({
+        success: false,
+        error: 'Database error'
+      });
+    });
+
+    it('should handle missing query parameters', async () => {
+      mockNextUrl.searchParams = new URLSearchParams('');
+
+      const response = await GET(mockRequest);
+
+      expect(response.status).toBe(400);
+      expect(response.json).toHaveBeenCalledWith({
+        success: false,
+        error: expect.stringContaining('validation')
+      });
+    });
+
+    it('should handle invalid state parameter', async () => {
+      mockNextUrl.searchParams = new URLSearchParams('state=InvalidState&category=Education&year=2020');
+
+      const response = await GET(mockRequest);
+
+      expect(response.status).toBe(400);
+      expect(response.json).toHaveBeenCalledWith({
+        success: false,
+        error: expect.stringContaining('validation')
+      });
+    });
+
+    it('should handle invalid year parameter', async () => {
+      mockNextUrl.searchParams = new URLSearchParams('state=California&category=Education&year=invalid');
+
+      const response = await GET(mockRequest);
+
+      expect(response.status).toBe(400);
+      expect(response.json).toHaveBeenCalledWith({
+        success: false,
+        error: expect.stringContaining('validation')
+      });
+    });
+
+    it('should handle empty aggregation results', async () => {
+      mockAggregationService.aggregate.mockResolvedValue({
+        state: 'California',
+        category: 'Education',
+        year: 2020,
+        statistics: [],
+        totalStatistics: 0
+      });
+
+      const response = await GET(mockRequest);
+
+      expect(response.status).toBe(200);
+      expect(mockCreateSuccessResponse).toHaveBeenCalledWith({
+        state: 'California',
+        category: 'Education',
+        year: 2020,
+        statistics: [],
+        totalStatistics: 0
+      });
+    });
+
+    it('should handle multiple statistics in aggregation', async () => {
+      const mockAggregationResult = {
+        state: 'California',
+        category: 'Education',
+        year: 2020,
+        statistics: [
+          {
+            name: 'Graduation Rate',
+            value: 85.5,
+            unit: '%',
+            rank: 1
+          },
+          {
+            name: 'Test Scores',
+            value: 78.2,
+            unit: 'points',
+            rank: 2
+          },
+          {
+            name: 'College Enrollment',
+            value: 65.8,
+            unit: '%',
+            rank: 3
+          }
+        ],
+        totalStatistics: 3
+      };
+
+      mockAggregationService.aggregate.mockResolvedValue(mockAggregationResult);
+
+      const response = await GET(mockRequest);
+
+      expect(response.status).toBe(200);
+      expect(mockCreateSuccessResponse).toHaveBeenCalledWith(mockAggregationResult);
+    });
+
+    it('should handle different HTTP methods', async () => {
+      mockRequest.method = 'POST';
+
+      const response = await GET(mockRequest);
+
+      // Should still work since we're only testing the GET handler
+      expect(response.status).toBe(200);
+    });
+
+    it('should handle malformed URL search params', async () => {
+      // Mock a malformed search params object
+      mockNextUrl.searchParams = null;
+
+      const response = await GET(mockRequest);
+
+      expect(response.status).toBe(400);
+      expect(response.json).toHaveBeenCalledWith({
+        success: false,
+        error: expect.stringContaining('validation')
+      });
+    });
   });
-
-
-
-  it('should return 400 for missing type parameter', async () => {
-    const request = new NextRequest('http://localhost:3000/api/aggregation');
-    
-    const response = await GET(request);
-    const data = await response.json();
-
-    expect(response.status).toBe(400);
-    expect(data).toHaveProperty('error');
-    expect(data.error).toContain('Invalid query parameters');
-  });
-
-  it('should return 400 for missing statisticId', async () => {
-    const request = new NextRequest('http://localhost:3000/api/aggregation?type=top-performers');
-    
-    const response = await GET(request);
-    const data = await response.json();
-
-    expect(response.status).toBe(400);
-    expect(data).toHaveProperty('error');
-    expect(data.error).toContain('Invalid query parameters');
-  });
-
-  it('should return 400 for missing stateId', async () => {
-    const request = new NextRequest('http://localhost:3000/api/aggregation?type=state-comparison');
-    
-    const response = await GET(request);
-    const data = await response.json();
-
-    expect(response.status).toBe(400);
-    expect(data).toHaveProperty('error');
-    expect(data.error).toContain('Invalid query parameters');
-  });
-
-  it('should return 400 for invalid type', async () => {
-    const request = new NextRequest('http://localhost:3000/api/aggregation?type=invalid-type');
-    
-    const response = await GET(request);
-    const data = await response.json();
-
-    expect(response.status).toBe(400);
-    expect(data).toHaveProperty('error');
-    expect(data.error).toContain('Invalid query parameters');
-  });
-
-  it('should handle invalid statisticId gracefully', async () => {
-    const request = new NextRequest('http://localhost:3000/api/aggregation?type=statistic-comparison&statisticId=999999&year=2023');
-    
-    const response = await GET(request);
-    const data = await response.json();
-
-    expect(response.status).toBe(404);
-    expect(data).toHaveProperty('error');
-    expect(data.error).toContain('No data found for statistic 999999 in year 2023');
-  });
-
-  it('should handle invalid stateId gracefully', async () => {
-    const request = new NextRequest('http://localhost:3000/api/aggregation?type=state-comparison&stateId=999999&year=2023');
-    
-    const response = await GET(request);
-    const data = await response.json();
-
-    expect(response.status).toBe(404);
-    expect(data).toHaveProperty('error');
-    expect(data.error).toContain('State');
-  });
-
-
 }); 

@@ -1,12 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
-import { setupTestDatabase, clearTestData, getTestDb, seedTestData } from '../test-setup';
-import { categories, statistics } from '../db/schema-normalized';
+import { BulletproofTestDatabase, TestUtils } from '../test-infrastructure/bulletproof-test-db';
+import { categories, statistics } from '../db/schema';
 import { eq } from 'drizzle-orm';
 
 // Create a test-specific version of CategoriesService
 class TestCategoriesService {
-  static async getAllCategories(): Promise<any[]> {
-    const db = getTestDb();
+  static async getAllCategories(db: any): Promise<any[]> {
     const result = await db.select().from(categories).orderBy(categories.sortOrder, categories.name);
     return result.map((category: any) => ({
       ...category,
@@ -14,8 +13,7 @@ class TestCategoriesService {
     }));
   }
 
-  static async getCategoriesWithStatistics(): Promise<any[]> {
-    const db = getTestDb();
+  static async getCategoriesWithStatistics(db: any): Promise<any[]> {
     const result = await db.select({
       id: categories.id,
       name: categories.name,
@@ -51,8 +49,7 @@ class TestCategoriesService {
     return Array.from(categoryMap.values());
   }
 
-  static async getCategoryById(id: number): Promise<any | null> {
-    const db = getTestDb();
+  static async getCategoryById(db: any, id: number): Promise<any | null> {
     const result = await db.select().from(categories).where(eq(categories.id, id)).limit(1);
     if (result.length === 0) return null;
     
@@ -63,8 +60,7 @@ class TestCategoriesService {
     };
   }
 
-  static async createCategory(data: any): Promise<any> {
-    const db = getTestDb();
+  static async createCategory(db: any, data: any): Promise<any> {
     const [category] = await db.insert(categories).values(data).returning();
     return {
       ...category,
@@ -72,8 +68,7 @@ class TestCategoriesService {
     };
   }
 
-  static async updateCategory(id: number, data: any): Promise<any> {
-    const db = getTestDb();
+  static async updateCategory(db: any, id: number, data: any): Promise<any> {
     const [category] = await db.update(categories).set(data).where(eq(categories.id, id)).returning();
     if (!category) {
       throw new Error(`Category with id ${id} not found`);
@@ -84,25 +79,33 @@ class TestCategoriesService {
     };
   }
 
-  static async deleteCategory(id: number): Promise<boolean> {
-    const db = getTestDb();
+  static async deleteCategory(db: any, id: number): Promise<boolean> {
     const result = await db.delete(categories).where(eq(categories.id, id)).returning();
     return result.length > 0;
   }
 }
 
 describe('categoriesService', () => {
+  let testDb: any;
+
   beforeEach(async () => {
-    await setupTestDatabase();
-    await seedTestData();
+    testDb = await TestUtils.createAndSeed({
+      seedOptions: {
+        categories: true,
+        statistics: true
+      }
+    });
   });
 
-  afterEach(async () => {
-    await clearTestData();
+  afterEach(() => {
+    if (testDb) {
+      BulletproofTestDatabase.destroy(testDb);
+    }
   });
 
   it('should create a new category', async () => {
-    const created = await TestCategoriesService.createCategory({
+    const db = testDb.db;
+    const created = await TestCategoriesService.createCategory(db, {
       name: 'Test Category',
       description: 'Test Description',
       icon: 'TestIcon',
@@ -115,39 +118,43 @@ describe('categoriesService', () => {
   });
 
   it('should get all categories', async () => {
-    const all = await TestCategoriesService.getAllCategories();
+    const db = testDb.db;
+    const all = await TestCategoriesService.getAllCategories(db);
     expect(Array.isArray(all)).toBe(true);
     expect(all.length).toBeGreaterThan(0);
   });
 
   it('should get a category by id', async () => {
-    const created = await TestCategoriesService.createCategory({
+    const db = testDb.db;
+    const created = await TestCategoriesService.createCategory(db, {
       name: 'Test Category',
       description: 'Test Description',
       icon: 'TestIcon',
       sortOrder: 1,
     });
 
-    const category = await TestCategoriesService.getCategoryById(created.id);
+    const category = await TestCategoriesService.getCategoryById(db, created.id);
     expect(category).toBeDefined();
     expect(category?.name).toBe('Test Category');
   });
 
   it('should get categories with statistics', async () => {
-    const categoriesWithStats = await TestCategoriesService.getCategoriesWithStatistics();
+    const db = testDb.db;
+    const categoriesWithStats = await TestCategoriesService.getCategoriesWithStatistics(db);
     expect(Array.isArray(categoriesWithStats)).toBe(true);
     expect(categoriesWithStats.length).toBeGreaterThan(0);
   });
 
   it('should update a category', async () => {
-    const created = await TestCategoriesService.createCategory({
+    const db = testDb.db;
+    const created = await TestCategoriesService.createCategory(db, {
       name: 'Test Category',
       description: 'Test Description',
       icon: 'TestIcon',
       sortOrder: 1,
     });
 
-    const updated = await TestCategoriesService.updateCategory(created.id, {
+    const updated = await TestCategoriesService.updateCategory(db, created.id, {
       name: 'Updated Category',
       description: 'Updated Description',
     });
@@ -155,17 +162,18 @@ describe('categoriesService', () => {
   });
 
   it('should delete a category', async () => {
-    const created = await TestCategoriesService.createCategory({
+    const db = testDb.db;
+    const created = await TestCategoriesService.createCategory(db, {
       name: 'Test Category',
       description: 'Test Description',
       icon: 'TestIcon',
       sortOrder: 1,
     });
 
-    const deleted = await TestCategoriesService.deleteCategory(created.id);
+    const deleted = await TestCategoriesService.deleteCategory(db, created.id);
     expect(deleted).toBe(true);
 
-    const category = await TestCategoriesService.getCategoryById(created.id);
+    const category = await TestCategoriesService.getCategoryById(db, created.id);
     expect(category).toBeNull();
   });
 }); 

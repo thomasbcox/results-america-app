@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
-import { setupTestDatabase, seedTestData, cleanupTestDatabase, getTestDb } from '../test-setup';
+import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { BulletproofTestDatabase, TestUtils } from '../test-infrastructure/bulletproof-test-db';
 import { 
   states, 
   categories, 
@@ -16,20 +16,32 @@ import {
 } from './schema';
 
 describe('Database Schema Tests', () => {
-  let db: any;
+  let testDb: any;
 
-  beforeAll(async () => {
-    await setupTestDatabase();
-    await seedTestData();
-    db = getTestDb();
+  beforeEach(async () => {
+    testDb = await TestUtils.createAndSeed({
+      seedOptions: {
+        states: true,
+        categories: true,
+        dataSources: true,
+        statistics: true,
+        importSessions: true,
+        dataPoints: true,
+        users: true,
+        nationalAverages: true
+      }
+    });
   });
 
-  afterAll(async () => {
-    await cleanupTestDatabase();
+  afterEach(() => {
+    if (testDb) {
+      BulletproofTestDatabase.destroy(testDb);
+    }
   });
 
   describe('Core Data Tables', () => {
     it('should have states table with correct structure', async () => {
+      const db = testDb.db;
       const result = await db.select().from(states).limit(1);
       expect(result).toBeDefined();
       
@@ -44,6 +56,7 @@ describe('Database Schema Tests', () => {
     });
 
     it('should have categories table with correct structure', async () => {
+      const db = testDb.db;
       const result = await db.select().from(categories).limit(1);
       expect(result).toBeDefined();
       
@@ -59,6 +72,7 @@ describe('Database Schema Tests', () => {
     });
 
     it('should have dataSources table with correct structure', async () => {
+      const db = testDb.db;
       const result = await db.select().from(dataSources).limit(1);
       expect(result).toBeDefined();
       
@@ -73,6 +87,7 @@ describe('Database Schema Tests', () => {
     });
 
     it('should have statistics table with correct structure', async () => {
+      const db = testDb.db;
       const result = await db.select().from(statistics).limit(1);
       expect(result).toBeDefined();
       
@@ -95,6 +110,7 @@ describe('Database Schema Tests', () => {
     });
 
     it('should have importSessions table with correct structure', async () => {
+      const db = testDb.db;
       const result = await db.select().from(importSessions).limit(1);
       expect(result).toBeDefined();
       
@@ -112,6 +128,7 @@ describe('Database Schema Tests', () => {
     });
 
     it('should have dataPoints table with correct structure', async () => {
+      const db = testDb.db;
       const result = await db.select().from(dataPoints).limit(1);
       expect(result).toBeDefined();
       
@@ -127,6 +144,7 @@ describe('Database Schema Tests', () => {
     });
 
     it('should have nationalAverages table with correct structure', async () => {
+      const db = testDb.db;
       const result = await db.select().from(nationalAverages).limit(1);
       expect(result).toBeDefined();
       
@@ -145,6 +163,7 @@ describe('Database Schema Tests', () => {
 
   describe('User Authentication Tables', () => {
     it('should have users table with correct structure', async () => {
+      const db = testDb.db;
       const result = await db.select().from(users).limit(1);
       expect(result).toBeDefined();
       
@@ -162,6 +181,7 @@ describe('Database Schema Tests', () => {
     });
 
     it('should have sessions table with correct structure', async () => {
+      const db = testDb.db;
       const result = await db.select().from(sessions).limit(1);
       expect(result).toBeDefined();
       
@@ -176,6 +196,7 @@ describe('Database Schema Tests', () => {
     });
 
     it('should have magicLinks table with correct structure', async () => {
+      const db = testDb.db;
       const result = await db.select().from(magicLinks).limit(1);
       expect(result).toBeDefined();
       
@@ -193,6 +214,7 @@ describe('Database Schema Tests', () => {
 
   describe('User Preferences Tables', () => {
     it('should have userFavorites table with correct structure', async () => {
+      const db = testDb.db;
       const result = await db.select().from(userFavorites).limit(1);
       expect(result).toBeDefined();
       
@@ -206,6 +228,7 @@ describe('Database Schema Tests', () => {
     });
 
     it('should have userSuggestions table with correct structure', async () => {
+      const db = testDb.db;
       const result = await db.select().from(userSuggestions).limit(1);
       expect(result).toBeDefined();
       
@@ -226,6 +249,8 @@ describe('Database Schema Tests', () => {
 
   describe('Table Relationships', () => {
     it('should have proper foreign key relationships', async () => {
+      const db = testDb.db;
+      
       // Test statistics -> categories relationship
       const statsWithCategories = await db
         .select({
@@ -258,6 +283,8 @@ describe('Database Schema Tests', () => {
     });
 
     it('should have proper unique constraints', async () => {
+      const db = testDb.db;
+      
       // Test states unique constraint
       const stateNames = await db.select({ name: states.name }).from(states);
       const uniqueNames = new Set(stateNames.map(s => s.name));
@@ -272,6 +299,7 @@ describe('Database Schema Tests', () => {
 
   describe('Data Integrity', () => {
     it('should have valid data in all tables', async () => {
+      const db = testDb.db;
       const tableCounts = {
         states: await db.select().from(states).then(r => r.length),
         categories: await db.select().from(categories).then(r => r.length),
@@ -299,6 +327,8 @@ describe('Database Schema Tests', () => {
     });
 
     it('should have valid foreign key references', async () => {
+      const db = testDb.db;
+      
       // Test that all statistics have valid category references
       const invalidStats = await db
         .select()

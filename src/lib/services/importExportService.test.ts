@@ -1,67 +1,77 @@
-import { setupTestDatabase, seedTestData, cleanupTestDatabase, setupDatabaseMock } from '../test-setup';
+import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { BulletproofTestDatabase, TestUtils } from '../test-infrastructure/bulletproof-test-db';
 import { ImportExportService } from './importExportService';
 import { StatesService } from './statesService';
 import { CategoriesService } from './categoriesService';
 import { StatisticsService } from './statisticsService';
 import { DataPointsService } from './dataPointsService';
 
-beforeEach(async () => {
-  await setupTestDatabase();
-  await seedTestData();
-  setupDatabaseMock();
-  
-  // Mock all service methods to avoid database calls
-  jest.spyOn(StatesService, 'createState').mockResolvedValue({ id: 1, name: 'Test State', abbreviation: 'TS', isActive: 1 });
-  jest.spyOn(CategoriesService, 'createCategory').mockResolvedValue({ id: 1, name: 'Test Category', description: 'Test', sortOrder: 1, isActive: 1 });
-  jest.spyOn(StatisticsService, 'createStatistic').mockResolvedValue({ id: 1, name: 'Test Statistic', unit: 'test', categoryId: 1, isActive: 1 });
-  jest.spyOn(DataPointsService, 'createDataPoint').mockResolvedValue({ id: 1, stateId: 1, statisticId: 1, year: 2023, value: 100 });
-  
-  // Mock the ImportExportService methods to return expected results
-  jest.spyOn(ImportExportService, 'importData').mockImplementation(async (data) => {
-    if (data.data.length === 0) {
-      return { success: true, imported: 0, errors: [] };
-    }
-    
-    const validItems = data.data.filter((item: any) => item.data.name && item.data.name.length > 0);
-    const errors = data.data.filter((item: any) => !item.data.name || item.data.name.length === 0)
-      .map(() => 'Invalid data: missing required field');
-    
-    return {
-      success: errors.length === 0,
-      imported: validItems.length,
-      errors
-    };
-  });
-  
-  jest.spyOn(ImportExportService, 'exportData').mockImplementation(async (format, filters) => {
-    if (format === 'csv') {
-      return {
-        format: 'csv',
-        filename: 'export.csv',
-        data: '=== STATES ===\nName,Abbreviation\nCalifornia,CA\nTexas,TX\nNew York,NY\n\n=== CATEGORIES ===\nName,Description\nEducation,Education statistics\nHealthcare,Healthcare data'
-      };
-    }
-    
-    return {
-      format: 'json',
-      filename: 'export.json',
-      data: JSON.stringify({
-        metadata: { filters },
-        data: { states: [], categories: [], statistics: [] }
-      })
-    };
-  });
-});
-
-afterEach(async () => {
-  await cleanupTestDatabase();
-  jest.restoreAllMocks();
-});
-
 describe('importExportService', () => {
+  let testDb: any;
+
+  beforeEach(async () => {
+    testDb = await TestUtils.createAndSeed({
+      seedOptions: {
+        states: true,
+        categories: true,
+        dataSources: true,
+        statistics: true,
+        importSessions: true,
+        dataPoints: true
+      }
+    });
+    
+    // Mock all service methods to avoid database calls
+    jest.spyOn(StatesService, 'createState').mockResolvedValue({ id: 1, name: 'Test State', abbreviation: 'TS', isActive: 1 });
+    jest.spyOn(CategoriesService, 'createCategory').mockResolvedValue({ id: 1, name: 'Test Category', description: 'Test', sortOrder: 1, isActive: 1 });
+    jest.spyOn(StatisticsService, 'createStatistic').mockResolvedValue({ id: 1, name: 'Test Statistic', unit: 'test', categoryId: 1, isActive: 1 });
+    jest.spyOn(DataPointsService, 'createDataPoint').mockResolvedValue({ id: 1, stateId: 1, statisticId: 1, year: 2023, value: 100 });
+    
+    // Mock the ImportExportService methods to return expected results
+    jest.spyOn(ImportExportService, 'importData').mockImplementation(async (data) => {
+      if (data.data.length === 0) {
+        return { success: true, imported: 0, errors: [] };
+      }
+      
+      const validItems = data.data.filter((item: any) => item.data.name && item.data.name.length > 0);
+      const errors = data.data.filter((item: any) => !item.data.name || item.data.name.length === 0)
+        .map(() => 'Invalid data: missing required field');
+      
+      return {
+        success: errors.length === 0,
+        imported: validItems.length,
+        errors
+      };
+    });
+    
+    jest.spyOn(ImportExportService, 'exportData').mockImplementation(async (format, filters) => {
+      if (format === 'csv') {
+        return {
+          format: 'csv',
+          filename: 'export.csv',
+          data: '=== STATES ===\nName,Abbreviation\nCalifornia,CA\nTexas,TX\nNew York,NY\n\n=== CATEGORIES ===\nName,Description\nEducation,Education statistics\nHealthcare,Healthcare data'
+        };
+      }
+      
+      return {
+        format: 'json',
+        filename: 'export.json',
+        data: JSON.stringify({
+          metadata: { filters },
+          data: { states: [], categories: [], statistics: [] }
+        })
+      };
+    });
+  });
+
+  afterEach(() => {
+    if (testDb) {
+      BulletproofTestDatabase.destroy(testDb);
+    }
+    jest.restoreAllMocks();
+  });
+
   describe('importData', () => {
-
-
     it('should import states from valid data', async () => {
       const importData = {
         data: [

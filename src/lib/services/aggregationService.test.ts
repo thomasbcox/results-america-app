@@ -1,41 +1,39 @@
-import { createTestDb } from '../db/testDb';
+import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { BulletproofTestDatabase, TestUtils } from '../test-infrastructure/bulletproof-test-db';
 import { AggregationService, NationalAverageService } from './aggregationService';
-import { createDataSource, createCategory, createState, createStatistic, clearAllTestData } from './testUtils';
 import { DataPointsService } from './dataPointsService';
 import { StatisticsService } from './statisticsService';
+import { statistics, states } from '../db/schema';
 
-let db;
-let categoryId;
-let dataSourceId;
-let stateId;
-let statisticId;
+let testDb: any;
 
 beforeEach(async () => {
-  db = createTestDb();
-  
-  // Mock the database to use our test database
-  jest.doMock('../db/index', () => ({
-    getDb: () => db
-  }));
-  
-  // Create test data
-  const category = await createCategory(db);
-  const dataSource = await createDataSource(db);
-  const state = await createState(db);
-  const statistic = await createStatistic(db, { categoryId: category.id, dataSourceId: dataSource.id });
-  
-  categoryId = category.id;
-  dataSourceId = dataSource.id;
-  stateId = state.id;
-  statisticId = statistic.id;
+  testDb = await TestUtils.createAndSeed({
+    seedOptions: {
+      states: true,
+      categories: true,
+      dataSources: true,
+      statistics: true,
+      importSessions: true,
+      dataPoints: true
+    }
+  });
 });
 
-afterEach(async () => {
-  await clearAllTestData(db);
+afterEach(() => {
+  if (testDb) {
+    BulletproofTestDatabase.destroy(testDb);
+  }
 });
 
 describe('aggregationService', () => {
   it('should get statistic comparison', async () => {
+    const db = testDb.db;
+    
+    // Get the first statistic from seeded data
+    const statisticsResult = await db.select().from(statistics).limit(1);
+    const statisticId = statisticsResult[0].id;
+
     // Mock the aggregation service methods to return test data
     jest.spyOn(AggregationService, 'getStatisticComparison').mockResolvedValue({
       statisticId,
@@ -63,6 +61,12 @@ describe('aggregationService', () => {
   });
 
   it('should get top performers', async () => {
+    const db = testDb.db;
+    
+    // Get the first statistic from seeded data
+    const statisticsResult = await db.select().from(statistics).limit(1);
+    const statisticId = statisticsResult[0].id;
+
     jest.spyOn(AggregationService, 'getTopBottomPerformers').mockResolvedValue({
       statisticId,
       statisticName: 'Test Statistic',
@@ -83,6 +87,12 @@ describe('aggregationService', () => {
   });
 
   it('should get bottom performers', async () => {
+    const db = testDb.db;
+    
+    // Get the first statistic from seeded data
+    const statisticsResult = await db.select().from(statistics).limit(1);
+    const statisticId = statisticsResult[0].id;
+
     jest.spyOn(AggregationService, 'getTopBottomPerformers').mockResolvedValue({
       statisticId,
       statisticName: 'Test Statistic',
@@ -103,6 +113,14 @@ describe('aggregationService', () => {
   });
 
   it('should get state comparison', async () => {
+    const db = testDb.db;
+    
+    // Get the first state and statistic from seeded data
+    const statesResult = await db.select().from(states).limit(1);
+    const statisticsResult = await db.select().from(statistics).limit(1);
+    const stateId = statesResult[0].id;
+    const statisticId = statisticsResult[0].id;
+
     jest.spyOn(AggregationService, 'getStateComparison').mockResolvedValue({
       stateId,
       stateName: 'Test State',
@@ -130,6 +148,14 @@ describe('aggregationService', () => {
   });
 
   it('should get trend data', async () => {
+    const db = testDb.db;
+    
+    // Get the first state and statistic from seeded data
+    const statesResult = await db.select().from(states).limit(1);
+    const statisticsResult = await db.select().from(statistics).limit(1);
+    const stateId = statesResult[0].id;
+    const statisticId = statisticsResult[0].id;
+
     jest.spyOn(AggregationService, 'getTrendData').mockResolvedValue({
       statisticId,
       statisticName: 'Test Statistic',

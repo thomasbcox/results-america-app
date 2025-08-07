@@ -10,9 +10,13 @@ module.exports = {
   transform: {
     '^.+\\.(ts|tsx)$': ['ts-jest', { 
       tsconfig: 'tsconfig.json',
-      useESM: true 
+      useESM: true,
+      jsx: 'react-jsx'
     }],
   },
+  transformIgnorePatterns: [
+    'node_modules/(?!(.*\\.mjs$))'
+  ],
   setupFilesAfterEnv: ['<rootDir>/src/lib/test-infrastructure/jest-setup.ts', '@testing-library/jest-dom'],
   testTimeout: 30000,
   // Clear mocks between tests to ensure isolation
@@ -56,6 +60,7 @@ module.exports = {
     'ts-jest': {
       tsconfig: 'tsconfig.json',
       useESM: true,
+      jsx: 'react-jsx'
     },
   },
 };

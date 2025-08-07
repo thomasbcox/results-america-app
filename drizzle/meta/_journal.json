@@ -22,6 +22,13 @@
       "when": 1753748556208,
       "tag": "0002_mature_vision",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1754528944091,
+      "tag": "0003_wide_harpoon",
+      "breakpoints": true
     }
   ]
 }
