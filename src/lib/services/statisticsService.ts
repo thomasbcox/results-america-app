@@ -1,4 +1,4 @@
-import { getDb } from '../db/index';
+import { getDbOrThrow } from '../db/index';
 import { statistics, dataSources, categories, dataPoints, states } from '../db/schema-postgres';
 import { eq, like, desc, asc, count, sql, and, inArray } from 'drizzle-orm';
 import type { 
@@ -15,7 +15,7 @@ export class StatisticsService {
   }
 
   static async searchStatistics(searchTerm: string): Promise<StatisticData[]> {
-    const db = getDb();
+    const db = getDbOrThrow();
     const results = await db.select({
       id: statistics.id,
       name: statistics.name,
@@ -26,6 +26,8 @@ export class StatisticsService {
       unit: statistics.unit,
       availableSince: statistics.availableSince,
       preferenceDirection: statistics.preferenceDirection,
+      dataQuality: statistics.dataQuality,
+      provenance: statistics.provenance,
       isActive: statistics.isActive,
       categoryId: statistics.categoryId,
       dataSourceId: statistics.dataSourceId,
@@ -49,8 +51,8 @@ export class StatisticsService {
       unit: result.unit,
       availableSince: result.availableSince,
       preferenceDirection: result.preferenceDirection || 'higher',
-      dataQuality: 'mock',
-      provenance: undefined,
+      dataQuality: result.dataQuality || 'mock',
+      provenance: result.provenance,
       isActive: result.isActive ?? 1,
       categoryId: result.categoryId,
       dataSourceId: result.dataSourceId,
@@ -63,7 +65,7 @@ export class StatisticsService {
     pagination: { page: number; limit: number },
     sorting?: { sortBy?: string; sortOrder?: 'asc' | 'desc' }
   ): Promise<{ data: StatisticData[]; pagination: any }> {
-    const db = getDb();
+    const db = getDbOrThrow();
     const { page, limit } = pagination;
     const offset = (page - 1) * limit;
 
@@ -88,6 +90,8 @@ export class StatisticsService {
       unit: statistics.unit,
       availableSince: statistics.availableSince,
       preferenceDirection: statistics.preferenceDirection,
+      dataQuality: statistics.dataQuality,
+      provenance: statistics.provenance,
       isActive: statistics.isActive,
       categoryId: statistics.categoryId,
       dataSourceId: statistics.dataSourceId,
@@ -102,8 +106,8 @@ export class StatisticsService {
       .offset(offset);
 
     // Get total count
-    const totalResult = await db.select({ count: statistics.id }).from(statistics);
-    const total = totalResult.length;
+    const totalResult = await db.select({ count: count() }).from(statistics);
+    const total = totalResult[0]?.count || 0;
 
     const data = results.map((result: StatisticWithJoins) => ({
       id: result.id,
@@ -115,8 +119,8 @@ export class StatisticsService {
       unit: result.unit,
       availableSince: result.availableSince,
       preferenceDirection: result.preferenceDirection || 'higher',
-      dataQuality: 'mock',
-      provenance: undefined,
+      dataQuality: result.dataQuality || 'mock',
+      provenance: result.provenance,
       isActive: result.isActive ?? 1,
       categoryId: result.categoryId,
       dataSourceId: result.dataSourceId,
@@ -138,7 +142,7 @@ export class StatisticsService {
   }
 
   static async getStatisticsWithAvailability(): Promise<StatisticData[]> {
-    const db = getDb();
+    const db = getDbOrThrow();
     
     // Handle case where database connection fails
     if (!db) {
@@ -157,7 +161,7 @@ export class StatisticsService {
         .from(dataPoints)
         .groupBy(dataPoints.statisticId);
       
-      const statisticsWithDataIds = new Set(statisticsWithData.map(r => r.statisticId));
+      const statisticsWithDataIds = new Set(statisticsWithData.map((r: { statisticId: number }) => r.statisticId));
       
       return results.map(statistic => ({
         ...statistic,
@@ -175,7 +179,7 @@ export class StatisticsService {
   }
 
   static async getAllStatisticsWithSources(): Promise<StatisticData[]> {
-    const db = getDb();
+    const db = getDbOrThrow();
     
     // Handle case where database connection fails
     if (!db) {
@@ -194,6 +198,8 @@ export class StatisticsService {
         unit: statistics.unit,
         availableSince: statistics.availableSince,
         preferenceDirection: statistics.preferenceDirection,
+        dataQuality: statistics.dataQuality,
+        provenance: statistics.provenance,
         isActive: statistics.isActive,
         categoryId: statistics.categoryId,
         dataSourceId: statistics.dataSourceId,
@@ -230,22 +236,47 @@ export class StatisticsService {
   }
 
   static async getStatisticById(id: number): Promise<StatisticData | null> {
-    const db = getDb();
-    const result = await db.select().from(statistics).where(eq(statistics.id, id)).limit(1);
+    const db = getDbOrThrow();
+    const result = await db.select({
+      id: statistics.id,
+      name: statistics.name,
+      raNumber: statistics.raNumber,
+      description: statistics.description,
+      subMeasure: statistics.subMeasure,
+      calculation: statistics.calculation,
+      unit: statistics.unit,
+      availableSince: statistics.availableSince,
+      preferenceDirection: statistics.preferenceDirection,
+      dataQuality: statistics.dataQuality,
+      provenance: statistics.provenance,
+      isActive: statistics.isActive,
+      categoryId: statistics.categoryId,
+      dataSourceId: statistics.dataSourceId,
+    }).from(statistics).where(eq(statistics.id, id)).limit(1);
+    
     if (result.length === 0) return null;
     
     const statistic = result[0];
     return {
-      ...statistic,
+      id: statistic.id,
+      name: statistic.name,
+      raNumber: statistic.raNumber,
+      description: statistic.description,
+      subMeasure: statistic.subMeasure,
+      calculation: statistic.calculation,
+      unit: statistic.unit,
+      availableSince: statistic.availableSince,
       preferenceDirection: statistic.preferenceDirection || 'higher',
-      dataQuality: 'mock', // Default for normalized schema
-      provenance: undefined, // Not available in normalized schema
+      dataQuality: statistic.dataQuality || 'mock',
+      provenance: statistic.provenance,
       isActive: statistic.isActive ?? 1,
+      categoryId: statistic.categoryId,
+      dataSourceId: statistic.dataSourceId,
     };
   }
 
   static async getStatisticsByCategory(categoryId: number): Promise<StatisticData[]> {
-    const db = getDb();
+    const db = getDbOrThrow();
     const results = await db.select({
       id: statistics.id,
       name: statistics.name,
@@ -256,6 +287,8 @@ export class StatisticsService {
       unit: statistics.unit,
       availableSince: statistics.availableSince,
       preferenceDirection: statistics.preferenceDirection,
+      dataQuality: statistics.dataQuality,
+      provenance: statistics.provenance,
       isActive: statistics.isActive,
       categoryId: statistics.categoryId,
       dataSourceId: statistics.dataSourceId,
@@ -263,12 +296,21 @@ export class StatisticsService {
       .from(statistics)
       .where(eq(statistics.categoryId, categoryId));
 
-    return results.map((statistic: any) => ({
-      ...statistic,
+    return results.map((statistic) => ({
+      id: statistic.id,
+      name: statistic.name,
+      raNumber: statistic.raNumber,
+      description: statistic.description,
+      subMeasure: statistic.subMeasure,
+      calculation: statistic.calculation,
+      unit: statistic.unit,
+      availableSince: statistic.availableSince,
       preferenceDirection: statistic.preferenceDirection || 'higher',
-      dataQuality: 'mock', // Default for normalized schema
-      provenance: undefined, // Not available in normalized schema
+      dataQuality: statistic.dataQuality || 'mock',
+      provenance: statistic.provenance,
       isActive: statistic.isActive ?? 1,
+      categoryId: statistic.categoryId,
+      dataSourceId: statistic.dataSourceId,
     }));
   }
 
@@ -286,7 +328,7 @@ export class StatisticsService {
       lastUpdated: Date;
     };
   }> {
-    const db = getDb();
+    const db = getDbOrThrow();
     const statistic = await this.getStatisticById(statisticId);
     if (!statistic) {
       throw new Error(`Statistic with id ${statisticId} not found`);
@@ -332,7 +374,7 @@ export class StatisticsService {
       stateCount: number;
     }>;
   }> {
-    const db = getDb();
+    const db = getDbOrThrow();
     const statistic = await this.getStatisticById(statisticId);
     if (!statistic) {
       throw new Error(`Statistic with id ${statisticId} not found`);
@@ -371,7 +413,7 @@ export class StatisticsService {
       percentile: number;
     }>;
   }> {
-    const db = getDb();
+    const db = getDbOrThrow();
     const statistic = await this.getStatisticById(statisticId);
     if (!statistic) {
       throw new Error(`Statistic with id ${statisticId} not found`);
@@ -419,7 +461,7 @@ export class StatisticsService {
       dataQuality: 'complete' | 'partial' | 'minimal';
     };
   }> {
-    const db = getDb();
+    const db = getDbOrThrow();
     const statistic = await this.getStatisticById(statisticId);
     if (!statistic) {
       throw new Error(`Statistic with id ${statisticId} not found`);
@@ -469,7 +511,7 @@ export class StatisticsService {
   }
 
   static async getStatisticsByDataSource(dataSourceId: number): Promise<StatisticData[]> {
-    const db = getDb();
+    const db = getDbOrThrow();
     const results = await db.select({
       id: statistics.id,
       name: statistics.name,
@@ -480,6 +522,8 @@ export class StatisticsService {
       unit: statistics.unit,
       availableSince: statistics.availableSince,
       preferenceDirection: statistics.preferenceDirection,
+      dataQuality: statistics.dataQuality,
+      provenance: statistics.provenance,
       isActive: statistics.isActive,
       categoryId: statistics.categoryId,
       dataSourceId: statistics.dataSourceId,
@@ -519,7 +563,7 @@ export class StatisticsService {
   }
 
   static async getStatisticsByYearRange(startYear: string, endYear: string): Promise<StatisticData[]> {
-    const db = getDb();
+    const db = getDbOrThrow();
     const results = await db.select({
       id: statistics.id,
       name: statistics.name,
@@ -530,6 +574,8 @@ export class StatisticsService {
       unit: statistics.unit,
       availableSince: statistics.availableSince,
       preferenceDirection: statistics.preferenceDirection,
+      dataQuality: statistics.dataQuality,
+      provenance: statistics.provenance,
       isActive: statistics.isActive,
       categoryId: statistics.categoryId,
       dataSourceId: statistics.dataSourceId,
@@ -546,7 +592,7 @@ export class StatisticsService {
         )
       );
 
-    return results.map((result: any) => ({
+    return results.map((result) => ({
       id: result.id,
       name: result.name,
       raNumber: result.raNumber,
@@ -556,8 +602,8 @@ export class StatisticsService {
       unit: result.unit,
       availableSince: result.availableSince,
       preferenceDirection: result.preferenceDirection || 'higher',
-      dataQuality: 'mock',
-      provenance: undefined,
+      dataQuality: result.dataQuality || 'mock',
+      provenance: result.provenance,
       isActive: result.isActive ?? 1,
       categoryId: result.categoryId,
       dataSourceId: result.dataSourceId,
@@ -567,30 +613,49 @@ export class StatisticsService {
   }
 
   static async createStatistic(data: CreateStatisticInput): Promise<StatisticData> {
-    const db = getDb();
+    const db = getDbOrThrow();
     const [statistic] = await db.insert(statistics).values(data).returning();
     return {
-      ...statistic,
-      dataQuality: 'mock', // Default for normalized schema
-      provenance: undefined, // Not available in normalized schema
+      id: statistic.id,
+      name: statistic.name,
+      raNumber: statistic.raNumber,
+      description: statistic.description,
+      subMeasure: statistic.subMeasure,
+      calculation: statistic.calculation,
+      unit: statistic.unit,
+      availableSince: statistic.availableSince,
+      preferenceDirection: statistic.preferenceDirection || 'higher',
+      dataQuality: statistic.dataQuality || 'mock',
+      provenance: statistic.provenance,
       isActive: statistic.isActive ?? 1,
+      categoryId: statistic.categoryId,
+      dataSourceId: statistic.dataSourceId,
     };
   }
 
   static async updateStatistic(id: number, data: UpdateStatisticInput): Promise<StatisticData> {
-    const db = getDb();
+    const db = getDbOrThrow();
     const [statistic] = await db.update(statistics).set(data).where(eq(statistics.id, id)).returning();
     return {
-      ...statistic,
+      id: statistic.id,
+      name: statistic.name,
+      raNumber: statistic.raNumber,
+      description: statistic.description,
+      subMeasure: statistic.subMeasure,
+      calculation: statistic.calculation,
+      unit: statistic.unit,
+      availableSince: statistic.availableSince,
       preferenceDirection: statistic.preferenceDirection || 'higher',
-      dataQuality: 'mock', // Default for normalized schema
-      provenance: undefined, // Not available in normalized schema
+      dataQuality: statistic.dataQuality || 'mock',
+      provenance: statistic.provenance,
       isActive: statistic.isActive ?? 1,
+      categoryId: statistic.categoryId,
+      dataSourceId: statistic.dataSourceId,
     };
   }
 
   static async deleteStatistic(id: number): Promise<boolean> {
-    const db = getDb();
+    const db = getDbOrThrow();
     const result = await db.delete(statistics).where(eq(statistics.id, id));
     return result.changes > 0;
   }

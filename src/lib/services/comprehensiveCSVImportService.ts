@@ -1,5 +1,5 @@
-import { getDb } from '@/lib/db';
-import { csvImports, states, categories, statistics, dataPoints, importSessions, dataSources } from '@/lib/db/schema';
+import { getDbOrThrow } from '@/lib/db';
+import { csvImports, states, categories, statistics, dataPoints, importSessions, dataSources } from '@/lib/db/schema-postgres';
 import { eq, and, inArray } from 'drizzle-orm';
 import { parse } from 'csv-parse/sync';
 import { createHash } from 'crypto';
@@ -27,7 +27,7 @@ export class ComprehensiveCSVImportService {
     fileBuffer: Buffer,
     templateId?: number
   ): Promise<CSVImportResult> {
-    const db = getDb();
+    const db = getDbOrThrow();
     const startTime = Date.now();
     const fileHash = createHash('sha256').update(fileBuffer).digest('hex');
     const fileSize = fileBuffer.length;
@@ -357,7 +357,7 @@ export class ComprehensiveCSVImportService {
   }
 
   static async getImportDetails(importId: number) {
-    const db = getDb();
+    const db = getDbOrThrow();
     const [importRecord] = await db
       .select()
       .from(csvImports)

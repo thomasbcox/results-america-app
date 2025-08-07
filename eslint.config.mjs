@@ -57,8 +57,8 @@ const eslintConfig = [
       // Allow more complexity in service layer
       "max-lines-per-function": ["warn", { "max": 100 }],
       "complexity": ["warn", { "max": 20 }],
-      // Temporarily disabled for deployment - will be re-enabled
-      "@typescript-eslint/no-explicit-any": "off",
+      // Strict type safety for database operations
+      "@typescript-eslint/no-explicit-any": "error",
       // Prevent untyped database results
       "no-restricted-syntax": [
         "error",

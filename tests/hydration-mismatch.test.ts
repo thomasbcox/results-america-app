@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react'
+import '@testing-library/jest-dom'
 import { useClientOnly, ClientOnly, useSafeContextValue } from '../src/lib/utils/hydrationUtils'
 import React from 'react'
 
@@ -68,8 +69,10 @@ describe('Hydration Mismatch Prevention', () => {
     it('should show fallback during SSR', () => {
       const TestComponent = () => React.createElement(
         ClientOnly,
-        { fallback: React.createElement('div', { 'data-testid': 'loading' }, 'Loading...') },
-        React.createElement('div', { 'data-testid': 'content' }, 'Actual Content')
+        { 
+          fallback: React.createElement('div', { 'data-testid': 'loading' }, 'Loading...'),
+          children: React.createElement('div', { 'data-testid': 'content' }, 'Actual Content')
+        }
       )
 
       render(React.createElement(TestComponent))
@@ -82,8 +85,10 @@ describe('Hydration Mismatch Prevention', () => {
     it('should show children after hydration', () => {
       const TestComponent = () => React.createElement(
         ClientOnly,
-        { fallback: React.createElement('div', { 'data-testid': 'loading' }, 'Loading...') },
-        React.createElement('div', { 'data-testid': 'content' }, 'Actual Content')
+        { 
+          fallback: React.createElement('div', { 'data-testid': 'loading' }, 'Loading...'),
+          children: React.createElement('div', { 'data-testid': 'content' }, 'Actual Content')
+        }
       )
 
       render(React.createElement(TestComponent))
@@ -178,13 +183,15 @@ describe('Hydration Mismatch Prevention', () => {
         
         return React.createElement(
           ClientOnly,
-          { fallback: React.createElement('div', { 'data-testid': 'loading' }, 'Loading...') },
-          React.createElement('div', null,
-            React.createElement('a', { 
-              href: `/measure?category=${selectedCategory || 'Select Category'}&measure=${selectedMeasure || 'Select Measure'}` 
-            }, 'Back to Selection'),
-            React.createElement('span', null, selectedCategory || 'Select Category')
-          )
+          { 
+            fallback: React.createElement('div', { 'data-testid': 'loading' }, 'Loading...'),
+            children: React.createElement('div', null,
+              React.createElement('a', { 
+                href: `/measure?category=${selectedCategory || 'Select Category'}&measure=${selectedMeasure || 'Select Measure'}` 
+              }, 'Back to Selection'),
+              React.createElement('span', null, selectedCategory || 'Select Category')
+            )
+          }
         )
       }
 

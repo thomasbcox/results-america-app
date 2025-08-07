@@ -1,5 +1,5 @@
 import { getDb } from './index';
-import { states, categories, dataSources, statistics, importSessions, dataPoints } from './schema';
+import { states, categories, dataSources, statistics, importSessions, dataPoints } from './schema-postgres';
 import { eq, and } from 'drizzle-orm';
 
 /**
@@ -22,6 +22,9 @@ import { eq, and } from 'drizzle-orm';
 
 export async function seedDatabaseNormalized() {
   const db = getDb();
+  if (!db) {
+    throw new Error('Database not available');
+  }
   console.log('🌱 Seeding normalized database in dependency order...');
 
   // Insert states (all 50 states in alphabetical order)

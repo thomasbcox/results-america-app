@@ -4,7 +4,11 @@ import { getDb } from '../../src/lib/db/index';
 import { csvImportTemplates } from '../../src/lib/db/schema-postgres';
 
 async function checkTemplates() {
-  const db = getDb();  console.log('🔍 Checking CSV templates in database...');
+  const db = getDb();
+  if (!db) {
+    throw new Error('Database not available');
+  }
+  console.log('🔍 Checking CSV templates in database...');
 
   try {
     const templates = await db.select().from(csvImportTemplates);

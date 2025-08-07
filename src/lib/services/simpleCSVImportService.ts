@@ -1,4 +1,4 @@
-import { getDb } from '../db/index';
+import { getDbOrThrow } from '../db/index';
 import { 
   csvImports, 
   csvImportMetadata, 
@@ -11,7 +11,7 @@ import {
   categories,
   dataSources,
   users
-} from '../db/schema';
+} from '../db/schema-postgres';
 import { eq, and, desc } from 'drizzle-orm';
 import { createHash } from 'crypto';
 import { parse } from 'csv-parse/sync';
@@ -43,7 +43,7 @@ export class SimpleCSVImportService {
    * Get the two available templates
    */
   static async getTemplates(): Promise<SimpleCSVTemplate[]> {
-    const db = getDb();
+    const db = getDbOrThrow();
     // Create templates if they don't exist
     await this.ensureTemplates();
     
@@ -72,7 +72,7 @@ export class SimpleCSVImportService {
     metadata: Record<string, any>,
     uploadedBy: number
   ): Promise<CSVImportResult> {
-    const db = getDb();
+    const db = getDbOrThrow();
     try {
       console.log('SimpleCSVImportService.uploadCSV started');
       
@@ -204,7 +204,7 @@ export class SimpleCSVImportService {
     records: any[],
     template: SimpleCSVTemplate
   ): Promise<{ success: boolean; stats: any }> {
-    const db = getDb();
+    const db = getDbOrThrow();
     const stagedRows = [];
     let validRows = 0;
     let invalidRows = 0;
@@ -430,8 +430,14 @@ export class SimpleCSVImportService {
    * Get template by ID
    */
   static async getTemplate(id: number): Promise<SimpleCSVTemplate | null> {
-    const db = getDb();
-    const [template] = await db.select()
+    const db = getDbOrThrow();
+    const [template] = await db.select({
+      id: csvImportTemplates.id,
+      name: csvImportTemplates.name,
+      description: csvImportTemplates.description,
+      templateSchema: csvImportTemplates.templateSchema,
+      sampleData: csvImportTemplates.sampleData,
+    })
       .from(csvImportTemplates)
       .where(eq(csvImportTemplates.id, id));
 
@@ -452,8 +458,11 @@ export class SimpleCSVImportService {
    * Get import metadata
    */
   static async getImportMetadata(importId: number): Promise<any> {
-    const db = getDb();
-    const metadata = await db.select()
+    const db = getDbOrThrow();
+    const metadata = await db.select({
+      key: csvImportMetadata.key,
+      value: csvImportMetadata.value,
+    })
       .from(csvImportMetadata)
       .where(eq(csvImportMetadata.csvImportId, importId));
 
@@ -468,8 +477,12 @@ export class SimpleCSVImportService {
    * Get or create import session
    */
   static async getImportSessionId(importId: number): Promise<number> {
-    const db = getDb();
-    const [importRecord] = await db.select()
+    const db = getDbOrThrow();
+    const [importRecord] = await db.select({
+      id: csvImports.id,
+      name: csvImports.name,
+      description: csvImports.description,
+    })
       .from(csvImports)
       .where(eq(csvImports.id, importId));
 
@@ -478,7 +491,9 @@ export class SimpleCSVImportService {
     }
 
     // Check if import session already exists
-    const [existingSession] = await db.select()
+    const [existingSession] = await db.select({
+      id: importSessions.id,
+    })
       .from(importSessions)
       .where(eq(importSessions.name, importRecord.name))
       .limit(1);
@@ -502,7 +517,7 @@ export class SimpleCSVImportService {
    * Ensure templates exist
    */
   static async ensureTemplates(): Promise<void> {
-    const db = getDb();
+    const db = getDbOrThrow();
     const existingTemplates = await db.select()
       .from(csvImportTemplates)
       .where(eq(csvImportTemplates.isActive, 1));

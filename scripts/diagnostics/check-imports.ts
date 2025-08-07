@@ -4,7 +4,11 @@ import { getDb } from '../../src/lib/db/index';
 import { csvImports, csvImportStaging, csvImportMetadata } from '../../src/lib/db/schema-postgres';
 
 async function checkImports() {
-  const db = getDb();  console.log('🔍 Checking CSV imports in database...');
+  const db = getDb();
+  if (!db) {
+    throw new Error('Database not available');
+  }
+  console.log('🔍 Checking CSV imports in database...');
 
   try {
     // Check imports

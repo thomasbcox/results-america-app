@@ -1,9 +1,12 @@
 import { getDb } from './index';
-import { states, categories, statistics, dataPoints } from './schema';
+import { states, categories, statistics, dataPoints } from './schema-postgres';
 import { eq } from 'drizzle-orm';
 
 export async function seedDatabaseComplete() {
   const db = getDb();
+  if (!db) {
+    throw new Error('Database not available');
+  }
   console.log('🌱 Seeding database with complete data...');
 
   // Insert states (all 50 states in alphabetical order)

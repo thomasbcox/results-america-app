@@ -4,6 +4,9 @@ import { eq } from 'drizzle-orm';
 
 async function setupTestData() {
   const db = getDb();
+  if (!db) {
+    throw new Error('Database not available');
+  }
   try {
     console.log('🔧 Setting up test data...');
     

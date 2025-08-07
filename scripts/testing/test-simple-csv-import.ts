@@ -6,7 +6,11 @@ import { csvImports, csvImportStaging, dataPoints } from '../../src/lib/db/schem
 import { eq } from 'drizzle-orm';
 
 async function testSimpleCSVImport() {
-  const db = getDb();  console.log('🧪 Testing Simplified CSV Import System...\n');
+  const db = getDb();
+  if (!db) {
+    throw new Error('Database not available');
+  }
+  console.log('🧪 Testing Simplified CSV Import System...\n');
 
   try {
     // Test 1: Get templates

@@ -1,5 +1,5 @@
 import { getDb } from '../db/index';
-import { dataPoints, statistics, states, importSessions } from '../db/schema-normalized';
+import { dataPoints, statistics, states, importSessions } from '../db/schema-postgres';
 import { eq, desc, asc, and, inArray } from 'drizzle-orm';
 import { ValidationError, NotFoundError } from '../errors';
 import type { IAggregationService } from '../types/service-interfaces';
@@ -69,6 +69,9 @@ async function getActiveDataPoints(statisticId?: number, year?: number) {
     conditions.push(eq(dataPoints.year, year));
   }
   
+  if (!db) {
+    throw new Error('Database not available');
+  }
   return db.select({
     value: dataPoints.value,
     stateId: dataPoints.stateId,
@@ -121,6 +124,9 @@ export class NationalAverageService {
 
   static async recalculateAllNationalAverages(year: number): Promise<void> {
     const db = getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
     const statisticsList = await db.select({ id: statistics.id }).from(statistics);
     
     for (const stat of statisticsList) {
@@ -150,6 +156,9 @@ export class AggregationService {
    */
   static async getStatisticComparison(statisticId: number, year: number = 2023): Promise<ComparisonData> {
     const db = getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
     // Get active data points for this statistic and year
     const dataPointsResult = await getActiveDataPoints(statisticId, year);
 
@@ -212,6 +221,9 @@ export class AggregationService {
    */
   static async getStateComparison(stateId: number, year: number = 2023): Promise<StateComparisonData> {
     const db = getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
     // Validate state exists
     const state = await db.select({
       id: states.id,
@@ -286,6 +298,9 @@ export class AggregationService {
     order: 'asc' | 'desc' = 'desc'
   ): Promise<TopBottomPerformersData> {
     const db = getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
     // Validate statistic exists
     const statistic = await db.select({
       id: statistics.id,
@@ -335,6 +350,9 @@ export class AggregationService {
    */
   static async getTrendData(statisticId: number, stateId: number): Promise<TrendData> {
     const db = getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
     // Validate statistic and state exist
     const [statistic, state] = await Promise.all([
       db.select({ id: statistics.id, name: statistics.name })

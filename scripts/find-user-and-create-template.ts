@@ -5,7 +5,11 @@ import { csvImportTemplates, categories, dataSources, users } from '../src/lib/d
 import { eq } from 'drizzle-orm';
 
 async function findUserAndCreateTemplate() {
-  const db = getDb();  console.log('🔍 Finding users and creating flexible template...');
+  const db = getDb();
+  if (!db) {
+    throw new Error('Database not available');
+  }
+  console.log('🔍 Finding users and creating flexible template...');
 
   try {
     // Find all users

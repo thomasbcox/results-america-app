@@ -3,7 +3,11 @@ import { users } from '../src/lib/db/schema-postgres';
 import { AuthService } from '../src/lib/services/authService';
 
 async function createAdmin() {
-  const db = getDb();  const email = process.argv[2];
+  const db = getDb();
+  if (!db) {
+    throw new Error('Database not available');
+  }
+  const email = process.argv[2];
   
   if (!email) {
     console.error('Please provide an email address: npm run create-admin <email>');

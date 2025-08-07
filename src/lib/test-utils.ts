@@ -9,7 +9,7 @@ import {
   statistics,
   importSessions,
   dataPoints
-} from './db/schema';
+} from './db/schema-postgres';
 import { eq } from 'drizzle-orm';
 import type { 
   StateData, 
@@ -34,6 +34,9 @@ export const createTestStateData = (overrides: Partial<CreateStateInput> = {}): 
 
 export const insertTestState = async (data: CreateStateInput): Promise<StateData> => {
   const db = getDb();
+  if (!db) {
+    throw new Error('Database not available');
+  }
   const [state] = await db.insert(states).values(data).returning();
   return {
     ...state,
@@ -60,6 +63,9 @@ export const createTestCategoryData = (overrides: Partial<CreateCategoryInput> =
 
 export const insertTestCategory = async (data: CreateCategoryInput): Promise<CategoryData> => {
   const db = getDb();
+  if (!db) {
+    throw new Error('Database not available');
+  }
   const [category] = await db.insert(categories).values(data).returning();
   return {
     ...category,
@@ -86,6 +92,9 @@ export const createTestDataSourceData = (overrides: Partial<{ name: string; desc
 
 export const insertTestDataSource = async (data: { name: string; description?: string; url?: string }): Promise<any> => {
   const db = getDb();
+  if (!db) {
+    throw new Error('Database not available');
+  }
   const [dataSource] = await db.insert(dataSources).values(data).returning();
   return dataSource;
 };
@@ -100,23 +109,41 @@ export const createTestDataSource = async (overrides: Partial<{ name: string; de
 // ============================================================================
 
 export const createTestStatisticData = (overrides: Partial<CreateStatisticInput> = {}): CreateStatisticInput => ({
-  raNumber: `RA${Math.floor(Math.random() * 9000) + 1000}`,
+  name: 'Test Statistic',
+  unit: 'percentage',
   categoryId: 1, // Will be overridden in practice
   dataSourceId: 1, // Will be overridden in practice
-  name: `Test Statistic ${Date.now()}`,
-  description: 'Test statistic description',
-  unit: 'test unit',
+  description: 'A test statistic for unit testing',
+  subMeasure: 'test_sub_measure',
+  calculation: 'test_calculation',
+  availableSince: '2023',
   dataQuality: 'mock',
+  provenance: 'test_provenance',
+  preferenceDirection: 'higher',
   ...overrides
 });
 
 export const insertTestStatistic = async (data: CreateStatisticInput): Promise<StatisticData> => {
   const db = getDb();
+  if (!db) {
+    throw new Error('Database not available');
+  }
   const [statistic] = await db.insert(statistics).values(data).returning();
   return {
-    ...statistic,
-    dataQuality: statistic.dataQuality ?? 'mock',
+    id: statistic.id,
+    name: statistic.name,
+    raNumber: statistic.raNumber,
+    description: statistic.description,
+    subMeasure: statistic.subMeasure,
+    calculation: statistic.calculation,
+    unit: statistic.unit,
+    availableSince: statistic.availableSince,
+    preferenceDirection: statistic.preferenceDirection || 'higher',
+    dataQuality: statistic.dataQuality || 'mock',
+    provenance: statistic.provenance,
     isActive: statistic.isActive ?? 1,
+    categoryId: statistic.categoryId,
+    dataSourceId: statistic.dataSourceId,
   };
 };
 
@@ -140,8 +167,11 @@ export const createTestDataPointData = (overrides: Partial<CreateDataPointInput>
 
 export const insertTestDataPoint = async (data: CreateDataPointInput): Promise<DataPointData> => {
   const db = getDb();
+  if (!db) {
+    throw new Error('Database not available');
+  }
   const [dataPoint] = await db.insert(dataPoints).values(data).returning();
-  return dataPoint;
+  return dataPoint as DataPointData;
 };
 
 export const createTestDataPoint = async (overrides: Partial<CreateDataPointInput> = {}): Promise<DataPointData> => {
@@ -183,6 +213,9 @@ export const createTestStateWithData = async (overrides: {
 
 export const cleanup = async () => {
   const db = getDb();
+  if (!db) {
+    throw new Error('Database not available');
+  }
   // Clean up in reverse dependency order
   await db.delete(dataPoints);
   await db.delete(importSessions);
@@ -194,6 +227,9 @@ export const cleanup = async () => {
 
 export const cleanupData = async () => {
   const db = getDb();
+  if (!db) {
+    throw new Error('Database not available');
+  }
   // Clean up only data, keep foundation data
   await db.delete(dataPoints);
   await db.delete(importSessions);

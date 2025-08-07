@@ -1,4 +1,4 @@
-import { getDb } from '../db/index';
+import { getDbOrThrow } from '../db/index';
 import { categories, statistics, dataPoints, states } from '../db/schema-postgres';
 import { eq, like, desc, asc, count, sql, and } from 'drizzle-orm';
 import type { 
@@ -11,16 +11,28 @@ import type { CategoryWithJoins } from '../types/database-results';
 
 export class CategoriesService {
   static async getAllCategories(): Promise<CategoryData[]> {
-    const db = getDb();
-    const result = await db.select().from(categories).orderBy(categories.sortOrder, categories.name);
-    return result.map((category: CategoryWithJoins) => ({
-      ...category,
+    const db = getDbOrThrow();
+    const result = await db.select({
+      id: categories.id,
+      name: categories.name,
+      description: categories.description,
+      icon: categories.icon,
+      sortOrder: categories.sortOrder,
+      isActive: categories.isActive,
+    }).from(categories).orderBy(categories.sortOrder, categories.name);
+    
+    return result.map((category) => ({
+      id: category.id,
+      name: category.name,
+      description: category.description,
+      icon: category.icon,
+      sortOrder: category.sortOrder ?? 0,
       isActive: category.isActive ?? 1,
     }));
   }
 
   static async getCategoriesWithStatistics(): Promise<CategoryData[]> {
-    const db = getDb();
+    const db = getDbOrThrow();
     const result = await db.select({
       id: categories.id,
       name: categories.name,
@@ -57,46 +69,66 @@ export class CategoriesService {
   }
 
   static async getCategoryById(id: number): Promise<CategoryData | null> {
-    const db = getDb();
-    const result = await db.select().from(categories).where(eq(categories.id, id)).limit(1);
+    const db = getDbOrThrow();
+    const result = await db.select({
+      id: categories.id,
+      name: categories.name,
+      description: categories.description,
+      icon: categories.icon,
+      sortOrder: categories.sortOrder,
+      isActive: categories.isActive,
+    }).from(categories).where(eq(categories.id, id)).limit(1);
+    
     if (result.length === 0) return null;
     
     const category = result[0];
     return {
-      ...category,
+      id: category.id,
+      name: category.name,
+      description: category.description,
+      icon: category.icon,
+      sortOrder: category.sortOrder ?? 0,
       isActive: category.isActive ?? 1,
     };
   }
 
   static async createCategory(data: CreateCategoryInput): Promise<CategoryData> {
-    const db = getDb();
+    const db = getDbOrThrow();
     const [category] = await db.insert(categories).values(data).returning();
     return {
-      ...category,
+      id: category.id,
+      name: category.name,
+      description: category.description,
+      icon: category.icon,
+      sortOrder: category.sortOrder ?? 0,
       isActive: category.isActive ?? 1,
     };
   }
 
   static async updateCategory(id: number, data: UpdateCategoryInput): Promise<CategoryData> {
-    const db = getDb();
+    const db = getDbOrThrow();
     const [category] = await db.update(categories).set(data).where(eq(categories.id, id)).returning();
     if (!category) {
       throw new Error(`Category with id ${id} not found`);
     }
     return {
-      ...category,
+      id: category.id,
+      name: category.name,
+      description: category.description,
+      icon: category.icon,
+      sortOrder: category.sortOrder ?? 0,
       isActive: category.isActive ?? 1,
     };
   }
 
   static async deleteCategory(id: number): Promise<boolean> {
-    const db = getDb();
+    const db = getDbOrThrow();
     const result = await db.delete(categories).where(eq(categories.id, id)).returning();
     return result.length > 0;
   }
 
   static async searchCategories(searchTerm: string): Promise<CategoryData[]> {
-    const db = getDb();
+    const db = getDbOrThrow();
     const result = await db.select()
       .from(categories)
       .where(like(categories.name, `%${searchTerm}%`))
@@ -112,7 +144,7 @@ export class CategoriesService {
     pagination: { page: number; limit: number },
     sorting?: { sortBy?: string; sortOrder?: 'asc' | 'desc' }
   ): Promise<{ data: CategoryData[]; pagination: any }> {
-    const db = getDb();
+    const db = getDbOrThrow();
     const { page, limit } = pagination;
     const offset = (page - 1) * limit;
     
@@ -183,7 +215,7 @@ export class CategoriesService {
       statesWithData: number;
     };
   }> {
-    const db = getDb();
+    const db = getDbOrThrow();
     const category = await this.getCategoryById(categoryId);
     if (!category) {
       throw new Error(`Category with id ${categoryId} not found`);
@@ -241,7 +273,7 @@ export class CategoriesService {
       statesWithData: number;
     };
   }> {
-    const db = getDb();
+    const db = getDbOrThrow();
     const category = await this.getCategoryById(categoryId);
     if (!category) {
       throw new Error(`Category with id ${categoryId} not found`);
@@ -304,7 +336,7 @@ export class CategoriesService {
       statesWithData: number;
     }>;
   }> {
-    const db = getDb();
+    const db = getDbOrThrow();
     const category = await this.getCategoryById(categoryId);
     if (!category) {
       throw new Error(`Category with id ${categoryId} not found`);
@@ -346,7 +378,7 @@ export class CategoriesService {
       averageDataPointsPerStatistic: number;
     }>;
   }> {
-    const db = getDb();
+    const db = getDbOrThrow();
     const categories = await Promise.all(categoryIds.map(id => this.getCategoryById(id)));
     const validCategories = categories.filter(cat => cat !== null) as CategoryData[];
 
@@ -392,7 +424,7 @@ export class CategoriesService {
   }
 
   static async getCategoriesByDataAvailability(): Promise<CategoryData[]> {
-    const db = getDb();
+    const db = getDbOrThrow();
     const result = await db.select({
       id: categories.id,
       name: categories.name,

@@ -12,6 +12,9 @@ export async function GET(request: NextRequest) {
     }
 
     const db = getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
     
     // Get all import sessions with basic data and import details
     const sessions = await db
@@ -91,6 +94,9 @@ export async function PATCH(request: NextRequest) {
 
     const { sessionId, action } = await request.json();
     const db = getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
 
     if (action === 'activate') {
       await db

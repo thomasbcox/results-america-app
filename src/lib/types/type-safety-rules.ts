@@ -61,7 +61,7 @@ export function validateDatabaseResult<T>(
 /**
  * Creates a type-safe database query wrapper
  */
-export function createTypedQuery<TDatabase, TBusiness>(
+export function createTypedQuery<TDatabase extends object, TBusiness>(
   queryFn: () => Promise<TDatabase[]>,
   mapper: (dbResult: TDatabase) => TBusiness,
   typeName: string

@@ -21,6 +21,9 @@ export async function GET(
     }
 
     const db = getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
     
     // Get data points with state, category, and statistic names
     const dataPointsResult = await db

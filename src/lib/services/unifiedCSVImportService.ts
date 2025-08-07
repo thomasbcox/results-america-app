@@ -1,4 +1,4 @@
-import { getDb } from '../db/index';
+import { getDbOrThrow } from '../db/index';
 import { 
   csvImports, 
   csvImportMetadata, 
@@ -23,7 +23,7 @@ export interface ImportSession {
   uploadedBy: number;
   uploadedAt: Date;
   templateId: number;
-  status: 'uploaded' | 'validating' | 'staged' | 'failed' | 'published' | 'rolled_back';
+  status: 'uploaded' | 'validating' | 'validation_failed' | 'importing' | 'imported' | 'failed';
   validationSummary?: ValidationSummary;
   errorLog?: ValidationError[];
   promotionHistory?: PromotionRecord[];
@@ -107,7 +107,7 @@ export class UnifiedCSVImportService {
     metadata: Record<string, any>,
     userId: number
   ): Promise<CSVImportResult> {
-    const db = getDb();
+    const db = getDbOrThrow();
     try {
       console.log('UnifiedCSVImportService.uploadAndStage started');
       
@@ -189,7 +189,7 @@ export class UnifiedCSVImportService {
       
       // Update import status
       await db.update(csvImports)
-        .set({ status: 'staged' })
+        .set({ status: 'importing' })
         .where(eq(csvImports.id, importRecord.id));
 
       return {
@@ -213,7 +213,7 @@ export class UnifiedCSVImportService {
    * Validate staged data
    */
   static async validateStagedData(sessionId: number): Promise<ValidationResult> {
-    const db = getDb();
+    const db = getDbOrThrow();
     console.log(`🔍 Starting validation for import ${sessionId}`);
     
     const stagedData = await db.select()
@@ -315,8 +315,8 @@ export class UnifiedCSVImportService {
       validationTimeMs: Date.now() - Date.now() // Will be calculated properly
     };
 
-    // Update validation status - only fail if there are actual errors, not warnings
-    const finalStatus = errors.length > 0 ? 'validation_failed' : 'validated';
+    // Determine final status
+    const finalStatus = errors.length === 0 ? 'importing' : 'validation_failed';
     console.log(`📝 Setting import status to: ${finalStatus}`);
     
     await db.update(csvImports)
@@ -339,7 +339,7 @@ export class UnifiedCSVImportService {
    * Promote staged data to production
    */
   static async promoteToProduction(sessionId: number, userId: number): Promise<PromotionResult> {
-    const db = getDb();
+    const db = getDbOrThrow();
     try {
       // Get import details
       const [importRecord] = await db.select()
@@ -350,7 +350,7 @@ export class UnifiedCSVImportService {
         return { success: false, message: 'Import not found', publishedRows: 0 };
       }
 
-      if (importRecord.status !== 'validated') {
+      if (importRecord.status !== 'importing') {
         return { success: false, message: 'Import must be validated before publishing', publishedRows: 0 };
       }
 
@@ -402,7 +402,7 @@ export class UnifiedCSVImportService {
       // Update import status
       await db.update(csvImports)
         .set({ 
-          status: 'published',
+          status: 'imported',
           publishedAt: new Date()
         })
         .where(eq(csvImports.id, sessionId));
@@ -426,7 +426,7 @@ export class UnifiedCSVImportService {
    * Rollback a promotion
    */
   static async rollbackPromotion(sessionId: number, userId: number): Promise<RollbackResult> {
-    const db = getDb();
+    const db = getDbOrThrow();
     try {
       // Get import details
       const [importRecord] = await db.select()
@@ -437,7 +437,7 @@ export class UnifiedCSVImportService {
         return { success: false, message: 'Import not found', rolledBackRows: 0 };
       }
 
-      if (importRecord.status !== 'published') {
+      if (importRecord.status !== 'imported') {
         return { success: false, message: 'Only published imports can be rolled back', rolledBackRows: 0 };
       }
 
@@ -459,7 +459,7 @@ export class UnifiedCSVImportService {
       // Update import status
       await db.update(csvImports)
         .set({ 
-          status: 'rolled_back',
+          status: 'failed',
           errorMessage: `Rolled back by user ${userId} on ${new Date().toISOString()}`
         })
         .where(eq(csvImports.id, sessionId));
@@ -483,7 +483,7 @@ export class UnifiedCSVImportService {
    * Retry a failed import
    */
   static async retryImport(sessionId: number, userId: number): Promise<CSVImportResult> {
-    const db = getDb();
+    const db = getDbOrThrow();
     try {
       // Get the original import
       const [originalImport] = await db.select()
@@ -530,7 +530,7 @@ export class UnifiedCSVImportService {
    * Smart duplicate file check with retry logic
    */
   static async checkDuplicateFile(fileHash: string): Promise<DuplicateCheckResult> {
-    const db = getDb();
+    const db = getDbOrThrow();
     const existingImport = await db.select()
       .from(csvImports)
       .where(eq(csvImports.fileHash, fileHash))
@@ -552,7 +552,7 @@ export class UnifiedCSVImportService {
     }
     
     // Block only if successfully published
-    if (existing.status === 'published') {
+    if (existing.status === 'imported') {
       return { 
         isDuplicate: true, 
         canRetry: false, 
@@ -576,7 +576,7 @@ export class UnifiedCSVImportService {
     records: any[],
     template: any
   ): Promise<{ success: boolean; stats: any }> {
-    const db = getDb();
+    const db = getDbOrThrow();
     const stagedRows = [];
     let validRows = 0;
     let invalidRows = 0;
@@ -754,7 +754,7 @@ export class UnifiedCSVImportService {
    * Get template by ID
    */
   private static async getTemplate(id: number): Promise<any> {
-    const db = getDb();
+    const db = getDbOrThrow();
     const [template] = await db.select()
       .from(csvImportTemplates)
       .where(eq(csvImportTemplates.id, id));
@@ -774,7 +774,7 @@ export class UnifiedCSVImportService {
    * Get import metadata
    */
   private static async getImportMetadata(importId: number): Promise<any> {
-    const db = getDb();
+    const db = getDbOrThrow();
     const metadata = await db.select()
       .from(csvImportMetadata)
       .where(eq(csvImportMetadata.csvImportId, importId));

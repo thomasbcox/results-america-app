@@ -84,7 +84,7 @@ describe('Preference Direction System', () => {
       expect(results.length).toBeGreaterThan(0);
       
       // Verify all results have the expected preference direction
-      results.forEach(stat => {
+      results.forEach((stat: any) => {
         expect(stat.preferenceDirection).toBe('higher');
       });
     });
@@ -98,7 +98,7 @@ describe('Preference Direction System', () => {
       expect(statistics).toBeDefined();
       expect(statistics.length).toBeGreaterThan(0);
       
-      statistics.forEach(stat => {
+      statistics.forEach((stat: any) => {
         expect(stat).toHaveProperty('preferenceDirection');
         expect(['higher', 'lower']).toContain(stat.preferenceDirection);
       });
@@ -122,7 +122,7 @@ describe('Preference Direction System', () => {
       // Test search functionality with test database
       const results = await testDb.db.select().from(schema.statistics).where(eq(schema.statistics.name, 'High School Graduation Rate'));
       
-      results.forEach(stat => {
+      results.forEach((stat: any) => {
         expect(stat).toHaveProperty('preferenceDirection');
         expect(['higher', 'lower']).toContain(stat.preferenceDirection);
       });
@@ -132,7 +132,7 @@ describe('Preference Direction System', () => {
       // Test category filtering with test database
       const categories = await testDb.db.select().from(schema.statistics).where(eq(schema.statistics.categoryId, 1));
       
-      categories.forEach(stat => {
+      categories.forEach((stat: any) => {
         expect(stat).toHaveProperty('preferenceDirection');
         expect(['higher', 'lower']).toContain(stat.preferenceDirection);
       });
@@ -205,14 +205,14 @@ describe('Preference Direction System', () => {
       expect(statistics.length).toBeGreaterThan(0);
       
       // Test that we have both higher and lower preference statistics
-      const higherStats = statistics.filter(s => s.preferenceDirection === 'higher');
-      const lowerStats = statistics.filter(s => s.preferenceDirection === 'lower');
+      const higherStats = statistics.filter((s: any) => s.preferenceDirection === 'higher');
+      const lowerStats = statistics.filter((s: any) => s.preferenceDirection === 'lower');
       
       expect(higherStats.length).toBeGreaterThan(0);
       expect(lowerStats.length).toBeGreaterThan(0);
       
       // Verify preference direction values are valid
-      statistics.forEach(stat => {
+      statistics.forEach((stat: any) => {
         expect(['higher', 'lower']).toContain(stat.preferenceDirection);
       });
     });
@@ -224,7 +224,7 @@ describe('Preference Direction System', () => {
       expect(statistics.length).toBeGreaterThan(0);
       
       // Verify all statistics have valid preference direction
-      statistics.forEach(stat => {
+      statistics.forEach((stat: any) => {
         expect(stat.preferenceDirection).toBeDefined();
         expect(stat.preferenceDirection).not.toBeNull();
         expect(['higher', 'lower']).toContain(stat.preferenceDirection);
@@ -252,7 +252,7 @@ describe('Preference Direction System', () => {
       expect(statistics.length).toBeGreaterThan(0);
       
       // Verify all statistics have preference direction set
-      statistics.forEach(stat => {
+      statistics.forEach((stat: any) => {
         expect(stat.preferenceDirection).toBeDefined();
         expect(['higher', 'lower']).toContain(stat.preferenceDirection);
       });
@@ -303,7 +303,7 @@ describe('Preference Direction System', () => {
       expect(results.length).toBeGreaterThan(0);
       
       // Verify all results have the expected preference direction
-      results.forEach(stat => {
+      results.forEach((stat: any) => {
         expect(stat.preferenceDirection).toBe('higher');
       });
     });

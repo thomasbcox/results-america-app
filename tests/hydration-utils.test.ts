@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react'
+import '@testing-library/jest-dom'
 import { useClientOnly, ClientOnly, useSafeContextValue } from '../src/lib/utils/hydrationUtils'
 import React from 'react'
 
@@ -14,7 +15,7 @@ describe('Hydration Utilities', () => {
     it('should return false initially', () => {
       const { useState, useEffect } = require('react')
       useState.mockReturnValue([false, jest.fn()])
-      useEffect.mockImplementation((fn) => fn())
+      useEffect.mockImplementation((fn: any) => fn())
 
       const TestComponent = () => {
         const isClient = useClientOnly()
@@ -30,12 +31,14 @@ describe('Hydration Utilities', () => {
     it('should show fallback during SSR', () => {
       const { useState, useEffect } = require('react')
       useState.mockReturnValue([false, jest.fn()])
-      useEffect.mockImplementation((fn) => fn())
+      useEffect.mockImplementation((fn: any) => fn())
 
       const TestComponent = () => React.createElement(
         ClientOnly,
-        { fallback: React.createElement('div', { 'data-testid': 'loading' }, 'Loading...') },
-        React.createElement('div', { 'data-testid': 'content' }, 'Actual Content')
+        { 
+          fallback: React.createElement('div', { 'data-testid': 'loading' }, 'Loading...'),
+          children: React.createElement('div', { 'data-testid': 'content' }, 'Actual Content')
+        }
       )
 
       render(React.createElement(TestComponent))
@@ -48,7 +51,7 @@ describe('Hydration Utilities', () => {
     it('should return null during SSR', () => {
       const { useState, useEffect } = require('react')
       useState.mockReturnValue([false, jest.fn()])
-      useEffect.mockImplementation((fn) => fn())
+      useEffect.mockImplementation((fn: any) => fn())
 
       const TestComponent = () => {
         const safeValue = useSafeContextValue('test-value')

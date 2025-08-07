@@ -1,4 +1,4 @@
-import { getDb } from '../db/index';
+import { getDbOrThrow } from '../db/index';
 import { dataPoints, statistics, states, categories } from '../db/schema-postgres';
 import { eq, and, inArray, desc, asc, count, sql } from 'drizzle-orm';
 import { DataPointsService } from './dataPointsService';
@@ -135,7 +135,7 @@ export class AnalyticsService {
    * Analyze trends for a specific statistic across multiple years
    */
   static async analyzeTrends(statisticId: number, stateId: number, years: number[]): Promise<TrendAnalysis> {
-    const db = getDb();
+    const db = getDbOrThrow();
     const statistic = await StatisticsService.getStatisticById(statisticId);
     if (!statistic) {
       throw new Error(`Statistic with id ${statisticId} not found`);
@@ -187,7 +187,7 @@ export class AnalyticsService {
    * Compare states for a specific statistic and year
    */
   static async compareStates(stateIds: number[], statisticId: number, year: number): Promise<ComparisonData> {
-    const db = getDb();
+    const db = getDbOrThrow();
     const statistic = await StatisticsService.getStatisticById(statisticId);
     if (!statistic) {
       throw new Error(`Statistic with id ${statisticId} not found`);
@@ -252,7 +252,7 @@ export class AnalyticsService {
    * Compare statistics for a specific state and year
    */
   static async compareStatistics(statisticIds: number[], stateId: number, year: number): Promise<StateComparisonData> {
-    const db = getDb();
+    const db = getDbOrThrow();
     const state = await StatesService.getStateById(stateId);
     if (!state) {
       throw new Error(`State with id ${stateId} not found`);
@@ -309,7 +309,7 @@ export class AnalyticsService {
     year: number = 2023,
     order: 'asc' | 'desc' = 'desc'
   ): Promise<TopBottomPerformersData> {
-    const db = getDb();
+    const db = getDbOrThrow();
     const statistic = await StatisticsService.getStatisticById(statisticId);
     if (!statistic) {
       throw new Error(`Statistic with id ${statisticId} not found`);
@@ -347,7 +347,7 @@ export class AnalyticsService {
    * Detect anomalies in data using statistical methods
    */
   static async detectAnomalies(statisticId: number, year: number, threshold: number = 2): Promise<AnomalyData[]> {
-    const db = getDb();
+    const db = getDbOrThrow();
     const statistic = await StatisticsService.getStatisticById(statisticId);
     if (!statistic) {
       throw new Error(`Statistic with id ${statisticId} not found`);
@@ -413,7 +413,7 @@ export class AnalyticsService {
    * Calculate correlation between two statistics
    */
   static async calculateCorrelation(statisticId1: number, statisticId2: number, year: number): Promise<CorrelationData> {
-    const db = getDb();
+    const db = getDbOrThrow();
     const [statistic1, statistic2] = await Promise.all([
       StatisticsService.getStatisticById(statisticId1),
       StatisticsService.getStatisticById(statisticId2),

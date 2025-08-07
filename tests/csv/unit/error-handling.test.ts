@@ -3,7 +3,8 @@ import {
   generateValidMultiCategoryCSV, 
   generateValidSingleCategoryCSV, 
   generateInvalidCSV,
-  uploadTestCSV 
+  uploadTestCSV,
+  createTestCSV
 } from '../../utils/csv-test-helpers';
 
 describe('CSV Import Error Handling', () => {

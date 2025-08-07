@@ -5,7 +5,11 @@ import { csvImportTemplates, categories, dataSources } from '../../src/lib/db/sc
 import { eq } from 'drizzle-orm';
 
 async function setupFlexibleCSVTemplate() {
-  const db = getDb();  console.log('📋 Setting up flexible CSV import template...');
+  const db = getDb();
+  if (!db) {
+    throw new Error('Database not available');
+  }
+  console.log('📋 Setting up flexible CSV import template...');
 
   try {
     // Get or create categories and data sources

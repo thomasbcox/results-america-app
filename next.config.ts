@@ -7,7 +7,7 @@ const nextConfig: NextConfig = {
   },
   typescript: {
     // Don't fail the build on TypeScript warnings
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
 };
 

@@ -4,6 +4,9 @@ import { eq } from 'drizzle-orm';
 
 async function addSampleTrendData() {
   const db = getDb();
+  if (!db) {
+    throw new Error('Database not available');
+  }
   console.log('📈 Adding sample trend data for 2020-2023...');
 
   // Create import sessions for each year

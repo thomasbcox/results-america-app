@@ -1,5 +1,5 @@
-import { getDb } from '../db';
-import { userFavorites, userSuggestions, statistics, users } from '../db/schema';
+import { getDbOrThrow } from '../db';
+import { userFavorites, userSuggestions, statistics, users } from '../db/schema-postgres';
 import { eq, and, desc } from 'drizzle-orm';
 import { ServiceError, NotFoundError, ValidationError } from '../errors';
 import type { User } from '../../types/api';
@@ -9,7 +9,7 @@ export class UserPreferencesService {
    * Add a statistic to user's favorites
    */
   static async addFavorite(userId: number, statisticId: number): Promise<void> {
-    const db = getDb();
+    const db = getDbOrThrow();
     // Check if statistic exists
     const statistic = await db
       .select()
@@ -47,7 +47,7 @@ export class UserPreferencesService {
    * Remove a statistic from user's favorites
    */
   static async removeFavorite(userId: number, statisticId: number): Promise<void> {
-    const db = getDb();
+    const db = getDbOrThrow();
     await db
       .delete(userFavorites)
       .where(
@@ -62,7 +62,7 @@ export class UserPreferencesService {
    * Get user's favorite statistics
    */
   static async getFavorites(userId: number) {
-    const db = getDb();
+    const db = getDbOrThrow();
     return await db
       .select({
         id: userFavorites.id,
@@ -86,7 +86,7 @@ export class UserPreferencesService {
    * Check if a statistic is favorited by user
    */
   static async isFavorited(userId: number, statisticId: number): Promise<boolean> {
-    const db = getDb();
+    const db = getDbOrThrow();
     const favorite = await db
       .select()
       .from(userFavorites)
@@ -111,7 +111,7 @@ export class UserPreferencesService {
     description: string;
     category?: string;
   }): Promise<void> {
-    const db = getDb();
+    const db = getDbOrThrow();
     if (!data.userId && !data.email) {
       throw new ValidationError('Either userId or email is required');
     }
@@ -136,7 +136,7 @@ export class UserPreferencesService {
     }
 
     await db.insert(userSuggestions).values({
-      userId: data.userId || null,
+      userId: data.userId || 1, // Use a default user ID if not provided
       email: email,
       title: data.title,
       description: data.description,
@@ -149,7 +149,7 @@ export class UserPreferencesService {
    * Get user's suggestions
    */
   static async getUserSuggestions(userId: number) {
-    const db = getDb();
+    const db = getDbOrThrow();
     return await db
       .select()
       .from(userSuggestions)
@@ -161,9 +161,9 @@ export class UserPreferencesService {
    * Get all suggestions (admin only)
    */
   static async getAllSuggestions(status?: string) {
-    const db = getDb();
+    const db = getDbOrThrow();
     return status 
-      ? await db.select().from(userSuggestions).where(eq(userSuggestions.status, status as any)).orderBy(desc(userSuggestions.createdAt))
+      ? await db.select().from(userSuggestions).where(eq(userSuggestions.status, status as 'pending' | 'approved' | 'rejected' | 'implemented')).orderBy(desc(userSuggestions.createdAt))
       : await db.select().from(userSuggestions).orderBy(desc(userSuggestions.createdAt));
   }
 
@@ -175,11 +175,11 @@ export class UserPreferencesService {
     status: string,
     adminNotes?: string
   ): Promise<void> {
-    const db = getDb();
+    const db = getDbOrThrow();
     await db
       .update(userSuggestions)
       .set({
-        status: status as any,
+        status: status as 'pending' | 'approved' | 'rejected' | 'implemented',
         adminNotes,
         updatedAt: new Date(),
       })
@@ -190,7 +190,7 @@ export class UserPreferencesService {
    * Get suggestion by ID
    */
   static async getSuggestionById(id: number) {
-    const db = getDb();
+    const db = getDbOrThrow();
     const suggestion = await db
       .select()
       .from(userSuggestions)

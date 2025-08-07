@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import { getAdminUser } from '@/lib/middleware/auth';
 import { getDb } from '@/lib/db';
-import { categories } from '@/lib/db/schema';
+import { categories } from '@/lib/db/schema-postgres';
 import { eq } from 'drizzle-orm';
 
 export async function GET(request: NextRequest) {
@@ -16,6 +16,9 @@ export async function GET(request: NextRequest) {
     }
 
     const db = getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
     
     // Get all active categories
     const allCategories = await db.select({

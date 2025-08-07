@@ -1,5 +1,5 @@
 import { getDb } from '../db';
-import { users, userSuggestions, userFavorites, statistics, categories, dataPoints } from '../db/schema';
+import { users, userSuggestions, userFavorites, statistics, categories, dataPoints } from '../db/schema-postgres';
 import { eq, and, desc, count, sql } from 'drizzle-orm';
 import { ServiceError, NotFoundError } from '../errors';
 import type { User } from '../../types/api';
@@ -10,6 +10,9 @@ export class AdminService {
    */
   static async getSystemStats() {
     const db = getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
     const [
       userCount,
       activeUserCount,
@@ -53,6 +56,9 @@ export class AdminService {
    */
   static async getUsers(page: number = 1, limit: number = 20) {
     const db = getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
     const offset = (page - 1) * limit;
 
     const [usersList, totalCount] = await Promise.all([
@@ -83,6 +89,9 @@ export class AdminService {
    */
   static async getUserDetails(userId: number) {
     const db = getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
     const user = await db
       .select()
       .from(users)
@@ -119,6 +128,9 @@ export class AdminService {
    */
   static async updateUserRole(userId: number, role: 'user' | 'admin'): Promise<User> {
     const db = getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
     const [user] = await db
       .update(users)
       .set({
@@ -145,6 +157,9 @@ export class AdminService {
    */
   static async toggleUserStatus(userId: number): Promise<User> {
     const db = getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
     const user = await db
       .select()
       .from(users)
@@ -177,6 +192,9 @@ export class AdminService {
    */
   static async getSuggestions(page: number = 1, limit: number = 20, status?: string) {
     const db = getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
     const offset = (page - 1) * limit;
 
     const suggestions = status 
@@ -209,6 +227,9 @@ export class AdminService {
     adminNotes?: string
   ): Promise<void> {
     const db = getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
     const result = await db
       .update(userSuggestions)
       .set({
@@ -216,9 +237,10 @@ export class AdminService {
         adminNotes,
         updatedAt: new Date(),
       })
-      .where(eq(userSuggestions.id, suggestionId));
+      .where(eq(userSuggestions.id, suggestionId))
+      .returning();
 
-    if (result.changes === 0) {
+    if (result.length === 0) {
       throw new NotFoundError('Suggestion not found');
     }
   }
@@ -228,6 +250,9 @@ export class AdminService {
    */
   static async getSuggestionStats() {
     const db = getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
     const stats = await db
       .select({
         status: userSuggestions.status,
@@ -247,6 +272,9 @@ export class AdminService {
    */
   static async getRecentActivity(limit: number = 10) {
     const db = getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
     // This would typically combine recent user registrations, suggestions, etc.
     // For now, return recent suggestions
     const recentSuggestions = await db
@@ -263,6 +291,9 @@ export class AdminService {
    */
   static async getImportDetails(importId: number) {
     const db = getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
     // Import the CSV import tables
     const { csvImports, csvImportStaging, csvImportMetadata } = await import('../db/schema-postgres');
     

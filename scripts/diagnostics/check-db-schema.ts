@@ -1,7 +1,11 @@
 import { getDb } from '../../src/lib/db';
 
 async function checkSchema() {
-  const db = getDb();  try {
+  const db = getDb();
+  if (!db) {
+    throw new Error('Database not available');
+  }
+  try {
     console.log('🔍 Checking database schema...');
     
     // Check if csv_imports table exists and get its structure

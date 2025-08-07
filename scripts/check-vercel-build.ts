@@ -43,7 +43,7 @@ for (const check of checks) {
     console.log(`✅ ${check.name} passed\n`);
   } catch (error) {
     console.log(`❌ ${check.name} failed:`);
-    console.log(error.stdout?.toString() || error.message);
+    console.log((error as any).stdout?.toString() || (error as Error).message);
     console.log('');
     allPassed = false;
   }

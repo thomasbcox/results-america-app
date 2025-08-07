@@ -4,7 +4,11 @@ import { getDb } from '../../src/lib/db';
 import { categories, statistics } from '../../src/lib/db/schema-postgres';
 
 async function checkCategoriesAndStats() {
-  const db = getDb();  console.log('📊 Checking categories and statistics...');
+  const db = getDb();
+  if (!db) {
+    throw new Error('Database not available');
+  }
+  console.log('📊 Checking categories and statistics...');
   
   try {
     const allCategories = await db.select().from(categories);

@@ -106,6 +106,15 @@ export const getDb = () => {
   return databaseInstance;
 };
 
+// Helper function to safely get database with null check
+export const getDbOrThrow = () => {
+  const db = getDb();
+  if (!db) {
+    throw new Error('Database connection not available');
+  }
+  return db;
+};
+
 // For backward compatibility, export db as a getter function
 export const db = getDb;
 

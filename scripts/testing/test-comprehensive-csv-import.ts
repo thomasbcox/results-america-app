@@ -49,7 +49,7 @@ async function testComprehensiveImport() {
       const details = await ComprehensiveCSVImportService.getImportDetails(result.importId);
       
       console.log('\n📝 Import Details:');
-      console.log('Status:', details.import.status);
+      console.log('Status:', (details.import as any)?.status || 'unknown');
       console.log('Total Logs:', details.logs.length);
       
       if (details.summary) {
