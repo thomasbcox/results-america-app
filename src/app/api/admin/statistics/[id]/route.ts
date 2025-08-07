@@ -4,9 +4,10 @@ import { withErrorHandling, createSuccessResponse, createBadRequestResponse } fr
 
 async function handleUpdateStatistic(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const statisticId = Number(params.id);
+  const resolvedParams = await params;
+  const statisticId = Number(resolvedParams.id);
   
   if (isNaN(statisticId)) {
     return createBadRequestResponse('Invalid statistic ID');

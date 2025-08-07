@@ -418,15 +418,17 @@ export default function ResultsPage() {
                               </div>
                               
                               {/* State Rankings */}
-                              <div className="mb-4">
-                                <StateRankings 
-                                  statisticId={safeSelectedMeasure}
-                                  year={2022}
-                                  order="desc"
-                                  className=""
-                                  preferenceDirection={preferenceDirection}
-                                />
-                              </div>
+                              {safeSelectedMeasure && preferenceDirection !== 'neutral' && (
+                                <div className="mb-4">
+                                  <StateRankings 
+                                    statisticId={safeSelectedMeasure}
+                                    year={2022}
+                                    order="desc"
+                                    className=""
+                                    preferenceDirection={preferenceDirection as 'higher' | 'lower'}
+                                  />
+                                </div>
+                              )}
                               
                               {/* Card footer */}
                               <div className="mt-4 pt-4 border-t border-gray-200 text-center">

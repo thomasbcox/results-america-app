@@ -672,12 +672,12 @@ export class BulletproofTestDatabase {
    */
   private static async seedStatistics(testDb: TestDatabase): Promise<void> {
     const statistics = [
-      { categoryId: 1, dataSourceId: 1, name: 'High School Graduation Rate', description: 'Percentage of students who graduate high school', unit: 'percentage', preferenceDirection: 'higher', isActive: 1 },
-      { categoryId: 1, dataSourceId: 1, name: 'College Enrollment Rate', description: 'Percentage of high school graduates who enroll in college', unit: 'percentage', preferenceDirection: 'higher', isActive: 1 },
-      { categoryId: 2, dataSourceId: 2, name: 'Life Expectancy', description: 'Average life expectancy at birth', unit: 'years', preferenceDirection: 'higher', isActive: 1 },
-      { categoryId: 2, dataSourceId: 2, name: 'Infant Mortality Rate', description: 'Deaths per 1,000 live births', unit: 'per 1,000', preferenceDirection: 'lower', isActive: 1 },
-      { categoryId: 3, dataSourceId: 3, name: 'Unemployment Rate', description: 'Percentage of labor force that is unemployed', unit: 'percentage', preferenceDirection: 'lower', isActive: 1 },
-      { categoryId: 3, dataSourceId: 3, name: 'Median Household Income', description: 'Median annual household income', unit: 'dollars', preferenceDirection: 'higher', isActive: 1 }
+      { categoryId: 1, dataSourceId: 1, name: 'High School Graduation Rate', description: 'Percentage of students who graduate high school', unit: 'percentage', preferenceDirection: 'higher' as const, isActive: 1 },
+      { categoryId: 1, dataSourceId: 1, name: 'College Enrollment Rate', description: 'Percentage of high school graduates who enroll in college', unit: 'percentage', preferenceDirection: 'higher' as const, isActive: 1 },
+      { categoryId: 2, dataSourceId: 2, name: 'Life Expectancy', description: 'Average life expectancy at birth', unit: 'years', preferenceDirection: 'higher' as const, isActive: 1 },
+      { categoryId: 2, dataSourceId: 2, name: 'Infant Mortality Rate', description: 'Deaths per 1,000 live births', unit: 'per 1,000', preferenceDirection: 'lower' as const, isActive: 1 },
+      { categoryId: 3, dataSourceId: 3, name: 'Unemployment Rate', description: 'Percentage of labor force that is unemployed', unit: 'percentage', preferenceDirection: 'lower' as const, isActive: 1 },
+      { categoryId: 3, dataSourceId: 3, name: 'Median Household Income', description: 'Median annual household income', unit: 'dollars', preferenceDirection: 'higher' as const, isActive: 1 }
     ];
 
     await testDb.db.insert(schema.statistics).values(statistics);

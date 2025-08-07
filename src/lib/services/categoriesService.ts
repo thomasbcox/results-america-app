@@ -211,7 +211,7 @@ export class CategoriesService {
     const statisticsWithData = new Set(dataPointsResult.map((dp: any) => dp.statisticId)).size;
     const totalDataPoints = dataPointsResult.length;
     const averageDataPointsPerStatistic = totalStatistics > 0 ? totalDataPoints / totalStatistics : 0;
-    const yearsWithData = [...new Set(dataPointsResult.map((dp: any) => dp.year))].sort();
+    const yearsWithData = [...new Set(dataPointsResult.map((dp: any) => dp.year as number))].sort() as number[];
     const statesWithData = new Set(dataPointsResult.map((dp: any) => dp.stateId)).size;
 
     return {
@@ -267,7 +267,7 @@ export class CategoriesService {
     const statisticsWithData = new Set(dataPointsResult.map((dp: any) => dp.statisticId)).size;
     const coveragePercentage = totalStatistics > 0 ? (statisticsWithData / totalStatistics) * 100 : 0;
     const averageDataPointsPerStatistic = totalStatistics > 0 ? dataPointsResult.length / totalStatistics : 0;
-    const yearsWithData = [...new Set(dataPointsResult.map((dp: any) => dp.year))].sort();
+    const yearsWithData = [...new Set(dataPointsResult.map((dp: any) => dp.year as number))].sort() as number[];
     const statesWithData = new Set(dataPointsResult.map((dp: any) => dp.stateId)).size;
 
     let dataQuality: 'complete' | 'partial' | 'minimal';

@@ -78,9 +78,9 @@ async function runMigration() {
     console.log('\n📋 Migration Summary:');
     console.log(`Total statistics: ${allStats.length}`);
     
-    const higherCount = allStats.filter(s => s.preferenceDirection === 'higher').length;
-    const lowerCount = allStats.filter(s => s.preferenceDirection === 'lower').length;
-    const neutralCount = allStats.filter(s => s.preferenceDirection === 'neutral').length;
+    const higherCount = allStats.filter((s: any) => s.preferenceDirection === 'higher').length;
+    const lowerCount = allStats.filter((s: any) => s.preferenceDirection === 'lower').length;
+    const neutralCount = allStats.filter((s: any) => s.preferenceDirection === 'neutral').length;
     
     console.log(`Higher preference: ${higherCount}`);
     console.log(`Lower preference: ${lowerCount}`);

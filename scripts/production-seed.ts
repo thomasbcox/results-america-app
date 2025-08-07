@@ -3,7 +3,7 @@
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import Database from 'better-sqlite3';
 import * as schema from '../src/lib/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 
 /**
  * PRODUCTION DATABASE SEEDING SCRIPT
@@ -331,10 +331,12 @@ Florida,2023,1200000`,
 
     for (const dataPoint of dataPointData) {
       const existing = await db.select().from(schema.dataPoints)
-        .where(eq(schema.dataPoints.importSessionId, dataPoint.importSessionId))
-        .where(eq(schema.dataPoints.year, dataPoint.year))
-        .where(eq(schema.dataPoints.stateId, dataPoint.stateId))
-        .where(eq(schema.dataPoints.statisticId, dataPoint.statisticId))
+        .where(and(
+          eq(schema.dataPoints.importSessionId, dataPoint.importSessionId),
+          eq(schema.dataPoints.year, dataPoint.year),
+          eq(schema.dataPoints.stateId, dataPoint.stateId),
+          eq(schema.dataPoints.statisticId, dataPoint.statisticId)
+        ))
         .limit(1);
       
       if (existing.length === 0) {

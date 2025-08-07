@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { seedVercelDatabase } from '@/scripts/vercel-seed';
+import { seedVercelDatabase } from '../../../../../scripts/vercel-seed';
 
 export async function POST(request: NextRequest) {
   try {

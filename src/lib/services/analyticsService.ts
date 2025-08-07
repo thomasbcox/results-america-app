@@ -147,7 +147,7 @@ export class AnalyticsService {
     }
 
     // Get data points for this statistic and state across the years
-    const dataPoints = await db.select({
+    const points = await db.select({
       year: dataPoints.year,
       value: dataPoints.value,
     })
@@ -160,8 +160,8 @@ export class AnalyticsService {
       .orderBy(dataPoints.year);
 
     // Calculate trends with year-over-year changes
-    const trends = dataPoints.map((point: any, index: number) => {
-      const previousPoint = index > 0 ? dataPoints[index - 1] : null;
+    const trends = points.map((point: any, index: number) => {
+      const previousPoint = index > 0 ? points[index - 1] : null;
       const changeFromPrevious = previousPoint ? point.value - previousPoint.value : 0;
       const changePercent = previousPoint && previousPoint.value !== 0 ? 
         (changeFromPrevious / previousPoint.value) * 100 : 0;
@@ -194,7 +194,7 @@ export class AnalyticsService {
     }
 
     // Get data points for the specified states, statistic, and year
-    const dataPoints = await db.select({
+    const points = await db.select({
       stateId: dataPoints.stateId,
       stateName: states.name,
       value: dataPoints.value,
@@ -208,26 +208,26 @@ export class AnalyticsService {
       ))
       .orderBy(desc(dataPoints.value));
 
-    if (dataPoints.length === 0) {
+    if (points.length === 0) {
       throw new Error(`No data found for statistic ${statisticId} in year ${year}`);
     }
 
     // Calculate statistics
-    const values = dataPoints.map((dp: any) => dp.value);
-    const nationalAverage = values.reduce((sum, val) => sum + val, 0) / values.length;
-    const sortedValues = [...values].sort((a, b) => a - b);
+    const values = points.map((dp: any) => dp.value);
+    const nationalAverage = values.reduce((sum: number, val: number) => sum + val, 0) / values.length;
+    const sortedValues = [...values].sort((a: number, b: number) => a - b);
     const median = sortedValues.length % 2 === 0 ? 
       (sortedValues[sortedValues.length / 2 - 1] + sortedValues[sortedValues.length / 2]) / 2 :
       sortedValues[Math.floor(sortedValues.length / 2)];
 
     // Calculate standard deviation
-    const variance = values.reduce((sum, val) => sum + Math.pow(val - nationalAverage, 2), 0) / values.length;
+    const variance = values.reduce((sum: number, val: number) => sum + Math.pow(val - nationalAverage, 2), 0) / values.length;
     const standardDeviation = Math.sqrt(variance);
 
     // Create rankings with percentiles
-    const rankings = dataPoints.map((point: any, index: number) => {
+    const rankings = points.map((point: any, index: number) => {
       const rank = index + 1;
-      const percentile = ((rank - 1) / (dataPoints.length - 1)) * 100;
+      const percentile = ((rank - 1) / (points.length - 1)) * 100;
       return {
         stateId: point.stateId,
         stateName: point.stateName || 'Unknown',
@@ -259,7 +259,7 @@ export class AnalyticsService {
     }
 
     // Get data points for the specified statistics, state, and year
-    const dataPoints = await db.select({
+    const points = await db.select({
       statisticId: dataPoints.statisticId,
       statisticName: statistics.name,
       value: dataPoints.value,
@@ -274,14 +274,14 @@ export class AnalyticsService {
       ))
       .orderBy(desc(dataPoints.value));
 
-    if (dataPoints.length === 0) {
+    if (points.length === 0) {
       throw new Error(`No data found for state ${stateId} in year ${year}`);
     }
 
     // Create rankings with percentiles
-    const rankings = dataPoints.map((point: any, index: number) => {
+    const rankings = points.map((point: any, index: number) => {
       const rank = index + 1;
-      const percentile = ((rank - 1) / (dataPoints.length - 1)) * 100;
+      const percentile = ((rank - 1) / (points.length - 1)) * 100;
       return {
         statisticId: point.statisticId,
         statisticName: point.statisticName || 'Unknown',
@@ -316,7 +316,7 @@ export class AnalyticsService {
     }
 
     // Get data points for this statistic and year, ordered by value
-    const dataPoints = await db.select({
+    const points = await db.select({
       stateId: dataPoints.stateId,
       stateName: states.name,
       value: dataPoints.value,
@@ -328,7 +328,7 @@ export class AnalyticsService {
       .limit(limit);
 
     // Create performers list with rankings
-    const performers = dataPoints.map((point: any, index: number) => ({
+    const performers = points.map((point: any, index: number) => ({
       stateId: point.stateId,
       stateName: point.stateName || 'Unknown',
       value: point.value,
@@ -354,7 +354,7 @@ export class AnalyticsService {
     }
 
     // Get all data points for this statistic and year
-    const dataPoints = await db.select({
+    const points = await db.select({
       stateId: dataPoints.stateId,
       stateName: states.name,
       value: dataPoints.value,
@@ -363,18 +363,18 @@ export class AnalyticsService {
       .leftJoin(states, eq(dataPoints.stateId, states.id))
       .where(and(eq(dataPoints.statisticId, statisticId), eq(dataPoints.year, year)));
 
-    if (dataPoints.length < 3) {
+    if (points.length < 3) {
       return []; // Need at least 3 data points for anomaly detection
     }
 
     // Calculate mean and standard deviation
-    const values = dataPoints.map((dp: any) => dp.value);
-    const mean = values.reduce((sum, val) => sum + val, 0) / values.length;
-    const variance = values.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / values.length;
+    const values = points.map((dp: any) => dp.value);
+    const mean = values.reduce((sum: number, val: number) => sum + val, 0) / values.length;
+    const variance = values.reduce((sum: number, val: number) => sum + Math.pow(val - mean, 2), 0) / values.length;
     const stdDev = Math.sqrt(variance);
 
     // Find anomalies (values outside threshold * standard deviation)
-    const anomalies = dataPoints
+    const anomalies = points
       .map((point: any) => {
         const deviation = Math.abs(point.value - mean);
         const deviationPercent = (deviation / mean) * 100;
@@ -439,8 +439,8 @@ export class AnalyticsService {
       .where(and(eq(dataPoints.statisticId, statisticId2), eq(dataPoints.year, year)));
 
     // Create maps for easy lookup
-    const map1 = new Map(dataPoints1.map((dp: any) => [dp.stateId, dp.value]));
-    const map2 = new Map(dataPoints2.map((dp: any) => [dp.stateId, dp.value]));
+    const map1 = new Map<number, number>(dataPoints1.map((dp: any) => [dp.stateId, dp.value]));
+    const map2 = new Map<number, number>(dataPoints2.map((dp: any) => [dp.stateId, dp.value]));
 
     // Find common states
     const commonStates = Array.from(map1.keys()).filter(stateId => map2.has(stateId));
@@ -450,17 +450,17 @@ export class AnalyticsService {
     }
 
     // Calculate correlation coefficient
-    const pairs = commonStates.map(stateId => ({
+    const pairs: Array<{ x: number; y: number }> = commonStates.map(stateId => ({
       x: map1.get(stateId)!,
       y: map2.get(stateId)!,
     }));
 
     const n = pairs.length;
-    const sumX = pairs.reduce((sum, pair) => sum + pair.x, 0);
-    const sumY = pairs.reduce((sum, pair) => sum + pair.y, 0);
-    const sumXY = pairs.reduce((sum, pair) => sum + pair.x * pair.y, 0);
-    const sumX2 = pairs.reduce((sum, pair) => sum + pair.x * pair.x, 0);
-    const sumY2 = pairs.reduce((sum, pair) => sum + pair.y * pair.y, 0);
+    const sumX = pairs.reduce((sum: number, pair: { x: number; y: number }) => sum + pair.x, 0);
+    const sumY = pairs.reduce((sum: number, pair: { x: number; y: number }) => sum + pair.y, 0);
+    const sumXY = pairs.reduce((sum: number, pair: { x: number; y: number }) => sum + pair.x * pair.y, 0);
+    const sumX2 = pairs.reduce((sum: number, pair: { x: number; y: number }) => sum + pair.x * pair.x, 0);
+    const sumY2 = pairs.reduce((sum: number, pair: { x: number; y: number }) => sum + pair.y * pair.y, 0);
 
     const numerator = n * sumXY - sumX * sumY;
     const denominator = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
