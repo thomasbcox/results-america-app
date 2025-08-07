@@ -148,44 +148,57 @@ export class StatisticsService {
 
   static async getAllStatisticsWithSources(): Promise<StatisticData[]> {
     const db = getDb();
-    const results = await db.select({
-      id: statistics.id,
-      name: statistics.name,
-      raNumber: statistics.raNumber,
-      description: statistics.description,
-      subMeasure: statistics.subMeasure,
-      calculation: statistics.calculation,
-      unit: statistics.unit,
-      availableSince: statistics.availableSince,
-      preferenceDirection: statistics.preferenceDirection,
-      isActive: statistics.isActive,
-      categoryId: statistics.categoryId,
-      dataSourceId: statistics.dataSourceId,
-      categoryName: categories.name,
-      dataSourceName: dataSources.name,
-    })
-      .from(statistics)
-      .leftJoin(dataSources, eq(statistics.dataSourceId, dataSources.id))
-      .leftJoin(categories, eq(statistics.categoryId, categories.id));
+    
+    // Handle case where database connection fails
+    if (!db) {
+      console.warn('Database connection not available, returning empty statistics array');
+      return [];
+    }
+    
+    try {
+      const results = await db.select({
+        id: statistics.id,
+        name: statistics.name,
+        raNumber: statistics.raNumber,
+        description: statistics.description,
+        subMeasure: statistics.subMeasure,
+        calculation: statistics.calculation,
+        unit: statistics.unit,
+        availableSince: statistics.availableSince,
+        preferenceDirection: statistics.preferenceDirection,
+        isActive: statistics.isActive,
+        categoryId: statistics.categoryId,
+        dataSourceId: statistics.dataSourceId,
+        categoryName: categories.name,
+        dataSourceName: dataSources.name,
+      })
+        .from(statistics)
+        .leftJoin(dataSources, eq(statistics.dataSourceId, dataSources.id))
+        .leftJoin(categories, eq(statistics.categoryId, categories.id));
 
-    return results.map((result: any) => ({
-      id: result.id,
-      name: result.name,
-      raNumber: result.raNumber,
-      description: result.description,
-      subMeasure: result.subMeasure,
-      calculation: result.calculation,
-      unit: result.unit,
-      availableSince: result.availableSince,
-      preferenceDirection: result.preferenceDirection || 'higher',
-      dataQuality: 'mock', // Default for normalized schema
-      provenance: undefined, // Not available in normalized schema
-      isActive: result.isActive ?? 1,
-      categoryId: result.categoryId,
-      dataSourceId: result.dataSourceId,
-      categoryName: result.categoryName || undefined,
-      dataSourceName: result.dataSourceName || undefined,
-    }));
+      return results.map((result: any) => ({
+        id: result.id,
+        name: result.name,
+        raNumber: result.raNumber,
+        description: result.description,
+        subMeasure: result.subMeasure,
+        calculation: result.calculation,
+        unit: result.unit,
+        availableSince: result.availableSince,
+        preferenceDirection: result.preferenceDirection || 'higher',
+        dataQuality: 'mock', // Default for normalized schema
+        provenance: undefined, // Not available in normalized schema
+        isActive: result.isActive ?? 1,
+        categoryId: result.categoryId,
+        dataSourceId: result.dataSourceId,
+        categoryName: result.categoryName || undefined,
+        dataSourceName: result.dataSourceName || undefined,
+      }));
+    } catch (error) {
+      console.error('Error fetching statistics from database:', error);
+      // Return empty array instead of throwing error
+      return [];
+    }
   }
 
   static async getStatisticById(id: number): Promise<StatisticData | null> {
