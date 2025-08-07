@@ -772,7 +772,7 @@ export default function AdminDataPage() {
                                 Your data should have these columns (in any order):
                               </p>
                               <div className="flex flex-wrap gap-2">
-                                {template.templateSchema.expectedHeaders && template.templateSchema.expectedHeaders.map((header: string, index: number) => (
+                                {template.templateSchema.expectedHeaders.map((header: string, index: number) => (
                                   <Badge key={index} variant="outline" className="text-xs">
                                     {header}
                                   </Badge>
@@ -1233,7 +1233,7 @@ Both formats will be automatically converted to CSV.`}
                           <div className="text-sm">
                             <span className="font-medium">Expected Columns:</span>
                             <p className="text-gray-600 mt-1">
-                              {template.templateSchema.expectedHeaders.join(', ')}
+                              {template.templateSchema?.expectedHeaders?.join(', ') || 'No headers defined'}
                             </p>
                           </div>
                           <Button size="sm" variant="outline" className="w-full">
