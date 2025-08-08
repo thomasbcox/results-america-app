@@ -1,7 +1,6 @@
-import { getDb } from '../db/index';
+import { getDbOrThrow } from '../db/index';
 import { states } from '../db/schema-postgres';
 import { eq } from 'drizzle-orm';
-import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 import { cache } from './cache';
 import { PaginationService } from './pagination';
 import { FilterService } from './filters';
@@ -15,11 +14,11 @@ import type {
   PaginatedResult,
   FilterOptions
 } from '../types/service-interfaces';
-import type { StateWithJoins } from '../types/database-results';
+// No need to import StateWithJoins for raw DB mapping
 
 export class StatesService {
   static async getAllStates(useCache = true): Promise<StateData[]> {
-    const db = getDb();
+    const db = getDbOrThrow();
     if (!db) {
       console.warn('Database not available - returning empty array');
       return [];
@@ -45,8 +44,10 @@ export class StatesService {
         cache.set('states', result);
       }
       
-      return result.map((state: StateWithJoins) => ({
-        ...state,
+      return result.map((state) => ({
+        id: state.id,
+        name: state.name,
+        abbreviation: state.abbreviation,
         isActive: state.isActive ?? 1,
       }));
     } catch (error) {
@@ -85,7 +86,7 @@ export class StatesService {
   }
 
   static async getStateById(id: number): Promise<StateData | null> {
-    const db = getDb();
+    const db = getDbOrThrow();
     const result = await db.select().from(states).where(eq(states.id, id)).limit(1);
     if (result.length === 0) return null;
     
@@ -97,7 +98,7 @@ export class StatesService {
   }
 
   static async createState(data: CreateStateInput): Promise<StateData> {
-    const db = getDb();
+    const db = getDbOrThrow();
     const [state] = await db.insert(states).values(data).returning();
     cache.delete('states'); // Invalidate cache
     return {
@@ -107,7 +108,7 @@ export class StatesService {
   }
 
   static async updateState(id: number, data: UpdateStateInput): Promise<StateData> {
-    const db = getDb();
+    const db = getDbOrThrow();
     const [state] = await db.update(states).set(data).where(eq(states.id, id)).returning();
     if (!state) {
       throw new Error(`State with id ${id} not found`);
@@ -120,7 +121,7 @@ export class StatesService {
   }
 
   static async deleteState(id: number): Promise<boolean> {
-    const db = getDb();
+    const db = getDbOrThrow();
     const result = await db.delete(states).where(eq(states.id, id)).returning();
     cache.delete('states'); // Invalidate cache
     return result.length > 0;

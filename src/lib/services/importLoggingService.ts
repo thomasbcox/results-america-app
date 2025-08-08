@@ -1,5 +1,5 @@
-import { getDb } from '@/lib/db';
-import { importLogs, importValidationSummary, csvImports } from '@/lib/db/schema';
+import { getDbOrThrow } from '@/lib/db';
+import { importLogs, importValidationSummary, csvImports } from '@/lib/db/schema-postgres';
 import { eq, and, desc } from 'drizzle-orm';
 
 export interface ValidationError {
@@ -40,7 +40,7 @@ export class ImportLoggingService {
     importId: number, 
     error: ValidationError
   ): Promise<void> {
-    const db = getDb();
+    const db = getDbOrThrow();
     await db.insert(importLogs).values({
       csvImportId: importId,
       logLevel: 'validation_error',
@@ -59,7 +59,7 @@ export class ImportLoggingService {
     error: Error, 
     details?: any
   ): Promise<void> {
-    const db = getDb();
+    const db = getDbOrThrow();
     await db.insert(importLogs).values({
       csvImportId: importId,
       logLevel: 'system_error',
@@ -74,7 +74,7 @@ export class ImportLoggingService {
     message: string, 
     details?: any
   ): Promise<void> {
-    const db = getDb();
+    const db = getDbOrThrow();
     await db.insert(importLogs).values({
       csvImportId: importId,
       logLevel: 'info',
@@ -88,7 +88,7 @@ export class ImportLoggingService {
     importId: number, 
     summary: ValidationSummary
   ): Promise<void> {
-    const db = getDb();
+    const db = getDbOrThrow();
     await db.insert(importValidationSummary).values({
       csvImportId: importId,
       totalRows: summary.totalRows,
@@ -101,7 +101,7 @@ export class ImportLoggingService {
   }
 
   static async getImportLogs(importId: number): Promise<ImportLog[]> {
-    const db = getDb();
+    const db = getDbOrThrow();
     const logs = await db
       .select()
       .from(importLogs)
@@ -116,7 +116,7 @@ export class ImportLoggingService {
   }
 
   static async getImportSummary(importId: number): Promise<ValidationSummary | null> {
-    const db = getDb();
+    const db = getDbOrThrow();
     const summary = await db
       .select()
       .from(importValidationSummary)
@@ -158,13 +158,12 @@ export class ImportLoggingService {
     status: 'uploaded' | 'validating' | 'validation_failed' | 'importing' | 'imported' | 'failed',
     errorMessage?: string
   ): Promise<void> {
-    const db = getDb();
+    const db = getDbOrThrow();
     await db
       .update(csvImports)
       .set({ 
         status, 
-        errorMessage,
-        updatedAt: new Date()
+        errorMessage
       })
       .where(eq(csvImports.id, importId));
   }

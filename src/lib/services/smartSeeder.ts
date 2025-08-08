@@ -1,4 +1,4 @@
-import { getDb } from '../db';
+import { getDbOrThrow } from '../db';
 import { states, categories, dataSources, statistics, dataPoints, importSessions, nationalAverages } from '../db/schema-postgres';
 import { eq, and } from 'drizzle-orm';
 
@@ -58,7 +58,7 @@ export class SmartSeeder {
    * Seed states - all 50 US states
    */
   static async seedStates(): Promise<SeedingResult> {
-    const db = getDb();
+    const db = getDbOrThrow();
     const result: SeedingResult = { table: 'states', created: 0, updated: 0, errors: [] };
 
     const stateData = [
@@ -149,7 +149,7 @@ export class SmartSeeder {
    * Seed categories
    */
   static async seedCategories(): Promise<SeedingResult> {
-    const db = getDb();
+    const db = getDbOrThrow();
     const result: SeedingResult = { table: 'categories', created: 0, updated: 0, errors: [] };
 
     const categoryData = [
@@ -196,7 +196,7 @@ export class SmartSeeder {
    * Seed data sources
    */
   static async seedDataSources(): Promise<SeedingResult> {
-    const db = getDb();
+    const db = getDbOrThrow();
     const result: SeedingResult = { table: 'data_sources', created: 0, updated: 0, errors: [] };
 
     const dataSourceData = [
@@ -251,7 +251,7 @@ export class SmartSeeder {
    * Seed statistics with name-based FK lookups
    */
   static async seedStatistics(): Promise<SeedingResult> {
-    const db = getDb();
+    const db = getDbOrThrow();
     const result: SeedingResult = { table: 'statistics', created: 0, updated: 0, errors: [] };
 
     const statisticData = [
@@ -564,7 +564,7 @@ export class SmartSeeder {
    * Seed sample data points with name-based FK lookups
    */
   static async seedDataPoints(): Promise<SeedingResult> {
-    const db = getDb();
+    const db = getDbOrThrow();
     const result: SeedingResult = { table: 'data_points', created: 0, updated: 0, errors: [] };
 
     // Get or create import session
@@ -657,7 +657,7 @@ export class SmartSeeder {
    * Seed national averages
    */
   static async seedNationalAverages(): Promise<SeedingResult> {
-    const db = getDb();
+    const db = getDbOrThrow();
     const result: SeedingResult = { table: 'national_averages', created: 0, updated: 0, errors: [] };
 
     const averageData = [
@@ -728,7 +728,7 @@ export class SmartSeeder {
    * Get or create import session
    */
   private static async getOrCreateImportSession(name: string) {
-    const db = getDb();
+    const db = getDbOrThrow();
 
     const existing = await db
       .select()

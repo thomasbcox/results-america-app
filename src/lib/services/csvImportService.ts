@@ -1,4 +1,4 @@
-import { getDb } from '../db/index';
+import { getDbOrThrow } from '../db/index';
 import { 
   csvImports, 
   csvImportMetadata, 
@@ -91,7 +91,7 @@ export class CSVImportService {
     metadata: Record<string, any>,
     uploadedBy: number
   ): Promise<CSVImportResult> {
-    const db = getDb();
+    const db = getDbOrThrow();
     try {
       console.log('CSVImportService.uploadCSV started');
       console.log('Parameters:', { templateId, metadata, uploadedBy });
@@ -270,8 +270,9 @@ export class CSVImportService {
     records: any[],
     template: CSVImportTemplate
   ): Promise<{ success: boolean; stats: any }> {
-    const db = getDb();
-    const stagedRows = [];
+    const db = getDbOrThrow();
+    type CsvImportStagingInsert = typeof csvImportStaging.$inferInsert;
+    const stagedRows: CsvImportStagingInsert[] = [];
     let validRows = 0;
     let invalidRows = 0;
     let warnings = 0;
@@ -354,7 +355,7 @@ export class CSVImportService {
         // Basic validation
         const validation = this.validateRow(mappedData, template.validationRules);
         
-        const stagedRow = {
+        const stagedRow: CsvImportStagingInsert = {
           csvImportId: importId,
           rowNumber,
           stateName: mappedData.stateName,
@@ -367,7 +368,7 @@ export class CSVImportService {
             ...record,
             additionalColumns: mappedData.additionalColumns
           }),
-          validationStatus: validation.isValid ? 'valid' : 'invalid',
+          validationStatus: (validation.isValid ? 'valid' : 'invalid'),
           validationErrors: validation.errors.length > 0 ? JSON.stringify(validation.errors) : null
         };
 
@@ -389,7 +390,7 @@ export class CSVImportService {
           rawData: JSON.stringify(record),
           validationStatus: 'invalid',
           validationErrors: JSON.stringify([error instanceof Error ? error.message : 'Unknown error'])
-        });
+        } as CsvImportStagingInsert);
       }
     }
 
@@ -413,7 +414,7 @@ export class CSVImportService {
    * Validate staged data
    */
   static async validateImport(importId: number): Promise<CSVValidationResult> {
-    const db = getDb();
+    const db = getDbOrThrow();
     console.log(`🔍 Starting validation for import ${importId}`);
     
     const stagedData = await db.select()
@@ -515,7 +516,7 @@ export class CSVImportService {
    * Publish validated data to the main dataPoints table
    */
   static async publishImport(importId: number): Promise<{ success: boolean; message: string; publishedRows: number }> {
-    const db = getDb();
+    const db = getDbOrThrow();
     try {
       // Get import details
       const [importRecord] = await db.select()
@@ -601,7 +602,7 @@ export class CSVImportService {
    * Get import templates
    */
   static async getTemplates(): Promise<CSVImportTemplate[]> {
-    const db = getDb();
+    const db = getDbOrThrow();
     const templates = await db.select()
       .from(csvImportTemplates)
       .where(eq(csvImportTemplates.isActive, 1))
@@ -618,7 +619,7 @@ export class CSVImportService {
    * Get template by ID
    */
   static async getTemplate(id: number): Promise<CSVImportTemplate | null> {
-    const db = getDb();
+    const db = getDbOrThrow();
     const [template] = await db.select()
       .from(csvImportTemplates)
       .where(eq(csvImportTemplates.id, id));
@@ -626,9 +627,14 @@ export class CSVImportService {
     if (!template) return null;
 
     return {
-      ...template,
+      id: template.id,
+      name: template.name,
+      description: template.description || '',
+      categoryId: template.categoryId ?? undefined,
+      dataSourceId: template.dataSourceId ?? undefined,
       templateSchema: JSON.parse(template.templateSchema),
-      validationRules: JSON.parse(template.validationRules)
+      validationRules: JSON.parse(template.validationRules || '{}'),
+      sampleData: template.sampleData || ''
     };
   }
 
@@ -636,7 +642,7 @@ export class CSVImportService {
    * Get import history
    */
   static async getImportHistory(limit = 50): Promise<any[]> {
-    const db = getDb();
+    const db = getDbOrThrow();
     return await db.select({
       id: csvImports.id,
       name: csvImports.name,
@@ -663,7 +669,7 @@ export class CSVImportService {
    * Get import details with staging data
    */
   static async getImportDetails(importId: number): Promise<any> {
-    const db = getDb();
+    const db = getDbOrThrow();
     const [importRecord] = await db.select()
       .from(csvImports)
       .where(eq(csvImports.id, importId));

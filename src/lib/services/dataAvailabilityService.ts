@@ -1,10 +1,9 @@
-import { getDb } from '../db/index';
-import { statistics, dataPoints, categories, dataSources } from '../db/schema';
+import { getDbOrThrow } from '../db/index';
+import { statistics, dataPoints, categories, dataSources } from '../db/schema-postgres';
 import { eq, and, count } from 'drizzle-orm';
-import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 
 // Check if a specific statistic has data points
-export async function hasDataForStatistic(statisticId: number, database = getDb()) {
+export async function hasDataForStatistic(statisticId: number, database: any = getDbOrThrow()) {
   const result = await database
     .select({ count: count() })
     .from(dataPoints)
@@ -14,7 +13,7 @@ export async function hasDataForStatistic(statisticId: number, database = getDb(
 }
 
 // Get all statistics that have data
-export async function getStatisticsWithData(database = getDb()) {
+export async function getStatisticsWithData(database: any = getDbOrThrow()) {
   const result = await database
     .select({ statisticId: dataPoints.statisticId })
     .from(dataPoints)
@@ -30,7 +29,7 @@ export async function getStatisticsWithData(database = getDb()) {
 }
 
 // Get categories that have statistics with data
-export async function getCategoriesWithData(database = getDb()) {
+export async function getCategoriesWithData(database: any = getDbOrThrow()) {
   const statisticsWithData = await getStatisticsWithData(database);
   
   if (statisticsWithData.length === 0) return [];
@@ -65,13 +64,13 @@ export async function getCategoriesWithData(database = getDb()) {
 }
 
 // Check if a category has any statistics with data
-export async function hasDataForCategory(categoryName: string, database = getDb()) {
+export async function hasDataForCategory(categoryName: string, database: any = getDbOrThrow()) {
   const categoriesWithData = await getCategoriesWithData(database);
   return categoriesWithData.includes(categoryName);
 }
 
 // Get statistics for a category that have data
-export async function getStatisticsForCategoryWithData(categoryName: string, database = getDb()) {
+export async function getStatisticsForCategoryWithData(categoryName: string, database: any = getDbOrThrow()) {
   const statisticsWithData = await getStatisticsWithData(database);
   
   if (statisticsWithData.length === 0) return [];

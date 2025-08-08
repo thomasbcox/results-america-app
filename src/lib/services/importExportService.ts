@@ -1,9 +1,9 @@
-import { getDb } from '../db/index';
+import { getDbOrThrow } from '../db/index';
 import { CategoriesService } from './categoriesService';
 import { StatisticsService } from './statisticsService';
 import { DataPointsService } from './dataPointsService';
 import { StatesService } from './statesService';
-import { importSessions } from '../db/schema';
+import { importSessions } from '../db/schema-postgres';
 import { eq } from 'drizzle-orm';
 import type { 
   IImportExportService, 
@@ -16,7 +16,7 @@ import type {
 
 export class ImportExportService {
   static async exportData(format: 'json' | 'csv', filters?: ExportFilters): Promise<ExportResult> {
-    const db = getDb();
+    const db = getDbOrThrow();
     const exportData: any = {
       metadata: {
         exportedAt: new Date().toISOString(),
@@ -127,7 +127,7 @@ export class ImportExportService {
   }
 
   static async importData(data: ImportDataInput): Promise<ImportResult> {
-    const db = getDb();
+    const db = getDbOrThrow();
     const errors: string[] = [];
     let imported = 0;
 

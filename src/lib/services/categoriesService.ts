@@ -7,7 +7,7 @@ import type {
   CreateCategoryInput, 
   UpdateCategoryInput 
 } from '../types/service-interfaces';
-import type { CategoryWithJoins } from '../types/database-results';
+// Removed unused CategoryWithJoins import
 
 export class CategoriesService {
   static async getAllCategories(): Promise<CategoryData[]> {
@@ -129,13 +129,25 @@ export class CategoriesService {
 
   static async searchCategories(searchTerm: string): Promise<CategoryData[]> {
     const db = getDbOrThrow();
-    const result = await db.select()
+    const result = await db
+      .select({
+        id: categories.id,
+        name: categories.name,
+        description: categories.description,
+        icon: categories.icon,
+        sortOrder: categories.sortOrder,
+        isActive: categories.isActive,
+      })
       .from(categories)
       .where(like(categories.name, `%${searchTerm}%`))
       .orderBy(categories.sortOrder, categories.name);
-    
-    return result.map((category: CategoryWithJoins) => ({
-      ...category,
+
+    return result.map((category) => ({
+      id: category.id,
+      name: category.name,
+      description: category.description,
+      icon: category.icon,
+      sortOrder: category.sortOrder ?? 0,
       isActive: category.isActive ?? 1,
     }));
   }
@@ -148,36 +160,31 @@ export class CategoriesService {
     const { page, limit } = pagination;
     const offset = (page - 1) * limit;
     
-    // Build query with explicit sorting options
-    let query = db.select().from(categories);
-    
-    // Apply sorting based on valid fields
-    if (sorting?.sortBy) {
+    // Build query with explicit sorting options (avoid reassign type widening)
+    const baseQuery = db.select().from(categories);
+
+    const orderedQuery = (() => {
+      if (!sorting?.sortBy) {
+        return baseQuery.orderBy(categories.sortOrder, categories.name);
+      }
       switch (sorting.sortBy) {
         case 'name':
-          query = query.orderBy(sorting.sortOrder === 'desc' ? desc(categories.name) : asc(categories.name));
-          break;
+          return baseQuery.orderBy(sorting.sortOrder === 'desc' ? desc(categories.name) : asc(categories.name));
         case 'description':
-          query = query.orderBy(sorting.sortOrder === 'desc' ? desc(categories.description) : asc(categories.description));
-          break;
+          return baseQuery.orderBy(sorting.sortOrder === 'desc' ? desc(categories.description) : asc(categories.description));
         case 'sortOrder':
-          query = query.orderBy(sorting.sortOrder === 'desc' ? desc(categories.sortOrder) : asc(categories.sortOrder));
-          break;
+          return baseQuery.orderBy(sorting.sortOrder === 'desc' ? desc(categories.sortOrder) : asc(categories.sortOrder));
         case 'id':
-          query = query.orderBy(sorting.sortOrder === 'desc' ? desc(categories.id) : asc(categories.id));
-          break;
+          return baseQuery.orderBy(sorting.sortOrder === 'desc' ? desc(categories.id) : asc(categories.id));
         default:
-          // Default sorting
-          query = query.orderBy(categories.sortOrder, categories.name);
+          return baseQuery.orderBy(categories.sortOrder, categories.name);
       }
-    } else {
-      query = query.orderBy(categories.sortOrder, categories.name);
-    }
-    
+    })();
+
     // Apply pagination
-    query = query.limit(limit).offset(offset);
-    
-    const result = await query;
+    const pagedQuery = orderedQuery.limit(limit).offset(offset);
+
+    const result = await pagedQuery;
     
     // Get total count for pagination
     const totalResult = await db.select({ count: categories.id }).from(categories);

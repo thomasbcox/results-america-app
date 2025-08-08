@@ -41,7 +41,7 @@ export class StatisticsService {
         like(statistics.name, `%${searchTerm}%`)
       );
 
-    return results.map((result: StatisticWithJoins) => ({
+    return results.map((result) => ({
       id: result.id,
       name: result.name,
       raNumber: result.raNumber,
@@ -51,7 +51,7 @@ export class StatisticsService {
       unit: result.unit,
       availableSince: result.availableSince,
       preferenceDirection: result.preferenceDirection || 'higher',
-      dataQuality: result.dataQuality || 'mock',
+      dataQuality: (result.dataQuality as 'mock' | 'real') || 'mock',
       provenance: result.provenance,
       isActive: result.isActive ?? 1,
       categoryId: result.categoryId,
@@ -109,7 +109,7 @@ export class StatisticsService {
     const totalResult = await db.select({ count: count() }).from(statistics);
     const total = totalResult[0]?.count || 0;
 
-    const data = results.map((result: StatisticWithJoins) => ({
+    const data = results.map((result) => ({
       id: result.id,
       name: result.name,
       raNumber: result.raNumber,
@@ -119,7 +119,7 @@ export class StatisticsService {
       unit: result.unit,
       availableSince: result.availableSince,
       preferenceDirection: result.preferenceDirection || 'higher',
-      dataQuality: result.dataQuality || 'mock',
+      dataQuality: (result.dataQuality as 'mock' | 'real') || 'mock',
       provenance: result.provenance,
       isActive: result.isActive ?? 1,
       categoryId: result.categoryId,
@@ -221,7 +221,7 @@ export class StatisticsService {
         availableSince: result.availableSince,
         preferenceDirection: result.preferenceDirection || 'higher',
         dataQuality: 'mock', // Default for normalized schema
-        provenance: undefined, // Not available in normalized schema
+        provenance: result.provenance || null, // default to null
         isActive: result.isActive ?? 1,
         categoryId: result.categoryId,
         dataSourceId: result.dataSourceId,
@@ -546,7 +546,7 @@ export class StatisticsService {
       availableSince: result.availableSince,
       preferenceDirection: result.preferenceDirection || 'higher',
       dataQuality: 'mock',
-      provenance: undefined,
+      provenance: result.provenance || null,
       isActive: result.isActive ?? 1,
       categoryId: result.categoryId,
       dataSourceId: result.dataSourceId,
@@ -656,7 +656,7 @@ export class StatisticsService {
 
   static async deleteStatistic(id: number): Promise<boolean> {
     const db = getDbOrThrow();
-    const result = await db.delete(statistics).where(eq(statistics.id, id));
-    return result.changes > 0;
+    const result = await db.delete(statistics).where(eq(statistics.id, id)).returning({ id: statistics.id });
+    return result.length > 0;
   }
 } 

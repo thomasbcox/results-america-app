@@ -1,4 +1,4 @@
-import { getDb } from '../db/index';
+import { getDbOrThrow } from '../db/index';
 import { dataPoints, states, statistics, categories, dataSources, importSessions } from '../db/schema-postgres';
 import { eq, and, inArray, between, desc, asc, count, sql } from 'drizzle-orm';
 import type { 
@@ -11,7 +11,7 @@ import type { DataPointWithJoins } from '../types/database-results';
 
 export class DataPointsService {
   static async getDataPointsForState(stateId: number, year?: number): Promise<DataPointData[]> {
-    const db = getDb();
+    const db = getDbOrThrow();
     const conditions = [eq(dataPoints.stateId, stateId)];
     if (year) {
       conditions.push(eq(dataPoints.year, year));
@@ -45,7 +45,7 @@ export class DataPointsService {
   }
 
   static async getDataPointsForStatistic(statisticId: number, year?: number): Promise<DataPointData[]> {
-    const db = getDb();
+    const db = getDbOrThrow();
     const conditions = [eq(dataPoints.statisticId, statisticId)];
     if (year) {
       conditions.push(eq(dataPoints.year, year));
@@ -80,7 +80,7 @@ export class DataPointsService {
   }
 
   static async getDataPointsForComparison(stateIds: number[], statisticIds: number[], year: number): Promise<DataPointData[]> {
-    const db = getDb();
+    const db = getDbOrThrow();
     const results = await db.select({
       id: dataPoints.id,
       statisticId: dataPoints.statisticId,
@@ -117,7 +117,7 @@ export class DataPointsService {
   // NEW: Critical missing query methods for immediate business value
 
   static async getDataPointsByYearRange(startYear: number, endYear: number, statisticId?: number): Promise<DataPointData[]> {
-    const db = getDb();
+    const db = getDbOrThrow();
     const conditions = [between(dataPoints.year, startYear, endYear)];
     if (statisticId) {
       conditions.push(eq(dataPoints.statisticId, statisticId));
@@ -152,7 +152,7 @@ export class DataPointsService {
   }
 
   static async getDataPointsByMultipleStates(stateIds: number[], statisticId: number, year: number): Promise<DataPointData[]> {
-    const db = getDb();
+    const db = getDbOrThrow();
     const results = await db.select({
       id: dataPoints.id,
       statisticId: dataPoints.statisticId,
@@ -188,7 +188,7 @@ export class DataPointsService {
   }
 
   static async getDataPointsByMultipleStatistics(statisticIds: number[], stateId: number, year: number): Promise<DataPointData[]> {
-    const db = getDb();
+    const db = getDbOrThrow();
     const results = await db.select({
       id: dataPoints.id,
       statisticId: dataPoints.statisticId,
@@ -224,7 +224,7 @@ export class DataPointsService {
   }
 
   static async getLatestDataPoints(statisticId: number, limit: number = 10): Promise<DataPointData[]> {
-    const db = getDb();
+    const db = getDbOrThrow();
     const results = await db.select({
       id: dataPoints.id,
       statisticId: dataPoints.statisticId,
@@ -255,7 +255,7 @@ export class DataPointsService {
   }
 
   static async getDataPointsByImportSession(sessionId: number): Promise<DataPointData[]> {
-    const db = getDb();
+    const db = getDbOrThrow();
     const results = await db.select({
       id: dataPoints.id,
       statisticId: dataPoints.statisticId,
@@ -293,7 +293,7 @@ export class DataPointsService {
     max: number;
     totalValue: number;
   }> {
-    const db = getDb();
+    const db = getDbOrThrow();
     const conditions = [eq(dataPoints.statisticId, statisticId)];
     if (year) {
       conditions.push(eq(dataPoints.year, year));
@@ -317,7 +317,7 @@ export class DataPointsService {
     statesWithData: number;
     yearsWithData: number[];
   }> {
-    const db = getDb();
+    const db = getDbOrThrow();
     const conditions = [eq(dataPoints.statisticId, statisticId)];
     if (year) {
       conditions.push(eq(dataPoints.year, year));
@@ -337,7 +337,7 @@ export class DataPointsService {
   }
 
   static async getOutliers(statisticId: number, year: number, threshold: number = 2): Promise<DataPointData[]> {
-    const db = getDb();
+    const db = getDbOrThrow();
     
     // Get mean and standard deviation
     const stats = await db.select({
@@ -389,13 +389,13 @@ export class DataPointsService {
   }
 
   static async createDataPoint(data: CreateDataPointInput): Promise<DataPointData> {
-    const db = getDb();
+    const db = getDbOrThrow();
     const [dataPoint] = await db.insert(dataPoints).values(data).returning();
     return dataPoint;
   }
 
   static async updateDataPoint(id: number, data: UpdateDataPointInput): Promise<DataPointData> {
-    const db = getDb();
+    const db = getDbOrThrow();
     const [dataPoint] = await db.update(dataPoints).set(data).where(eq(dataPoints.id, id)).returning();
     if (!dataPoint) {
       throw new Error(`Data point with id ${id} not found`);
@@ -404,7 +404,7 @@ export class DataPointsService {
   }
 
   static async deleteDataPoint(id: number): Promise<boolean> {
-    const db = getDb();
+    const db = getDbOrThrow();
     const result = await db.delete(dataPoints).where(eq(dataPoints.id, id)).returning();
     return result.length > 0;
   }

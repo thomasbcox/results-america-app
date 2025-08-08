@@ -577,7 +577,8 @@ export class UnifiedCSVImportService {
     template: any
   ): Promise<{ success: boolean; stats: any }> {
     const db = getDbOrThrow();
-    const stagedRows = [];
+    type CsvImportStagingInsert = typeof csvImportStaging.$inferInsert;
+    const stagedRows: CsvImportStagingInsert[] = [];
     let validRows = 0;
     let invalidRows = 0;
 
@@ -641,7 +642,7 @@ export class UnifiedCSVImportService {
             rawData: JSON.stringify(record),
             validationStatus: 'invalid',
             validationErrors: JSON.stringify(['Missing or invalid required fields'])
-          });
+          } as CsvImportStagingInsert);
           continue;
         }
 
@@ -657,7 +658,7 @@ export class UnifiedCSVImportService {
             rawData: JSON.stringify(record),
             validationStatus: 'invalid',
             validationErrors: JSON.stringify([`State "${mappedData.stateName}" not found`])
-          });
+          } as CsvImportStagingInsert);
           continue;
         }
 
@@ -678,7 +679,7 @@ export class UnifiedCSVImportService {
               rawData: JSON.stringify(record),
               validationStatus: 'invalid',
               validationErrors: JSON.stringify([`Category "${mappedData.categoryName}" not found`])
-            });
+            } as CsvImportStagingInsert);
             continue;
           }
           categoryId = categoryMatch.id;
@@ -696,7 +697,7 @@ export class UnifiedCSVImportService {
               rawData: JSON.stringify(record),
               validationStatus: 'invalid',
               validationErrors: JSON.stringify([`Statistic "${mappedData.statisticName}" not found in category "${mappedData.categoryName}"`])
-            });
+            } as CsvImportStagingInsert);
             continue;
           }
           statisticId = statisticMatch.id;
@@ -721,7 +722,7 @@ export class UnifiedCSVImportService {
           validationStatus: 'valid',
           isProcessed: 0,
           processedAt: null
-        });
+        } as CsvImportStagingInsert);
 
       } catch (error) {
         invalidRows++;
@@ -731,7 +732,7 @@ export class UnifiedCSVImportService {
           rawData: JSON.stringify(record),
           validationStatus: 'invalid',
           validationErrors: JSON.stringify([error instanceof Error ? error.message : 'Unknown error'])
-        });
+        } as CsvImportStagingInsert);
       }
     }
 

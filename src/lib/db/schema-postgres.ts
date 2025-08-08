@@ -152,7 +152,7 @@ export const csvImports = pgTable('csv_imports', {
   filename: text('filename').notNull(), // Original uploaded filename
   fileSize: integer('file_size').notNull(), // File size in bytes
   fileHash: text('file_hash').notNull(), // SHA256 hash for deduplication
-  status: text('status', { enum: ['uploaded', 'validating', 'validation_failed', 'importing', 'imported', 'failed'] }).notNull().default('uploaded'),
+  status: text('status', { enum: ['uploaded', 'staged', 'validating', 'validated', 'validation_failed', 'importing', 'imported', 'published', 'failed'] }).notNull().default('uploaded'),
   uploadedBy: integer('uploaded_by').notNull().references(() => users.id),
   uploadedAt: timestamp('uploaded_at').notNull().default(sql`CURRENT_TIMESTAMP`),
   validatedAt: timestamp('validated_at'),

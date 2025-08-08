@@ -205,7 +205,8 @@ export class SimpleCSVImportService {
     template: SimpleCSVTemplate
   ): Promise<{ success: boolean; stats: any }> {
     const db = getDbOrThrow();
-    const stagedRows = [];
+    type CsvImportStagingInsert = typeof csvImportStaging.$inferInsert;
+    const stagedRows: CsvImportStagingInsert[] = [];
     let validRows = 0;
     let invalidRows = 0;
 
@@ -269,7 +270,7 @@ export class SimpleCSVImportService {
             rawData: JSON.stringify(record),
             validationStatus: 'invalid',
             validationErrors: JSON.stringify(['Missing or invalid required fields'])
-          });
+          } as CsvImportStagingInsert);
           continue;
         }
 
@@ -285,7 +286,7 @@ export class SimpleCSVImportService {
             rawData: JSON.stringify(record),
             validationStatus: 'invalid',
             validationErrors: JSON.stringify([`State "${mappedData.stateName}" not found`])
-          });
+          } as CsvImportStagingInsert);
           continue;
         }
 
@@ -306,7 +307,7 @@ export class SimpleCSVImportService {
               rawData: JSON.stringify(record),
               validationStatus: 'invalid',
               validationErrors: JSON.stringify([`Category "${mappedData.categoryName}" not found`])
-            });
+            } as CsvImportStagingInsert);
             continue;
           }
           categoryId = categoryMatch.id;
@@ -324,7 +325,7 @@ export class SimpleCSVImportService {
               rawData: JSON.stringify(record),
               validationStatus: 'invalid',
               validationErrors: JSON.stringify([`Statistic "${mappedData.statisticName}" not found in category "${mappedData.categoryName}"`])
-            });
+            } as CsvImportStagingInsert);
             continue;
           }
           statisticId = statisticMatch.id;
@@ -355,12 +356,13 @@ export class SimpleCSVImportService {
             ));
         } else {
           // Create new data point
+          const importSessionId = await this.getImportSessionId(importId);
           await db.insert(dataPoints).values({
             stateId,
-            statisticId,
+            statisticId: statisticId!,
             year: mappedData.year,
             value: mappedData.value,
-            importSessionId: await this.getImportSessionId(importId)
+            importSessionId
           });
         }
 
@@ -378,7 +380,7 @@ export class SimpleCSVImportService {
           validationStatus: 'valid',
           isProcessed: 0, // Don't mark as processed yet
           processedAt: null // Don't set processedAt until actually processed
-        });
+        } as CsvImportStagingInsert);
 
       } catch (error) {
         invalidRows++;
@@ -388,7 +390,7 @@ export class SimpleCSVImportService {
           rawData: JSON.stringify(record),
           validationStatus: 'invalid',
           validationErrors: JSON.stringify([error instanceof Error ? error.message : 'Unknown error'])
-        });
+        } as CsvImportStagingInsert);
       }
     }
 
@@ -446,7 +448,7 @@ export class SimpleCSVImportService {
     return {
       id: template.id,
       name: template.name,
-      description: template.description,
+      description: template.description || '',
       type: template.name.includes('Multi-Category') ? 'multi-category' : 
              template.name.includes('Multi Year Export') ? 'multi-year-export' : 'single-category',
       expectedHeaders: JSON.parse(template.templateSchema).expectedHeaders,
